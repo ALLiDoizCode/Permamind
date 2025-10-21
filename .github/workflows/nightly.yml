@@ -1,0 +1,108 @@
+name: Nightly Build
+
+on:
+  schedule:
+    # Runs at 00:00 UTC every day
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout development branch
+        uses: actions/checkout@v4
+        with:
+          ref: development
+          fetch-depth: 0
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run lint (if configured)
+        run: npm run lint --if-present
+
+      - name: Check build
+        run: npm run build --if-present
+
+  publish-nightly:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout development branch
+        uses: actions/checkout@v4
+        with:
+          ref: development
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run build --if-present
+
+      - name: Generate nightly version
+        id: nightly_version
+        run: |
+          # Get current version from package.json
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+
+          # Get current date in YYYYMMDD format
+          NIGHTLY_DATE=$(date -u +%Y%m%d)
+
+          # Get short commit hash
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+
+          # Create nightly version: X.Y.Z-nightly.YYYYMMDD.COMMITHASH
+          NIGHTLY_VERSION="${CURRENT_VERSION}-nightly.${NIGHTLY_DATE}.${COMMIT_SHA}"
+
+          echo "version=${NIGHTLY_VERSION}" >> $GITHUB_OUTPUT
+          echo "Nightly version: ${NIGHTLY_VERSION}"
+
+      - name: Update package.json version
+        run: |
+          npm version ${{ steps.nightly_version.outputs.version }} --no-git-tag-version
+
+      - name: Publish nightly to NPM
+        run: npm publish --tag nightly --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Nightly build failed! Check the logs for details."
+          # You can add notification logic here (Slack, Discord, email, etc.)
+
+      - name: Create nightly release note
+        if: success()
+        run: |
+          echo "✅ Nightly build ${{ steps.nightly_version.outputs.version }} published successfully!"
+          echo "Install with: npm install your-package@nightly"

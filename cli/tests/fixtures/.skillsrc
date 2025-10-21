@@ -1,0 +1,5 @@
+{
+  "wallet": "~/.arweave/wallet.json",
+  "registry": "MOCK_REGISTRY_PROCESS_ID",
+  "gateway": "https://arweave.net"
+}

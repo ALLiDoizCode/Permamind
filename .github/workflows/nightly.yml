@@ -31,7 +31,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm test
+        run: npm run test:once
 
       - name: Run lint (if configured)
         run: npm run lint --if-present

@@ -29,7 +29,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --include-workspace-root
+        run: npm install
 
       - name: Run tests
         run: npm run test:once

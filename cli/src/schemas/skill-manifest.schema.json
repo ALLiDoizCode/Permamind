@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Skill Manifest",
+  "description": "JSON schema for validating skill manifest metadata extracted from SKILL.md frontmatter",
+  "type": "object",
+  "required": ["name", "version", "description", "author"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique skill identifier (lowercase alphanumeric with hyphens only)",
+      "pattern": "^[a-z0-9-]+$",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version number (x.y.z format)",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable skill description for search and discovery",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "author": {
+      "type": "string",
+      "description": "Creator display name (individual, team, or organization)",
+      "minLength": 1
+    },
+    "tags": {
+      "type": "array",
+      "description": "Searchable category tags for skill discovery",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "Required skill dependencies (must be installed before this skill)",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9-]+$",
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "uniqueItems": true
+    },
+    "license": {
+      "type": "string",
+      "description": "SPDX license identifier or custom license string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

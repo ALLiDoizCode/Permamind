@@ -320,6 +320,21 @@ describe('AO Registry Client', () => {
       await expect(aoRegistryClient.searchSkills('ao')).rejects.toThrow(NetworkError);
       expect(dryrun).toHaveBeenCalledTimes(2);
     });
+
+    it('should timeout after 30 seconds and throw NetworkError', async () => {
+      // Mock dryrun to never resolve (simulate timeout)
+      (dryrun as jest.Mock).mockImplementation(
+        () => new Promise(() => {}) // Never resolves
+      );
+
+      const startTime = Date.now();
+      await expect(aoRegistryClient.searchSkills('ao')).rejects.toThrow(NetworkError);
+      const duration = Date.now() - startTime;
+
+      // Should timeout around 30s (fast-fail on timeout, no retry)
+      expect(duration).toBeGreaterThanOrEqual(29000);
+      expect(duration).toBeLessThan(32000);
+    }, 35000);
   });
 
   describe('getSkill()', () => {
@@ -375,15 +390,28 @@ describe('AO Registry Client', () => {
     });
 
     it('should retry on failure', async () => {
+      const mockSkill: ISkillMetadata = {
+        name: 'ao-basics',
+        version: '1.0.0',
+        description: 'AO fundamentals',
+        author: 'Skills Team',
+        owner: 'owner123',
+        tags: ['ao'],
+        dependencies: [],
+        arweaveTxId: 'tx123',
+        publishedAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
       (dryrun as jest.Mock)
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce({
-          Messages: [{ Data: JSON.stringify(null) }],
+          Messages: [{ Data: JSON.stringify(mockSkill) }],
         });
 
       const result = await aoRegistryClient.getSkill('ao-basics');
 
-      expect(result).toBeNull();
+      expect(result).toEqual(mockSkill);
       expect(dryrun).toHaveBeenCalledTimes(2);
     });
   });

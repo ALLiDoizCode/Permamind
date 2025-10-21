@@ -119,78 +119,66 @@ export async function execute(
   // Track performance for NFR4 requirement (2-second target)
   const startTime = Date.now();
 
-  try {
-    // Query execution with AO Registry Client
-    const results = await queryRegistry(query, options);
+  // Query execution with AO Registry Client
+  const results = await queryRegistry(query);
 
-    // Filter results by tags (client-side, AND logic)
-    const filteredResults = filterByTags(results, options.tag || []);
+  // Filter results by tags (client-side, AND logic)
+  const filteredResults = filterByTags(results, options.tag || []);
 
-    // Calculate query duration
-    const endTime = Date.now();
-    const duration = endTime - startTime;
-    const durationSeconds = (duration / 1000).toFixed(2);
+  // Calculate query duration
+  const endTime = Date.now();
+  const duration = endTime - startTime;
+  const durationSeconds = (duration / 1000).toFixed(2);
 
-    // Log performance warning if exceeds 2 seconds (NFR4)
-    if (duration > 2000) {
-      logger.warn(
-        `Search query took ${durationSeconds}s (exceeds 2s target). Consider optimizing your query or checking network connectivity.`
-      );
-    }
-
-    // Log verbose metadata if requested
-    if (options.verbose) {
-      await logVerboseMetadata(query, results.length, filteredResults.length, duration, options.tag);
-    }
-
-    // Sort results by relevance
-    const sortedResults = sortByRelevance(filteredResults, query);
-
-    // Format and display results
-    const formattedOutput = formatSearchResults(sortedResults, {
-      json: options.json,
-      tags: options.tag,
-    });
-
-    // Display results using logger (not console.log per critical rule #1)
-    logger.info(formattedOutput);
-
-    return sortedResults;
-  } catch (error: unknown) {
-    throw error; // Re-throw for error handler
+  // Log performance warning if exceeds 2 seconds (NFR4)
+  if (duration > 2000) {
+    logger.warn(
+      `Search query took ${durationSeconds}s (exceeds 2s target). Consider optimizing your query or checking network connectivity.`
+    );
   }
+
+  // Log verbose metadata if requested
+  if (options.verbose === true) {
+    await logVerboseMetadata(query, results.length, filteredResults.length, duration, options.tag);
+  }
+
+  // Sort results by relevance
+  const sortedResults = sortByRelevance(filteredResults, query);
+
+  // Format and display results
+  const formattedOutput = formatSearchResults(sortedResults, {
+    json: options.json,
+    tags: options.tag,
+  });
+
+  // Display results using logger (not console.log per critical rule #1)
+  logger.info(formattedOutput);
+
+  return sortedResults;
 }
 
 /**
  * Query AO registry for skills matching the search query
  *
  * @param query - Search query (empty string lists all skills)
- * @param options - Search options
  * @returns Array of skill metadata
  * @throws {NetworkError} If query fails
  * @throws {ConfigurationError} If registry not configured
  */
 async function queryRegistry(
-  query: string,
-  options: ISearchOptions
+  query: string
 ): Promise<ISkillMetadata[]> {
   logger.debug('Querying AO registry', { query });
 
-  try {
-    // Call searchSkills with query parameter
-    // Empty query returns all skills (AC: 12)
-    const results = await aoRegistryClient.searchSkills(query);
+  // Call searchSkills with query parameter
+  // Empty query returns all skills (AC: 12)
+  const results = await aoRegistryClient.searchSkills(query);
 
-    logger.debug('Query execution complete', {
-      resultCount: results.length,
-    });
+  logger.debug('Query execution complete', {
+    resultCount: results.length,
+  });
 
-    return results;
-  } catch (error: unknown) {
-    // Error handling is already done by ao-registry-client
-    // Just re-throw
-    throw error;
-  }
+  return results;
 }
 
 /**

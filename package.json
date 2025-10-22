@@ -1,5 +1,5 @@
 {
-  "name": "agent-skills-registry",
+  "name": "@permamind/skills",
   "version": "0.1.0",
   "description": "Decentralized registry for Claude Agent Skills with CLI tooling for publish, search, and install operations",
   "private": true,
@@ -35,7 +35,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/agent-skills-registry.git"
+    "url": "https://github.com/permamind/skills.git"
   },
   "keywords": [
     "claude",

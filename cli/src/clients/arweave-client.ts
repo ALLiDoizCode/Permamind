@@ -15,6 +15,7 @@ import {
   IBundleMetadata,
   IUploadOptions,
   IUploadResult,
+  IDownloadOptions,
   TransactionStatus,
   JWK,
   ITag,
@@ -30,6 +31,7 @@ import {
  */
 const DEFAULT_GATEWAY = 'https://arweave.net';
 const UPLOAD_TIMEOUT_MS = 60000; // 60 seconds
+const DOWNLOAD_TIMEOUT_MS = 30000; // 30 seconds
 const POLL_INTERVAL_MS = 30000; // 30 seconds
 const CONFIRMATION_TIMEOUT_MS = 300000; // 5 minutes
 const MAX_RETRY_ATTEMPTS = 3;
@@ -496,48 +498,171 @@ export async function pollConfirmation(
 /**
  * Download bundle from Arweave by transaction ID
  *
- * Retrieves a previously uploaded bundle from the Arweave network.
- * This function will be used by the install command (Story 3.x).
+ * Retrieves a previously uploaded bundle from the Arweave network with
+ * progress tracking, retry logic, timeout handling, and Content-Type verification.
+ *
+ * Includes retry logic for network failures (3 attempts with exponential backoff).
  *
  * @param txId - Arweave transaction ID (43 characters)
- * @param gatewayUrl - Optional custom gateway URL (defaults to config)
+ * @param options - Optional progress callback, custom gateway URL, and timeout
  * @returns Bundle buffer (compressed tar.gz)
- * @throws {NetworkError} On network failure or gateway error
+ * @throws {ValidationError} On invalid TXID or wrong Content-Type
+ * @throws {NetworkError} On network timeout, gateway failure, or bundle not found
  *
  * @example
  * ```typescript
- * const bundle = await downloadBundle('abc123...xyz789');
+ * const bundle = await downloadBundle(
+ *   'abc123...xyz789',
+ *   { progressCallback: (pct) => console.log(`${pct}% downloaded`) }
+ * );
  * console.log('Downloaded', bundle.length, 'bytes');
  * ```
  */
 export async function downloadBundle(
   txId: string,
-  gatewayUrl?: string
+  options?: IDownloadOptions
 ): Promise<Buffer> {
-  // Load configuration if gateway not provided
-  if (!gatewayUrl) {
-    const config = await loadConfig();
-    gatewayUrl = config.gateway || DEFAULT_GATEWAY;
-  }
-
-  validateGatewayUrl(gatewayUrl);
-
-  try {
-    const dataUrl = `${gatewayUrl}/${txId}`;
-    const response = await fetch(dataUrl);
-
-    if (!response.ok) {
-      throw new Error(`Gateway returned status ${response.status}: ${response.statusText}`);
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer);
-  } catch (error) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    throw new NetworkError(
-      `Failed to download bundle → Solution: Verify transaction ID and network connection`,
-      err,
-      gatewayUrl
+  // Validate TXID length (43 characters)
+  if (txId.length !== 43) {
+    throw new ValidationError(
+      `Invalid Arweave TXID length (expected 43, got ${txId.length}) → Solution: Verify transaction ID format`,
+      'txId',
+      txId
     );
   }
+
+  // Load configuration for gateway URL
+  const config = await loadConfig();
+  const gatewayUrl = options?.gatewayUrl || config.gateway || DEFAULT_GATEWAY;
+  validateGatewayUrl(gatewayUrl);
+
+  // Retry logic with exponential backoff
+  return await retryWithBackoff(
+    async () => {
+      // Timeout handling
+      const controller = new AbortController();
+      const timeout = options?.timeout || DOWNLOAD_TIMEOUT_MS;
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      try {
+        const dataUrl = `${gatewayUrl}/${txId}`;
+        const response = await fetch(dataUrl, { signal: controller.signal });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new NetworkError(
+              `Bundle not found (TXID: ${txId}) → Solution: Verify transaction ID or wait for network propagation`,
+              new Error('404 Not Found'),
+              gatewayUrl
+            );
+          }
+          throw new Error(`Gateway returned status ${response.status}: ${response.statusText}`);
+        }
+
+        // Content-Type verification
+        const contentType = response.headers.get('Content-Type');
+        if (
+          contentType !== null &&
+          contentType !== '' &&
+          !contentType.includes('gzip') &&
+          !contentType.includes('tar')
+        ) {
+          throw new ValidationError(
+            `Invalid bundle Content-Type (expected application/x-tar+gzip or application/gzip, got ${contentType}) → Solution: Ensure TXID points to a valid skill bundle`,
+            'contentType',
+            contentType
+          );
+        }
+
+        // Progress tracking with readable stream
+        const contentLength = response.headers.get('Content-Length');
+        const totalBytes =
+          contentLength !== null && contentLength !== '' ? parseInt(contentLength, 10) : null;
+
+        if (options?.progressCallback) {
+          options.progressCallback(0);
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error('Response body is not readable');
+        }
+
+        const chunks: Uint8Array[] = [];
+        let receivedBytes = 0;
+
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          const { done, value } = await reader.read();
+
+          if (done === true) break;
+
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+          chunks.push(value);
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          receivedBytes += value.length;
+
+          // Report progress if total size known
+          if (totalBytes !== null && totalBytes !== 0 && options?.progressCallback !== undefined) {
+            const progress = Math.round((receivedBytes / totalBytes) * 100);
+            options.progressCallback(progress);
+          }
+        }
+
+        if (options?.progressCallback) {
+          options.progressCallback(100);
+        }
+
+        // Concatenate chunks into single Buffer
+        const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+        const result = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const chunk of chunks) {
+          result.set(chunk, offset);
+          offset += chunk.length;
+        }
+
+        logger.info(`Successfully downloaded bundle from Arweave: ${txId}`);
+        return Buffer.from(result);
+      } catch (error) {
+        // Re-throw ValidationError and NetworkError directly
+        if (error instanceof ValidationError || error instanceof NetworkError) {
+          throw error;
+        }
+
+        const err = error instanceof Error ? error : new Error(String(error));
+
+        // Check for timeout/abort errors
+        if (err.name === 'AbortError' || (err as NodeJS.ErrnoException).code === 'ABORT_ERR') {
+          throw new NetworkError(
+            `Download failed: network timeout after ${timeout / 1000} seconds → Solution: Check your internet connection and try again. If the issue persists, try a different gateway using --gateway flag`,
+            err,
+            gatewayUrl
+          );
+        }
+
+        // Gateway errors (502/503)
+        if (err.message.includes('502') || err.message.includes('503')) {
+          throw new NetworkError(
+            `Gateway unavailable (${gatewayUrl} returned ${err.message.match(/\d{3}/)?.[0]}) → Solution: Try an alternative gateway: --gateway https://g8way.io`,
+            err,
+            gatewayUrl
+          );
+        }
+
+        // Generic network error
+        throw new NetworkError(
+          `Failed to download bundle → Solution: ${err.message}`,
+          err,
+          gatewayUrl
+        );
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    },
+    isRetryableError,
+    MAX_RETRY_ATTEMPTS,
+    BASE_RETRY_DELAY_MS
+  );
 }

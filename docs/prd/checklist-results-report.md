@@ -203,7 +203,6 @@
 **Features that could be cut if time-constrained:**
 - Story 2.4 (Enhanced Search with Tag Filtering) - Nice-to-have enhancement, core search sufficient
 - Story 3.6 (Installation Progress Indicators) - Improves UX but not critical for functionality
-- Story 4.5 (CLI Development Skill) - Fifth bootstrap skill, could launch with 4 skills if necessary
 - Epic 5 Story 5.4 (Performance Optimization) - Meet NFR targets first, optimize if time permits
 
 **Missing features requiring addition:**

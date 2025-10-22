@@ -34,6 +34,21 @@ export interface IUploadOptions {
 }
 
 /**
+ * Options for bundle download operation
+ *
+ * Configures optional behavior during Arweave bundle download, including
+ * progress tracking, custom gateway selection, and timeout customization.
+ */
+export interface IDownloadOptions {
+  /** Optional callback for download progress tracking (0-100 percent) */
+  progressCallback?: (progress: number) => void;
+  /** Custom Arweave gateway URL (overrides config, must be HTTPS) */
+  gatewayUrl?: string;
+  /** Custom timeout in milliseconds (default: 30000ms / 30 seconds) */
+  timeout?: number;
+}
+
+/**
  * Result of a successful bundle upload to Arweave
  *
  * Contains the transaction ID, upload size, and estimated cost for

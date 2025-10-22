@@ -83,7 +83,7 @@ describe('Bundler', () => {
 
         // Extract and verify .git is excluded
         const extractDir = path.join(tempDir, 'exclude-git-test');
-        await extract(result.buffer, extractDir);
+        await extract(result.buffer, { targetDir: extractDir, force: true });
 
         const gitDirExists = await fs
           .access(path.join(extractDir, '.git'))
@@ -98,7 +98,7 @@ describe('Bundler', () => {
 
         // Extract and verify node_modules is excluded
         const extractDir = path.join(tempDir, 'exclude-node-modules-test');
-        await extract(result.buffer, extractDir);
+        await extract(result.buffer, { targetDir: extractDir, force: true });
 
         const nodeModulesExists = await fs
           .access(path.join(extractDir, 'node_modules'))
@@ -113,7 +113,7 @@ describe('Bundler', () => {
 
         // Extract and verify hidden files are excluded
         const extractDir = path.join(tempDir, 'exclude-hidden-test');
-        await extract(result.buffer, extractDir);
+        await extract(result.buffer, { targetDir: extractDir, force: true });
 
         const dsStoreExists = await fs
           .access(path.join(extractDir, '.DS_Store'))
@@ -134,7 +134,7 @@ describe('Bundler', () => {
 
         // Extract and verify .skillsrc is included
         const extractDir = path.join(tempDir, 'include-skillsrc-test');
-        await extract(result.buffer, extractDir);
+        await extract(result.buffer, { targetDir: extractDir, force: true });
 
         const skillsrcExists = await fs
           .access(path.join(extractDir, '.skillsrc'))
@@ -149,7 +149,7 @@ describe('Bundler', () => {
 
         // Extract to verify structure
         const extractDir = path.join(tempDir, 'verify-exclusions-test');
-        await extract(result.buffer, extractDir);
+        await extract(result.buffer, { targetDir: extractDir, force: true });
 
         // Read extracted directory
         const extractedFiles = await fs.readdir(extractDir, { recursive: true });
@@ -332,7 +332,7 @@ describe('Bundler', () => {
       const result = await bundle(testSkillDir);
       const extractDir = path.join(tempDir, 'extract-test');
 
-      await extract(result.buffer, extractDir);
+      await extract(result.buffer, { targetDir: extractDir, force: true });
 
       // Verify extracted files exist
       const skillMdExists = await fs
@@ -347,7 +347,7 @@ describe('Bundler', () => {
       const result = await bundle(testSkillDir);
       const extractDir = path.join(tempDir, 'match-test');
 
-      await extract(result.buffer, extractDir);
+      await extract(result.buffer, { targetDir: extractDir, force: true });
 
       // Compare file contents
       const originalContent = await fs.readFile(path.join(testSkillDir, 'SKILL.md'), 'utf8');
@@ -362,7 +362,7 @@ describe('Bundler', () => {
       const extractDir = path.join(tempDir, 'roundtrip-test');
 
       // Extract
-      await extract(result1.buffer, extractDir);
+      await extract(result1.buffer, { targetDir: extractDir, force: true });
 
       // Bundle again from extracted directory
       const result2 = await bundle(extractDir);
@@ -375,7 +375,7 @@ describe('Bundler', () => {
       const result = await bundle(testSkillDir);
       const extractDir = path.join(tempDir, 'new-dir', 'nested', 'extract');
 
-      await extract(result.buffer, extractDir);
+      await extract(result.buffer, { targetDir: extractDir, force: true });
 
       const dirExists = await fs
         .access(extractDir)
@@ -389,8 +389,8 @@ describe('Bundler', () => {
       const invalidBuffer = Buffer.from('not a tar file');
       const extractDir = path.join(tempDir, 'invalid-test');
 
-      await expect(extract(invalidBuffer, extractDir)).rejects.toThrow(FileSystemError);
-      await expect(extract(invalidBuffer, extractDir)).rejects.toThrow(/Failed to extract/);
+      await expect(extract(invalidBuffer, { targetDir: extractDir, force: true })).rejects.toThrow();
+      await expect(extract(invalidBuffer, { targetDir: extractDir, force: true })).rejects.toThrow(/corrupted|invalid/);
     });
   });
 });

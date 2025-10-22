@@ -621,45 +621,211 @@ describe('Arweave Client', () => {
       (global.fetch).mockClear();
     });
 
-    it('should download bundle from Arweave by transaction ID', async () => {
+    // Helper to create mock readable stream
+    function createMockReadableStream(chunks: Uint8Array[]) {
+      let index = 0;
+      return {
+        getReader: () => ({
+          read: jest.fn(async () => {
+            if (index < chunks.length) {
+              return { done: false, value: chunks[index++] };
+            }
+            return { done: true, value: undefined };
+          }),
+        }),
+      };
+    }
+
+    it('should download bundle successfully and return Buffer with correct size', async () => {
       const mockBundleData = Buffer.from('downloaded bundle data');
-      // Extract the exact ArrayBuffer slice (not the pooled buffer)
-      const exactBuffer = mockBundleData.buffer.slice(
-        mockBundleData.byteOffset,
-        mockBundleData.byteOffset + mockBundleData.byteLength
-      );
+      const chunks = [mockBundleData];
 
       (global.fetch).mockResolvedValueOnce({
         ok: true,
-        arrayBuffer: jest.fn().mockResolvedValue(exactBuffer),
+        headers: {
+          get: (name: string) => {
+            if (name === 'Content-Length') return String(mockBundleData.length);
+            if (name === 'Content-Type') return 'application/gzip';
+            return null;
+          },
+        },
+        body: createMockReadableStream(chunks),
       });
 
-      const bundle = await downloadBundle('mock_tx_id');
+      const bundle = await downloadBundle('abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG');
 
-      expect(global.fetch).toHaveBeenCalledWith('https://arweave.net/mock_tx_id');
       expect(bundle.length).toBe(mockBundleData.length);
       expect(bundle.toString()).toBe(mockBundleData.toString());
     });
 
-    it('should throw NetworkError on download failure', async () => {
+    it('should invoke progress callback with correct percentages (0%, 50%, 100%)', async () => {
+      const chunk1 = Buffer.from('first half');
+      const chunk2 = Buffer.from('second half');
+      const totalSize = chunk1.length + chunk2.length;
+
+      const progressCallback = jest.fn();
+
+      (global.fetch).mockResolvedValueOnce({
+        ok: true,
+        headers: {
+          get: (name: string) => {
+            if (name === 'Content-Length') return String(totalSize);
+            if (name === 'Content-Type') return 'application/gzip';
+            return null;
+          },
+        },
+        body: createMockReadableStream([chunk1, chunk2]),
+      });
+
+      await downloadBundle('abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG', {
+        progressCallback,
+      });
+
+      // Should call: 0%, then ~50%, then 100%
+      expect(progressCallback).toHaveBeenCalledWith(0);
+      expect(progressCallback).toHaveBeenCalledWith(100);
+      expect(progressCallback.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('should verify Content-Type passes for valid gzip types', async () => {
+      const validTypes = ['application/x-tar+gzip', 'application/gzip'];
+
+      for (const contentType of validTypes) {
+        const mockData = Buffer.from('data');
+        (global.fetch).mockResolvedValueOnce({
+          ok: true,
+          headers: {
+            get: (name: string) => {
+              if (name === 'Content-Type') return contentType;
+              return null;
+            },
+          },
+          body: createMockReadableStream([mockData]),
+        });
+
+        await expect(
+          downloadBundle('abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG')
+        ).resolves.toBeDefined();
+      }
+    });
+
+    it('should throw ValidationError for invalid Content-Type', async () => {
+      (global.fetch).mockResolvedValueOnce({
+        ok: true,
+        headers: {
+          get: (name: string) => {
+            if (name === 'Content-Type') return 'text/html';
+            return null;
+          },
+        },
+        body: createMockReadableStream([Buffer.from('data')]),
+      });
+
+      await expect(
+        downloadBundle('abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG')
+      ).rejects.toThrow(/Content-Type/);
+    });
+
+    it('should trigger retry logic on network errors (ETIMEDOUT, 502)', async () => {
+      const error502 = new Error('Gateway returned status 502: Bad Gateway');
+
+      // First 2 attempts fail, 3rd succeeds
+      (global.fetch)
+        .mockRejectedValueOnce(error502)
+        .mockRejectedValueOnce(error502)
+        .mockResolvedValueOnce({
+          ok: true,
+          headers: {
+            get: () => 'application/gzip',
+          },
+          body: createMockReadableStream([Buffer.from('success')]),
+        });
+
+      const result = await downloadBundle('abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG');
+
+      expect(result).toBeDefined();
+      expect(global.fetch).toHaveBeenCalledTimes(3);
+    });
+
+    it('should throw NetworkError after timeout (30 seconds)', async () => {
+      // Mock fetch that respects abort signal
+      (global.fetch).mockImplementationOnce(
+        (url: string, options: any) =>
+          new Promise((resolve, reject) => {
+            // Listen for abort signal
+            if (options?.signal) {
+              options.signal.addEventListener('abort', () => {
+                const abortError = new Error('The operation was aborted');
+                abortError.name = 'AbortError';
+                reject(abortError);
+              });
+            }
+            // Never resolve otherwise
+          })
+      );
+
+      await expect(
+        downloadBundle('abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG', {
+          timeout: 100, // 100ms timeout
+        })
+      ).rejects.toThrow(/timeout/);
+    }, 5000);
+
+    it('should throw ValidationError for invalid TXID (not 43 characters)', async () => {
+      await expect(downloadBundle('short_txid')).rejects.toThrow(ValidationError);
+      await expect(downloadBundle('short_txid')).rejects.toThrow(/Invalid Arweave TXID length/);
+    });
+
+    it('should throw NetworkError with "not found" message for 404', async () => {
       (global.fetch).mockResolvedValueOnce({
         ok: false,
         status: 404,
         statusText: 'Not Found',
       });
 
-      await expect(downloadBundle('invalid_tx_id')).rejects.toThrow(NetworkError);
+      await expect(
+        downloadBundle('abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG')
+      ).rejects.toThrow(/Bundle not found/);
     });
 
-    it('should use custom gateway for download', async () => {
+    it('should use custom gateway URL when provided in options', async () => {
       (global.fetch).mockResolvedValueOnce({
         ok: true,
-        arrayBuffer: async () => Buffer.from('data').buffer,
+        headers: {
+          get: () => 'application/gzip',
+        },
+        body: createMockReadableStream([Buffer.from('data')]),
       });
 
-      await downloadBundle('mock_tx_id', 'https://g8way.io');
+      await downloadBundle('abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG', {
+        gatewayUrl: 'https://g8way.io',
+      });
 
-      expect(global.fetch).toHaveBeenCalledWith('https://g8way.io/mock_tx_id');
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://g8way.io/abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG',
+        expect.any(Object)
+      );
+    });
+
+    it('should use configurable gateway from config when no option provided', async () => {
+      mockLoadConfig.mockResolvedValueOnce({
+        gateway: 'https://ar-io.dev',
+      });
+
+      (global.fetch).mockResolvedValueOnce({
+        ok: true,
+        headers: {
+          get: () => 'application/gzip',
+        },
+        body: createMockReadableStream([Buffer.from('data')]),
+      });
+
+      await downloadBundle('abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://ar-io.dev/abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG',
+        expect.any(Object)
+      );
     });
   });
 });

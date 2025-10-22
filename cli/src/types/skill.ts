@@ -268,3 +268,99 @@ export interface BundleResult {
    */
   exceededLimit: boolean;
 }
+
+/**
+ * Options for bundle extraction
+ *
+ * Configures extraction behavior including target directory,
+ * overwrite policy, and logging verbosity.
+ *
+ * @example
+ * ```typescript
+ * const options: IExtractionOptions = {
+ *   targetDir: '/custom/path',
+ *   force: true,
+ *   verbose: true,
+ *   local: false
+ * };
+ * ```
+ */
+export interface IExtractionOptions {
+  /**
+   * Custom target directory (optional)
+   *
+   * If not provided, installation path is determined by local flag:
+   * - local=false: ~/.claude/skills/<skill-name>/ (default)
+   * - local=true: .claude/skills/<skill-name>/
+   */
+  targetDir?: string;
+
+  /**
+   * Overwrite existing installations without prompting (optional)
+   *
+   * Default: false (prompt user for confirmation)
+   * When true, existing directories are deleted without prompting
+   */
+  force?: boolean;
+
+  /**
+   * Enable detailed logging output (optional)
+   *
+   * Default: false (standard logging)
+   * When true, logs each file extracted with relative path
+   */
+  verbose?: boolean;
+
+  /**
+   * Install to local project directory instead of global (optional)
+   *
+   * Default: false (installs to ~/.claude/skills/)
+   * When true, installs to .claude/skills/ in current working directory
+   */
+  local?: boolean;
+}
+
+/**
+ * Result of bundle extraction operation
+ *
+ * Contains metadata about the extraction including final installation path,
+ * number of files extracted, and skill name.
+ *
+ * @example
+ * ```typescript
+ * const result: IExtractionResult = {
+ *   installedPath: '/Users/joe/.claude/skills/ao-basics',
+ *   filesExtracted: 42,
+ *   skillName: 'ao-basics'
+ * };
+ * ```
+ */
+export interface IExtractionResult {
+  /**
+   * Absolute path to installed skill directory
+   *
+   * This is the final location where the skill was extracted
+   * Contains SKILL.md and all bundled files
+   *
+   * @example '/Users/joe/.claude/skills/ao-basics'
+   */
+  installedPath: string;
+
+  /**
+   * Number of files extracted from bundle
+   *
+   * Useful for progress reporting and debugging
+   * Includes SKILL.md and all bundled resources
+   */
+  filesExtracted: number;
+
+  /**
+   * Skill name extracted from SKILL.md frontmatter
+   *
+   * Matches the 'name' field from YAML frontmatter
+   * Used to construct installation directory path
+   *
+   * @example 'ao-basics', 'arweave-fundamentals'
+   */
+  skillName: string;
+}

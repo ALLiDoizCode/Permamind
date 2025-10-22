@@ -1,0 +1,16 @@
+{
+  "lockfileVersion": 1,
+  "generatedAt": 1704067200000,
+  "skills": [
+    {
+      "name": "ao-basics",
+      "version": "1.0.0",
+      "arweaveTxId": "abc123def456ghi789jkl012mno345pqr678stu901",
+      "installedAt": 1704067200000,
+      "installedPath": "~/.claude/skills/ao-basics/",
+      "dependencies": [],
+      "isDirectDependency": true
+    }
+  ],
+  "installLocation": "~/.claude/skills/"
+}

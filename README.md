@@ -1,4 +1,4 @@
-# Agent Skills Registry
+# @permamind/skills
 
 A decentralized registry for Claude Agent Skills, providing CLI tooling for publishing, searching, and installing Skills on the Arweave and AO networks.
 
@@ -106,7 +106,7 @@ npm test
 ## Project Structure
 
 ```
-agent-skills-registry/
+@permamind/skills/
 ├── cli/                    # CLI tool source code
 │   ├── src/
 │   │   ├── commands/       # CLI commands (publish, search, install)
@@ -193,19 +193,19 @@ Upload a skill to Arweave and register it in the AO registry:
 
 ```bash
 # Publish a skill directory
-agent-skills publish ./my-skill
+skills publish ./my-skill
 
 # With custom wallet
-agent-skills publish ./my-skill --wallet ~/custom-wallet.json
+skills publish ./my-skill --wallet ~/custom-wallet.json
 
 # With verbose logging
-agent-skills publish ./my-skill --verbose
+skills publish ./my-skill --verbose
 
 # Skip transaction confirmation (faster, less reliable)
-agent-skills publish ./my-skill --skip-confirmation
+skills publish ./my-skill --skip-confirmation
 
 # Custom gateway
-agent-skills publish ./my-skill --gateway https://arweave.dev
+skills publish ./my-skill --gateway https://arweave.dev
 ```
 
 #### Publish Command Options

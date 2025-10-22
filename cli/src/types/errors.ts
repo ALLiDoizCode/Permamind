@@ -196,3 +196,63 @@ export class NetworkError extends Error {
     }
   }
 }
+
+/**
+ * Error thrown when user cancels an operation
+ *
+ * Used for interactive prompts where user declines to proceed
+ * This is a non-critical error (exit code 0)
+ *
+ * @example
+ * ```typescript
+ * throw new UserCancelledError(
+ *   'Installation cancelled by user'
+ * );
+ * ```
+ */
+export class UserCancelledError extends Error {
+  /**
+   * @param message - User-friendly cancellation message
+   */
+  constructor(message: string) {
+    super(message);
+    this.name = 'UserCancelledError';
+    if (typeof Error.captureStackTrace === 'function') {
+      Error.captureStackTrace(this, UserCancelledError);
+    }
+  }
+}
+
+/**
+ * Error thrown when dependency resolution fails
+ *
+ * Used for missing dependencies, circular dependencies, and depth limit exceeded
+ * Includes the dependency name and full dependency path for debugging
+ *
+ * @example
+ * ```typescript
+ * throw new DependencyError(
+ *   'Circular dependency detected: A→B→C→A → Solution: Remove circular dependencies from skill manifests',
+ *   'skill-a',
+ *   ['skill-root', 'skill-a', 'skill-b', 'skill-c', 'skill-a']
+ * );
+ * ```
+ */
+export class DependencyError extends Error {
+  /**
+   * @param message - User-friendly error message with solution guidance
+   * @param dependencyName - Name of the dependency that caused the error
+   * @param dependencyPath - Full path of dependencies from root to error point
+   */
+  constructor(
+    message: string,
+    public dependencyName: string,
+    public dependencyPath: string[]
+  ) {
+    super(message);
+    this.name = 'DependencyError';
+    if (typeof Error.captureStackTrace === 'function') {
+      Error.captureStackTrace(this, DependencyError);
+    }
+  }
+}

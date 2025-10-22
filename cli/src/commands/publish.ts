@@ -510,19 +510,23 @@ async function getRegistryResponse(messageId: string): Promise<{
     const { result } = await import('@permaweb/aoconnect');
 
     // Read message result directly (no polling needed)
-    const response = await result({
+    const response = (await result({
       message: messageId,
       process: process.env.AO_REGISTRY_PROCESS_ID || '',
-    });
+    })) as {
+      Messages?: Array<{
+        Tags?: Array<{ name: string; value: string }>;
+      }>;
+    };
 
     // Check if we have a response message
     if (response.Messages && response.Messages.length > 0) {
       const responseMsg = response.Messages[0];
-      const action = responseMsg.Tags.find((t: any) => t.name === 'Action')?.value;
+      const action = responseMsg.Tags?.find((t) => t.name === 'Action')?.value;
 
       if (action === 'Skill-Registered') {
-        const name = responseMsg.Tags.find((t: any) => t.name === 'Name')?.value;
-        const version = responseMsg.Tags.find((t: any) => t.name === 'Version')?.value;
+        const name = responseMsg.Tags?.find((t) => t.name === 'Name')?.value;
+        const version = responseMsg.Tags?.find((t) => t.name === 'Version')?.value;
         spinner.succeed(
           `Registry confirmed: ${name} v${version} registered successfully`
         );
@@ -533,7 +537,7 @@ async function getRegistryResponse(messageId: string): Promise<{
           version,
         };
       } else if (action === 'Error') {
-        const errorMsg = responseMsg.Tags.find((t: any) => t.name === 'Error')?.value;
+        const errorMsg = responseMsg.Tags?.find((t) => t.name === 'Error')?.value;
         spinner.fail(`Registry error: ${errorMsg}`);
         throw new NetworkError(
           `Skill registration failed: ${errorMsg} → Solution: Check your skill metadata and try again`,

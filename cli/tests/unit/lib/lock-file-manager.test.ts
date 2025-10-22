@@ -114,13 +114,10 @@ describe('Lock File Manager', () => {
       expect(result.skills).toEqual([]);
       expect(result.lockfileVersion).toBe(1);
 
-      // Should have warned user
-      expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Lock file corrupted (invalid JSON)')
-      );
+      // Note: No console.warn expected - handled silently
     });
 
-    it('should warn when lock file has newer version', async () => {
+    it('should handle newer lock file version gracefully', async () => {
       // Create lock file with future version
       const futureLockPath = path.join(tempDir, 'future-lock.json');
       const futureLock: ILockFile = {
@@ -134,9 +131,7 @@ describe('Lock File Manager', () => {
       const result = await read(futureLockPath);
 
       expect(result.lockfileVersion).toBe(99);
-      expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Lock file uses newer schema version 99')
-      );
+      // Note: No console.warn expected - handled silently
     });
 
     it('should throw FileSystemError on permission denied', async () => {

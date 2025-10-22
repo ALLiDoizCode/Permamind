@@ -20,6 +20,11 @@ coverage/
 .env.development.local
 .env.test.local
 
+# Wallet files (NEVER commit these!)
+wallet.json
+*.jwk
+.arweave/
+
 # Log files
 *.log
 npm-debug.log*

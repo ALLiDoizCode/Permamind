@@ -1,29 +1,222 @@
-# Agent Skills CLI
+# @permamind/skills
 
-Command-line interface for publishing, searching, and installing Claude Agent Skills.
+[![npm version](https://img.shields.io/npm/v/@permamind/skills.svg)](https://www.npmjs.com/package/@permamind/skills)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.11.0-brightgreen.svg)](https://nodejs.org/)
+
+A decentralized CLI for publishing, searching, and installing Claude Agent Skills on Arweave and AO networks.
+
+## Overview
+
+The Agent Skills Registry enables developers to:
+- **Publish** Claude Agent Skills as immutable bundles on Arweave
+- **Search** for Skills via a decentralized AO registry process
+- **Install** Skills with automatic dependency resolution
 
 ## Installation
 
 ```bash
-npm install -g @agent-skills/cli
+npm install -g @permamind/skills
 ```
 
-## Usage
+Verify installation:
 
 ```bash
-agent-skills --help
+skills --version
 ```
 
-## Development
+## Prerequisites
 
-See the root README.md for development setup instructions.
+- **Node.js**: 20.11.0 LTS or higher
+- **npm**: 10.x or higher (bundled with Node.js)
+- **Arweave Wallet**: Required for publishing Skills (JSON keyfile)
+
+## Quick Start
+
+### 1. Configure Your Wallet
+
+Create a `.skillsrc` file in your home directory:
+
+```json
+{
+  "wallet": "~/.arweave/wallet.json",
+  "registry": "AO_REGISTRY_PROCESS_ID",
+  "gateway": "https://arweave.net"
+}
+```
+
+### 2. Search for Skills
+
+```bash
+# Search by keyword
+skills search arweave
+
+# List all skills
+skills search ""
+
+# Filter by tags
+skills search --tag tutorial --tag beginner
+```
+
+### 3. Install a Skill
+
+```bash
+# Install globally (default)
+skills install ao-basics
+
+# Install to project directory
+skills install ao-basics --local
+```
+
+### 4. Publish a Skill
+
+```bash
+# Publish a skill directory
+skills publish ./my-skill
+
+# With verbose logging
+skills publish ./my-skill --verbose
+```
 
 ## Commands
 
-- `publish` - Publish a Skill to the registry
-- `search` - Search for Skills in the registry
-- `install` - Install a Skill with dependency resolution
+### `skills search [query]`
 
-## Documentation
+Search for Skills in the decentralized registry.
 
-For detailed documentation, see the `docs/` directory in the repository root.
+**Options:**
+- `--tag <tag>` - Filter by tag (can be repeated)
+- `--author <address>` - Filter by author Arweave address
+- `--limit <number>` - Limit number of results (default: 20)
+
+**Examples:**
+```bash
+skills search "arweave basics"
+skills search --tag tutorial --tag beginner
+skills search --author ABC123...XYZ789
+```
+
+### `skills install <name>`
+
+Install a Skill with automatic dependency resolution.
+
+**Options:**
+- `--local` - Install to project directory instead of global
+- `--force` - Force reinstall even if already installed
+- `--skip-deps` - Skip dependency installation
+
+**Examples:**
+```bash
+skills install ao-basics
+skills install my-skill --local
+skills install advanced-skill --force
+```
+
+### `skills publish <directory>`
+
+Publish a Skill to Arweave and register it in the AO registry.
+
+**Options:**
+- `--verbose` - Show detailed logging
+- `--dry-run` - Validate without publishing
+- `--wallet <path>` - Override wallet path from config
+
+**Examples:**
+```bash
+skills publish ./my-skill
+skills publish ./my-skill --verbose
+skills publish ./my-skill --dry-run
+```
+
+### `skills --help`
+
+Display help for all commands or a specific command.
+
+```bash
+skills --help
+skills publish --help
+skills search --help
+```
+
+## Architecture
+
+This CLI uses a **decentralized infrastructure**:
+- **Arweave Network**: Permanent storage for skill bundles (.tar.gz files)
+- **AO Network**: Decentralized compute for registry process (Lua handlers)
+- **npm Registry**: CLI tool distribution
+
+## Troubleshooting
+
+### "command not found: skills"
+
+Ensure npm global bin directory is in your PATH:
+
+```bash
+# Check npm global bin path
+npm bin -g
+
+# Add to PATH (example for macOS/Linux with bash)
+echo 'export PATH="$(npm bin -g):$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### "Permission denied" on installation
+
+Use Node Version Manager (nvm) to avoid permission issues:
+
+```bash
+# Install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+
+# Install Node.js via nvm
+nvm install 20.11.0
+nvm use 20.11.0
+
+# Install CLI globally (no sudo needed)
+npm install -g @permamind/skills
+```
+
+### "Wallet not found"
+
+Create a `.skillsrc` config file with your wallet path:
+
+```json
+{
+  "wallet": "/path/to/your/arweave-wallet.json"
+}
+```
+
+Or generate a new Arweave wallet:
+- Visit [Arweave Web Wallet](https://arweave.app)
+- Download your keyfile JSON
+- Reference it in `.skillsrc`
+
+## Contributing
+
+Contributions are welcome! Please see the [GitHub repository](https://github.com/ALLiDoizCode/Permamind) for:
+- Source code
+- Issue tracker
+- Contributing guidelines
+- Development setup
+
+## License
+
+MIT License - See [LICENSE](https://github.com/ALLiDoizCode/Permamind/blob/main/LICENSE) for details.
+
+## Links
+
+- **Repository**: [https://github.com/ALLiDoizCode/Permamind](https://github.com/ALLiDoizCode/Permamind)
+- **Issues**: [https://github.com/ALLiDoizCode/Permamind/issues](https://github.com/ALLiDoizCode/Permamind/issues)
+- **npm Package**: [https://www.npmjs.com/package/@permamind/skills](https://www.npmjs.com/package/@permamind/skills)
+- **Arweave Network**: [https://arweave.org](https://arweave.org)
+- **AO Network**: [https://ao.arweave.dev](https://ao.arweave.dev)
+
+## Support
+
+For questions, issues, or feature requests:
+- Open an issue on [GitHub Issues](https://github.com/ALLiDoizCode/Permamind/issues)
+- Join the community discussions
+
+---
+
+**Built with ❤️ on Arweave and AO networks**

@@ -38,8 +38,21 @@
     "agent-skills",
     "cli",
     "arweave",
-    "ao"
+    "ao",
+    "decentralized",
+    "registry"
   ],
-  "author": "",
-  "license": "MIT"
+  "author": "Permamind Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ALLiDoizCode/Permamind.git",
+    "directory": "cli"
+  },
+  "homepage": "https://github.com/ALLiDoizCode/Permamind#readme",
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ]
 }

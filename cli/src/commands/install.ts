@@ -47,6 +47,40 @@ export function createInstallCommand(): Command {
     .option('--force', 'Overwrite existing installations without confirmation')
     .option('--verbose', 'Show detailed dependency tree and progress')
     .option('--no-lock', 'Skip lock file generation')
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ skills install ao-basics
+    Install skill to global directory (~/.claude/skills/)
+
+  $ skills install arweave-fundamentals --local
+    Install to local project directory (.claude/skills/)
+
+  $ skills install permamind-integration --force
+    Force reinstall, overwriting existing installation
+
+  $ skills install cli-development --verbose
+    Show detailed dependency tree and installation progress
+
+  $ skills install agent-skills-best-practices --no-lock
+    Install without updating skills-lock.json
+
+  $ skills install ao-basics --local --verbose
+    Combine options: local installation with verbose output
+
+Workflow:
+  1. Searches AO registry for skill by name
+  2. Downloads skill bundle from Arweave
+  3. Resolves and installs all dependencies recursively
+  4. Extracts files to installation directory
+  5. Updates skills-lock.json (unless --no-lock specified)
+  6. Displays success message with installation path
+
+Documentation:
+  Troubleshooting: https://github.com/permamind/skills/blob/main/docs/troubleshooting.md
+`,
+    )
     .action(async (skillName: string, options: IInstallOptions) => {
       const interactive = isInteractive();
       let spinner: Ora | INoOpSpinner | undefined;

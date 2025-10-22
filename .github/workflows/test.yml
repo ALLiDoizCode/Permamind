@@ -12,10 +12,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         node-version: [18.x, 20.x]
 
     steps:
@@ -32,12 +33,18 @@ jobs:
         uses: leafo/gh-actions-lua@v10
         with:
           luaVersion: "5.3"
+        continue-on-error: false
 
       - name: Install dependencies
         run: npm install
 
       - name: Run tests
         run: npm run test:once
+
+      - name: Run performance regression tests
+        run: npm test -- cli/tests/performance/regression.test.ts --no-watch
+        env:
+          NODE_ENV: test
 
       - name: Run AO process tests
         run: npm run test:ao

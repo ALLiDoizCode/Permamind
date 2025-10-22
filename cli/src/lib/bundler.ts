@@ -211,7 +211,9 @@ export async function bundle(
   const buffers: Buffer[] = [];
   const tarStream = tar.create(
     {
-      gzip: true,
+      gzip: {
+        level: options?.compressionLevel ?? 6, // Level 6 provides optimal balance of size vs speed
+      },
       cwd: directory,
       portable: true,
     },

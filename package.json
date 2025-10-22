@@ -17,7 +17,7 @@
     "test:unit": "jest --testPathPattern=tests/unit --watch",
     "test:integration": "jest --testPathPattern=tests/integration",
     "test:coverage": "jest --coverage --coverageThreshold='{\"global\":{\"lines\":100}}'",
-    "test:ao": "cd ao-process/tests && lua run-all.lua",
+    "test:ao": "cd ao-process && cd tests && lua run-all.lua",
     "tdd": "jest --watch --verbose",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"**/*.{ts,js,json,md}\""

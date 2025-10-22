@@ -23,12 +23,81 @@ This project uses a **decentralized infrastructure**:
 
 ## Installation
 
+### For Users
+
 ```bash
+# Install CLI globally via npm
+npm install -g @permamind/skills
+
+# Verify installation
+skills --version
+```
+
+### For Developers
+
+```bash
+# Clone the repository
+git clone https://github.com/permamind/skills.git
+cd skills
+
 # Install dependencies
 npm install
 
 # Build all workspaces
 npm run build
+```
+
+## Quick Start
+
+### 1. Install the CLI
+
+```bash
+npm install -g @permamind/skills
+```
+
+### 2. Configure Your Wallet
+
+Create a `.skillsrc` file in your home directory:
+
+```json
+{
+  "wallet": "~/.arweave/wallet.json",
+  "registry": "AO_REGISTRY_PROCESS_ID",
+  "gateway": "https://arweave.net"
+}
+```
+
+### 3. Search for Skills
+
+```bash
+# Search by keyword
+skills search arweave
+
+# List all skills
+skills search ""
+
+# Filter by tags
+skills search --tag tutorial --tag beginner
+```
+
+### 4. Install a Skill
+
+```bash
+# Install globally (default)
+skills install ao-basics
+
+# Install to project directory
+skills install ao-basics --local
+```
+
+### 5. Publish Your First Skill
+
+```bash
+# Publish a skill directory
+skills publish ./my-skill
+
+# With verbose logging
+skills publish ./my-skill --verbose
 ```
 
 ## Development
@@ -146,6 +215,45 @@ npm run test:unit
 # Coverage report
 npm run test:coverage
 ```
+
+## Performance
+
+The CLI has been heavily optimized for speed and responsiveness:
+
+### Performance Metrics
+
+| Operation | Performance | Notes |
+|-----------|-------------|-------|
+| **Startup** | 47-49ms | 91% faster with lazy loading |
+| **Search** (cached) | <100ms | 99% faster for repeated queries |
+| **Install** (cached) | <1s | 95% faster with dependency cache |
+| **Bundle** | 3-11ms | Optimal gzip compression (level 6) |
+
+### Optimizations
+
+- **Lazy Loading**: Heavy dependencies (tar, arweave, aoconnect) load on-demand only
+- **Smart Caching**:
+  - Search results cached for 5 minutes
+  - Dependency metadata cached across operations (LRU, 100 entries)
+- **Optimal Compression**: 61.75% compression ratio without speed penalty
+- **Parallel Operations**: Dependency fetching parallelized with Promise.all()
+
+### Performance Testing
+
+Run performance benchmarks and regression tests:
+
+```bash
+# Run all performance tests
+npm test -- cli/tests/performance/
+
+# Run regression tests only
+npm test -- cli/tests/performance/regression.test.ts
+
+# Run specific benchmarks
+npm test -- cli/tests/performance/benchmark-publish.test.ts
+```
+
+**Documentation**: See `docs/performance-benchmarks.md` for detailed metrics and `docs/performance-analysis.md` for optimization techniques.
 
 ## Coding Standards
 
@@ -266,10 +374,241 @@ Search for your skill:
 
 All error messages follow the pattern: **"Error → Solution:"** with actionable recovery steps.
 
+### Search for Skills
+
+Query the AO registry to discover available skills:
+
+```bash
+# Search by keyword
+skills search arweave
+
+# Multi-word query
+skills search "ao basics"
+
+# List all skills
+skills search ""
+
+# Filter by single tag
+skills search crypto --tag blockchain
+
+# Multiple tags (AND logic)
+skills search --tag ao --tag arweave
+
+# JSON output
+skills search crypto --json
+
+# Verbose mode
+skills search --verbose --tag ao
+```
+
+#### Search Command Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--tag <tag>` | Filter by tag (multiple allowed, AND logic) | `[]` |
+| `--json` | Output raw JSON instead of table | `false` |
+| `--verbose` | Show detailed query information | `false` |
+
+### Install a Skill
+
+Download and install a skill with automatic dependency resolution:
+
+```bash
+# Install globally (default)
+skills install ao-basics
+
+# Install to local project
+skills install arweave-fundamentals --local
+
+# Force reinstall
+skills install permamind-integration --force
+
+# Show dependency tree
+skills install cli-development --verbose
+
+# Skip lock file
+skills install agent-skills-best-practices --no-lock
+```
+
+#### Install Command Options
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--global` | Install to ~/.claude/skills/ | `true` |
+| `--local` | Install to .claude/skills/ (project-specific) | `false` |
+| `--force` | Overwrite existing installations | `false` |
+| `--verbose` | Show detailed dependency tree | `false` |
+| `--no-lock` | Skip lock file generation | `false` |
+
+#### Install Workflow
+
+1. **Searches** AO registry for skill by name
+2. **Downloads** skill bundle from Arweave
+3. **Resolves** and installs all dependencies recursively
+4. **Extracts** files to installation directory
+5. **Updates** skills-lock.json (unless --no-lock)
+6. **Displays** success message with installation path
+
+## Common Workflows
+
+### Publishing Your First Skill
+
+```bash
+# 1. Create skill directory with SKILL.md
+mkdir my-skill
+cd my-skill
+
+# 2. Create SKILL.md with frontmatter
+cat > SKILL.md << 'EOF'
+---
+name: my-skill
+description: A helpful skill for X
+version: 1.0.0
+author: Your Name
+tags: [tutorial, beginner]
+---
+
+# My Skill Instructions
+
+Your skill instructions go here.
+EOF
+
+# 3. Publish to Arweave
+skills publish .
+
+# 4. Verify it's searchable
+skills search my-skill
+```
+
+### Searching and Installing Skills
+
+```bash
+# 1. Search for skills by topic
+skills search arweave
+
+# 2. Filter by tags to find relevant skills
+skills search --tag tutorial --tag beginner
+
+# 3. Install the skill you want
+skills install ao-basics
+
+# 4. Verify installation
+ls ~/.claude/skills/
+```
+
+### Handling Skill Dependencies
+
+```bash
+# 1. Install a skill with dependencies
+skills install complex-skill --verbose
+
+# 2. View dependency tree in output
+# Dependencies are automatically resolved and installed
+
+# 3. Check lock file for installed versions
+cat skills-lock.json
+
+# 4. Force reinstall if needed
+skills install complex-skill --force
+```
+
+### Working with Multiple Environments
+
+```bash
+# Mainnet configuration
+cat > ~/.skillsrc << EOF
+{
+  "wallet": "~/.arweave/mainnet-wallet.json",
+  "registry": "MAINNET_REGISTRY_ID",
+  "gateway": "https://arweave.net"
+}
+EOF
+
+# Test your skill
+skills search my-skill
+
+# Switch to testnet for development
+cat > ~/.skillsrc << EOF
+{
+  "wallet": "~/.arweave/testnet-wallet.json",
+  "registry": "TESTNET_REGISTRY_ID",
+  "gateway": "https://arweave.dev"
+}
+EOF
+
+# Publish to testnet first
+skills publish ./my-skill --verbose
+```
+
+## Configuration Reference
+
+### .skillsrc Options
+
+The `.skillsrc` file can be placed in your home directory or project root. Project-level configuration takes precedence.
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `wallet` | string | Yes | Path to Arweave wallet JSON file. Supports tilde expansion (`~`). Can be overridden with `--wallet` flag. |
+| `registry` | string | Yes | AO process ID (43-character Arweave transaction ID) for skill registry. Use mainnet registry for production. |
+| `gateway` | string | No | Arweave gateway URL. Default: `https://arweave.net`. Can be overridden with `--gateway` flag. |
+
+### Example Configurations
+
+**Mainnet Production:**
+```json
+{
+  "wallet": "~/.arweave/mainnet-wallet.json",
+  "registry": "MAINNET_REGISTRY_PROCESS_ID",
+  "gateway": "https://arweave.net"
+}
+```
+
+**Testnet Development:**
+```json
+{
+  "wallet": "~/.arweave/testnet-wallet.json",
+  "registry": "TESTNET_REGISTRY_PROCESS_ID",
+  "gateway": "https://arweave.dev"
+}
+```
+
+**Custom Gateway:**
+```json
+{
+  "wallet": "~/.arweave/wallet.json",
+  "registry": "REGISTRY_PROCESS_ID",
+  "gateway": "https://g8way.io"
+}
+```
+
 ## License
 
 MIT
 
+## Troubleshooting
+
+Encountering errors? Check our comprehensive **[Troubleshooting Guide](docs/troubleshooting.md)** for solutions to common issues:
+
+- Validation errors (invalid skill names, missing fields, etc.)
+- Network errors (timeouts, gateway failures, connection issues)
+- Configuration errors (missing wallet, registry not configured)
+- Authorization errors (insufficient funds, wallet not found)
+- Dependency errors (circular dependencies, missing dependencies)
+- File system errors (permissions, disk space)
+
+All error messages follow the format: `[ErrorType] Problem. -> Solution: Action to take.`
+
+For detailed debugging, use the `--verbose` flag:
+```bash
+skills publish ./my-skill --verbose
+```
+
 ## Contributing
 
-See the `docs/` directory for architecture documentation and contributing guidelines.
+We welcome contributions! See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for:
+
+- How to report issues
+- How to submit pull requests
+- Development setup instructions
+- Coding standards and testing requirements
+- PR review process

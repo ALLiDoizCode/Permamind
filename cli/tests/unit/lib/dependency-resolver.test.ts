@@ -4,10 +4,13 @@
  * Tests recursive dependency resolution with mocked AO registry client.
  */
 
-import { resolve } from '../../../src/lib/dependency-resolver';
+import * as dependencyResolver from '../../../src/lib/dependency-resolver';
 import { DependencyError } from '../../../src/types/errors';
 import * as aoRegistryClient from '../../../src/clients/ao-registry-client';
 import { ISkillMetadata } from '../../../src/types/ao-registry';
+
+// Import resolve for backwards compatibility
+const { resolve } = dependencyResolver;
 
 // Mock the AO registry client
 jest.mock('../../../src/clients/ao-registry-client');
@@ -17,6 +20,9 @@ const mockGetSkill = aoRegistryClient.getSkill as jest.MockedFunction<typeof aoR
 describe('Dependency Resolver', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Clear dependency cache to prevent test interference
+    dependencyResolver.clearDependencyCache();
   });
 
   describe('resolve', () => {

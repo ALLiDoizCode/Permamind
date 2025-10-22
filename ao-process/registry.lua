@@ -7,7 +7,10 @@
 -- Architecture: Monolithic design, message-based communication only
 
 -- Import JSON module (required for encoding/decoding)
-json = require("json")
+-- Check if json is already available (from test mock or AO runtime)
+if not json then
+  json = require("json")
+end
 
 -- ============================================================================
 -- GLOBAL STATE

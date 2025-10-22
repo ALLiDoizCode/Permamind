@@ -24,6 +24,7 @@ import { NetworkError, ConfigurationError } from '../types/errors.js';
  */
 const MAX_RETRY_ATTEMPTS = 2; // 2 attempts for queries only
 const RETRY_DELAY_MS = 5000; // 5 seconds between retries
+const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds default timeout
 
 /**
  * Get AO Registry Process ID from environment or config
@@ -276,6 +277,39 @@ export async function getRegistryInfo(): Promise<IRegistryInfo> {
 }
 
 /**
+ * Wrap a function with a timeout using Promise.race()
+ *
+ * @param fn - Function to execute with timeout
+ * @param timeoutMs - Timeout duration in milliseconds
+ * @param actionName - Name of action for error messages
+ * @returns Result from successful function execution
+ * @throws {NetworkError} If timeout is exceeded
+ * @private
+ */
+async function withTimeout<T>(
+  fn: () => Promise<T>,
+  timeoutMs: number,
+  actionName: string
+): Promise<T> {
+  return Promise.race([
+    fn(),
+    new Promise<T>((_, reject) =>
+      setTimeout(
+        () =>
+          reject(
+            new NetworkError(
+              `${actionName} query timed out after ${timeoutMs / 1000} seconds → Solution: The AO registry process may be slow or unresponsive. Try again or check network connectivity.`,
+              new Error('Timeout exceeded'),
+              'ao-registry'
+            )
+          ),
+        timeoutMs
+      )
+    ),
+  ]);
+}
+
+/**
  * Retry a query function with fixed delay between attempts
  *
  * IMPORTANT: Only use this for dryrun queries (read-only operations).
@@ -295,9 +329,15 @@ async function retryQuery<T>(
 
   for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
     try {
-      return await fn();
+      // Wrap function execution with timeout
+      return await withTimeout(fn, DEFAULT_TIMEOUT_MS, actionName);
     } catch (error: unknown) {
       lastError = error instanceof Error ? error : new Error(String(error));
+
+      // Fast fail on timeout errors - do not retry
+      if (lastError.message.includes('timed out')) {
+        throw lastError;
+      }
 
       if (attempt < MAX_RETRY_ATTEMPTS) {
         logger.debug(`${actionName} query failed, retrying...`, {

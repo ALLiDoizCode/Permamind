@@ -4,7 +4,7 @@
 
 - Launch MVP within 2 weeks with functional CLI capabilities (publish, install, search) by October 27, 2025
 - Achieve >95% installation success rate to establish trust and reliability as core value proposition
-- Bootstrap ecosystem with 5+ high-quality skills (AO, Arweave, related topics) to demonstrate value and set quality standards
+- Bootstrap ecosystem with core Permaweb skills (ao, arweave) to demonstrate platform value and set quality standards for the community
 - Establish first-mover positioning as the recognized standard platform for agent skills distribution
 - Drive initial community adoption: 50+ CLI installs and 10+ community-published skills within 30 days post-launch
 - Validate architectural advantage of free consumption model (browse/search/install free, publish/review/rate paid)

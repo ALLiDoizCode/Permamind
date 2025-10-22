@@ -10,7 +10,7 @@ Implement search command to query the AO registry and display matching skills. E
 Implement install command with recursive dependency resolution and lock file generation. Delivers the "wow moment" that demonstrates value and builds trust through reliable installation (>95% success rate target).
 
 **Epic 4: Bootstrap Ecosystem Content**
-Create 5+ high-quality bootstrap skills (AO, Arweave, related topics) to seed the ecosystem and demonstrate platform value. Establishes quality standards and provides initial content for community discovery.
+Create core Permaweb bootstrap skills (ao, arweave) to seed the ecosystem and demonstrate platform value. Establishes quality standards and provides essential content for the Arweave/AO developer community.
 
 **Epic 5: Polish, Testing & Launch Readiness**
 Cross-platform testing, CLI UX polish, error handling refinement, and community launch preparation. Delivers production-ready platform with >95% installation reliability and prepares for Day 14 launch.

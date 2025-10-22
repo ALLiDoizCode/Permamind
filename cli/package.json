@@ -1,10 +1,10 @@
 {
-  "name": "@agent-skills/cli",
+  "name": "@permamind/skills",
   "version": "0.1.0",
   "description": "CLI tool for publishing, searching, and installing Claude Agent Skills",
   "main": "dist/index.js",
   "bin": {
-    "agent-skills": "dist/index.js"
+    "skills": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",

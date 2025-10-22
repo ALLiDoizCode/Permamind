@@ -1,0 +1,154 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/your-org/agent-skills-registry/schemas/skills-lock.schema.json",
+  "title": "Agent Skills Lock File",
+  "description": "Schema for Agent Skills Registry lock file (skills-lock.json) that tracks installed skills, versions, dependencies, and installation metadata for reproducible skill installations.",
+  "type": "object",
+  "required": ["lockfileVersion", "generatedAt", "skills", "installLocation"],
+  "additionalProperties": false,
+  "properties": {
+    "lockfileVersion": {
+      "type": "integer",
+      "description": "Lock file schema version number (current: 1). Used for forward compatibility when schema evolves.",
+      "minimum": 1,
+      "examples": [1]
+    },
+    "generatedAt": {
+      "type": "integer",
+      "description": "Unix timestamp (milliseconds) when the lock file was last updated. Updated on every write operation.",
+      "minimum": 0,
+      "examples": [1704067200000]
+    },
+    "skills": {
+      "type": "array",
+      "description": "Array of all installed skill records (direct and transitive dependencies). Each record contains recursive dependency trees.",
+      "items": {
+        "$ref": "#/definitions/installedSkillRecord"
+      },
+      "default": []
+    },
+    "installLocation": {
+      "type": "string",
+      "description": "Installation directory path (global or local). Indicates which installation context the lock file tracks.",
+      "minLength": 1,
+      "examples": ["~/.claude/skills/", ".claude/skills/"]
+    }
+  },
+  "definitions": {
+    "installedSkillRecord": {
+      "type": "object",
+      "description": "Represents a single installed skill record with recursive dependency support.",
+      "required": [
+        "name",
+        "version",
+        "arweaveTxId",
+        "installedAt",
+        "installedPath",
+        "dependencies",
+        "isDirectDependency"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the installed skill (from SKILL.md frontmatter).",
+          "minLength": 1,
+          "examples": ["ao-basics", "arweave-fundamentals"]
+        },
+        "version": {
+          "type": "string",
+          "description": "Version string of the installed skill (from SKILL.md frontmatter). Follows semver format.",
+          "minLength": 1,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9.-]+)?(\\+[a-zA-Z0-9.-]+)?$",
+          "examples": ["1.0.0", "2.1.3", "1.0.0-beta.1"]
+        },
+        "arweaveTxId": {
+          "type": "string",
+          "description": "Arweave transaction ID of the source bundle. This is the permanent storage address on Arweave.",
+          "minLength": 43,
+          "maxLength": 43,
+          "pattern": "^[a-zA-Z0-9_-]{43}$",
+          "examples": ["abc123def456ghi789jkl012mno345pqr678stu901"]
+        },
+        "installedAt": {
+          "type": "integer",
+          "description": "Unix timestamp (milliseconds) when the skill was installed.",
+          "minimum": 0,
+          "examples": [1704067200000]
+        },
+        "installedPath": {
+          "type": "string",
+          "description": "Local file system path where the skill is installed.",
+          "minLength": 1,
+          "examples": [
+            "~/.claude/skills/ao-basics/",
+            ".claude/skills/ao-basics/"
+          ]
+        },
+        "dependencies": {
+          "type": "array",
+          "description": "Recursive array of dependency skill records. Each dependency can have its own dependencies, creating a tree structure.",
+          "items": {
+            "$ref": "#/definitions/installedSkillRecord"
+          },
+          "default": []
+        },
+        "isDirectDependency": {
+          "type": "boolean",
+          "description": "Indicates if this skill was directly requested by the user (true) or installed automatically as a transitive dependency (false).",
+          "examples": [true, false]
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "lockfileVersion": 1,
+      "generatedAt": 1704067200000,
+      "skills": [],
+      "installLocation": "~/.claude/skills/"
+    },
+    {
+      "lockfileVersion": 1,
+      "generatedAt": 1704067200000,
+      "skills": [
+        {
+          "name": "ao-basics",
+          "version": "1.0.0",
+          "arweaveTxId": "abc123def456ghi789jkl012mno345pqr678stu901",
+          "installedAt": 1704067200000,
+          "installedPath": "~/.claude/skills/ao-basics/",
+          "dependencies": [],
+          "isDirectDependency": true
+        }
+      ],
+      "installLocation": "~/.claude/skills/"
+    },
+    {
+      "lockfileVersion": 1,
+      "generatedAt": 1704067200000,
+      "skills": [
+        {
+          "name": "advanced-skill",
+          "version": "2.0.0",
+          "arweaveTxId": "xyz789abc012def345ghi678jkl901mno234pqr567",
+          "installedAt": 1704067200000,
+          "installedPath": "~/.claude/skills/advanced-skill/",
+          "dependencies": [
+            {
+              "name": "ao-basics",
+              "version": "1.0.0",
+              "arweaveTxId": "abc123def456ghi789jkl012mno345pqr678stu901",
+              "installedAt": 1704067100000,
+              "installedPath": "~/.claude/skills/ao-basics/",
+              "dependencies": [],
+              "isDirectDependency": false
+            }
+          ],
+          "isDirectDependency": true
+        }
+      ],
+      "installLocation": "~/.claude/skills/"
+    }
+  ]
+}

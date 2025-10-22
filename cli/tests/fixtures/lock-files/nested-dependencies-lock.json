@@ -1,0 +1,36 @@
+{
+  "lockfileVersion": 1,
+  "generatedAt": 1704067200000,
+  "skills": [
+    {
+      "name": "advanced-skill",
+      "version": "2.0.0",
+      "arweaveTxId": "xyz789abc012def345ghi678jkl901mno234pqr567",
+      "installedAt": 1704067200000,
+      "installedPath": "~/.claude/skills/advanced-skill/",
+      "dependencies": [
+        {
+          "name": "ao-basics",
+          "version": "1.0.0",
+          "arweaveTxId": "abc123def456ghi789jkl012mno345pqr678stu901",
+          "installedAt": 1704067100000,
+          "installedPath": "~/.claude/skills/ao-basics/",
+          "dependencies": [
+            {
+              "name": "arweave-fundamentals",
+              "version": "1.5.0",
+              "arweaveTxId": "def456ghi789jkl012mno345pqr678stu901vwx234",
+              "installedAt": 1704067000000,
+              "installedPath": "~/.claude/skills/arweave-fundamentals/",
+              "dependencies": [],
+              "isDirectDependency": false
+            }
+          ],
+          "isDirectDependency": false
+        }
+      ],
+      "isDirectDependency": true
+    }
+  ],
+  "installLocation": "~/.claude/skills/"
+}

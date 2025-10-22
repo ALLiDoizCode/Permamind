@@ -79,7 +79,7 @@ Finalize the platform through comprehensive cross-platform testing, CLI UX polis
 
 **As a** developer,
 **I want** to publish the CLI to npm registry,
-**so that** users can install it with `npm install -g agent-skills-cli`.
+**so that** users can install it with `npm install -g @permamind/skills`.
 
 **Acceptance Criteria:**
 1. package.json configured with correct metadata: name, version, description, author, license, repository

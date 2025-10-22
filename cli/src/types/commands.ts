@@ -45,3 +45,57 @@ export interface IPublishResult {
   /** Timestamp of publication */
   publishedAt: number;
 }
+
+/**
+ * Options for the install command
+ */
+export interface IInstallOptions {
+  /** Install to ~/.claude/skills/ (default: true) */
+  global?: boolean;
+
+  /** Install to .claude/skills/ (mutually exclusive with global) */
+  local?: boolean;
+
+  /** Overwrite existing installations without confirmation */
+  force?: boolean;
+
+  /** Show detailed dependency tree and progress */
+  verbose?: boolean;
+
+  /** Skip lock file generation (for testing) */
+  noLock?: boolean;
+}
+
+/**
+ * Result returned from successful install operation
+ */
+export interface IInstallResult {
+  /** Array of installed skill names with versions (e.g., ["ao-basics@1.0.0", "arweave-fundamentals@1.5.0"]) */
+  installedSkills: string[];
+
+  /** Total number of dependencies installed (excluding root skill) */
+  dependencyCount: number;
+
+  /** Total size in bytes of all installed bundles */
+  totalSize: number;
+
+  /** Total installation time in seconds */
+  elapsedTime: number;
+}
+
+/**
+ * Progress information during installation
+ */
+export interface IInstallProgress {
+  /** Current installation phase (e.g., "Downloading", "Installing") */
+  phase: string;
+
+  /** Current item number being processed */
+  current: number;
+
+  /** Total number of items to process */
+  total: number;
+
+  /** Descriptive message for current progress */
+  message: string;
+}

@@ -1,8 +1,8 @@
-# Agent Skills Registry Architecture Document
+# @permamind/skills Architecture Document
 
 ## Introduction
 
-This document outlines the overall project architecture for Agent Skills Registry, including backend systems, shared services, and non-UI specific concerns. Its primary goal is to serve as the guiding architectural blueprint for AI-driven development, ensuring consistency and adherence to chosen patterns and technologies.
+This document outlines the overall project architecture for @permamind/skills, including backend systems, shared services, and non-UI specific concerns. Its primary goal is to serve as the guiding architectural blueprint for AI-driven development, ensuring consistency and adherence to chosen patterns and technologies.
 
 **Relationship to Frontend Architecture:**
 This is a backend-only/CLI project with no traditional frontend interface. The user interface is the command-line terminal (macOS Terminal, Linux shells, Windows PowerShell/CMD).
@@ -23,7 +23,7 @@ This is a backend-only/CLI project with no traditional frontend interface. The u
 
 ### Technical Summary
 
-The Agent Skills Registry employs a **serverless three-layer architecture** leveraging decentralized infrastructure (Arweave + AO) to eliminate traditional hosting costs and maintenance overhead. The system is built as a Node.js CLI tool that orchestrates interactions between local file operations, Arweave's permanent storage layer, and an AO process-based registry index. Core technology choices include TypeScript for type safety, Commander.js for CLI parsing, and a monorepo structure to keep all components (CLI, AO process, bootstrap skills) versioned together. The architecture prioritizes cross-platform compatibility, >95% installation reliability, and familiar npm-like developer experience while achieving complete decentralization through Arweave/AO integration.
+@permamind/skills employs a **serverless three-layer architecture** leveraging decentralized infrastructure (Arweave + AO) to eliminate traditional hosting costs and maintenance overhead. The system is built as a Node.js CLI tool that orchestrates interactions between local file operations, Arweave's permanent storage layer, and an AO process-based registry index. Core technology choices include TypeScript for type safety, Commander.js for CLI parsing, and a monorepo structure to keep all components (CLI, AO process, bootstrap skills) versioned together. The architecture prioritizes cross-platform compatibility, >95% installation reliability, and familiar npm-like developer experience while achieving complete decentralization through Arweave/AO integration.
 
 ### High Level Overview
 
@@ -1033,7 +1033,7 @@ skill-name.tar.gz
 ## Source Tree
 
 ```
-agent-skills-registry/
+@permamind/skills/
 ├── .github/
 │   └── workflows/
 │       ├── deploy-ao-process.yml

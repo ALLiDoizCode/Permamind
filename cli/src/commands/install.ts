@@ -14,7 +14,7 @@ import { downloadBundle } from '../clients/arweave-client.js';
 import { resolve as resolveDependencies } from '../lib/dependency-resolver.js';
 import { extract as extractBundle } from '../lib/bundler.js';
 import { update as updateLockFile, resolveLockFilePath } from '../lib/lock-file-manager.js';
-import { ISkillMetadata } from '../types/skill.js';
+import { ISkillManifest } from '../types/skill.js';
 import { IInstalledSkillRecord } from '../types/lock-file.js';
 import { IDependencyNode } from '../types/dependency.js';
 import { isInteractive } from '../utils/terminal.js';
@@ -135,10 +135,10 @@ export async function execute(
       );
     }
 
-    // Type narrowing: metadataOrNull is confirmed to be ISkillMetadata here
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- getSkill return type is ISkillMetadata | null, narrowed by null check above
-    const metadata = metadataOrNull as ISkillMetadata;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Type narrowed to ISkillMetadata
+    // Type narrowing: metadataOrNull is confirmed to be ISkillManifest here
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- getSkill return type is ISkillManifest | null, narrowed by null check above
+    const metadata = metadataOrNull as ISkillManifest;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Type narrowed to ISkillManifest
     spinner.succeed(`Found ${metadata.name}@${metadata.version}`);
 
     // Task 5: Resolve dependencies
@@ -270,7 +270,7 @@ export async function execute(
       const elapsedTime = (performance.now() - startTime) / 1000;
       const dependencyCount = installedSkills.length - 1; // Exclude root skill
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Type narrowed to ISkillMetadata earlier
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Type narrowed to ISkillManifest earlier
       spinner = createSpinner(`Success: Installed ${metadata.name}@${metadata.version} with ${dependencyCount} dependencies in ${elapsedTime.toFixed(2)}s`, interactive);
       spinner.succeed();
 

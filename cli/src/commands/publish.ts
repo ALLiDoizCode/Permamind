@@ -129,12 +129,15 @@ export async function execute(
     );
   }
 
-  // Task 15: Register in AO registry
+  // Task 15: Register in AO registry and verify response
   const registryMessageId = await registerInAORegistry(
     manifest,
     uploadResult.txId,
     wallet
   );
+
+  // Task 15.1: Get registry response message (validates registration success)
+  await getRegistryResponse(registryMessageId);
 
   // Task 16: Display success message
   displaySuccess({
@@ -482,6 +485,73 @@ async function registerInAORegistry(
     return messageId;
   } catch (error: unknown) {
     spinner.fail('Registry registration failed');
+    throw error;
+  }
+}
+
+/**
+ * Task 15.1: Get registry response message
+ *
+ * @param messageId - AO message ID to read response from
+ * @returns Registry response with success/error details
+ * @throws {NetworkError} If response indicates registration failure or no response found
+ */
+async function getRegistryResponse(messageId: string): Promise<{
+  success: boolean;
+  action: string;
+  skillName?: string;
+  version?: string;
+  error?: string;
+}> {
+  const spinner = ora('Reading registry response...').start();
+
+  try {
+    // Import aoconnect for result reading
+    const { result } = await import('@permaweb/aoconnect');
+
+    // Read message result directly (no polling needed)
+    const response = await result({
+      message: messageId,
+      process: process.env.AO_REGISTRY_PROCESS_ID || '',
+    });
+
+    // Check if we have a response message
+    if (response.Messages && response.Messages.length > 0) {
+      const responseMsg = response.Messages[0];
+      const action = responseMsg.Tags.find((t: any) => t.name === 'Action')?.value;
+
+      if (action === 'Skill-Registered') {
+        const name = responseMsg.Tags.find((t: any) => t.name === 'Name')?.value;
+        const version = responseMsg.Tags.find((t: any) => t.name === 'Version')?.value;
+        spinner.succeed(
+          `Registry confirmed: ${name} v${version} registered successfully`
+        );
+        return {
+          success: true,
+          action,
+          skillName: name,
+          version,
+        };
+      } else if (action === 'Error') {
+        const errorMsg = responseMsg.Tags.find((t: any) => t.name === 'Error')?.value;
+        spinner.fail(`Registry error: ${errorMsg}`);
+        throw new NetworkError(
+          `Skill registration failed: ${errorMsg} → Solution: Check your skill metadata and try again`,
+          new Error(errorMsg || 'Unknown registry error'),
+          'ao-registry'
+        );
+      }
+    }
+
+    // No response message found
+    spinner.fail('No response message from registry');
+    throw new NetworkError(
+      'Registry did not return a response message → Solution: Verify the AO registry process is responding correctly',
+      new Error('Empty response'),
+      'ao-registry'
+    );
+  } catch (error: unknown) {
+    spinner.fail('Failed to read registry response');
     throw error;
   }
 }

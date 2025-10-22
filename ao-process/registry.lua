@@ -6,6 +6,12 @@
 -- Runtime: AO mainnet, Lua 5.3
 -- Architecture: Monolithic design, message-based communication only
 
+-- Import JSON module (required for encoding/decoding)
+-- Check if json is already available (from test mock or AO runtime)
+if not json then
+  json = require("json")
+end
+
 -- ============================================================================
 -- GLOBAL STATE
 -- ============================================================================
@@ -131,12 +137,14 @@ Handlers.add("info",
 Handlers.add("register-skill",
   Handlers.utils.hasMatchingTag("Action", "Register-Skill"),
   function(msg)
-    -- Extract and validate required fields
+    -- Extract and validate required fields from message tags
+    -- In AO, tags are accessible directly on msg object (e.g., msg.Name, msg.Version)
+    -- Note: Tag names are case-sensitive - "ArweaveTxId" becomes "Arweavetxid"
     local name = msg.Name
     local version = msg.Version
     local description = msg.Description
     local author = msg.Author
-    local arweaveTxId = msg.ArweaveTxId
+    local arweaveTxId = msg.Arweavetxid or msg.ArweaveTxId
 
     -- Validate required fields
     if not name or name == "" then
@@ -223,7 +231,7 @@ Handlers.add("register-skill",
       return
     end
 
-    -- Parse optional fields
+    -- Parse optional fields (Tags and Dependencies are JSON strings in message tags)
     local tags = safeJsonDecode(msg.Tags, {})
     local dependencies = safeJsonDecode(msg.Dependencies, {})
 

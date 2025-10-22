@@ -41,12 +41,14 @@ jest.mock('arweave', () => {
 // Mock AO SDK (@permaweb/aoconnect)
 const mockMessage = jest.fn();
 const mockDryrun = jest.fn();
+const mockResult = jest.fn();
 const mockCreateDataItemSigner = jest.fn();
 
 jest.mock('@permaweb/aoconnect', () => ({
   __esModule: true,
   message: (...args: any[]) => mockMessage(...args),
   dryrun: (...args: any[]) => mockDryrun(...args),
+  result: (...args: any[]) => mockResult(...args),
   createDataItemSigner: (...args: any[]) => mockCreateDataItemSigner(...args),
 }));
 
@@ -202,6 +204,17 @@ describe('Publish Workflow Integration Tests', () => {
             name: 'test-skill',
             version: '1.0.0',
           }),
+        },
+      ],
+    });
+    mockResult.mockResolvedValue({
+      Messages: [
+        {
+          Tags: [
+            { name: 'Action', value: 'Skill-Registered' },
+            { name: 'Name', value: 'test-skill' },
+            { name: 'Version', value: '1.0.0' },
+          ],
         },
       ],
     });
@@ -383,6 +396,17 @@ Invalid manifest
         createTransaction: mockCreateTransaction,
       });
       mockMessage.mockResolvedValue('mock_ao_message_id_43_chars_long_12345');
+      mockResult.mockResolvedValue({
+        Messages: [
+          {
+            Tags: [
+              { name: 'Action', value: 'Skill-Registered' },
+              { name: 'Name', value: 'test-skill' },
+              { name: 'Version', value: '1.0.0' },
+            ],
+          },
+        ],
+      });
       mockLoadConfig.mockResolvedValue({
         gateway: 'https://arweave.net',
         registry: 'mock_registry_process_id_43_chars_long',

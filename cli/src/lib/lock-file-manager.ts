@@ -87,11 +87,10 @@ export async function read(lockFilePath: string): Promise<ILockFile> {
     // Parse JSON
     const lockFile = JSON.parse(content) as ILockFile;
 
-    // Validate lock file version (warn if newer version)
+    // Validate lock file version (silently continue if newer version)
+    // Future: Could add proper logging here if needed
     if (lockFile.lockfileVersion > LOCK_FILE_VERSION) {
-      console.warn(
-        `Lock file uses newer schema version ${lockFile.lockfileVersion}. Some features may not be available.`
-      );
+      // Lock file uses newer schema version - continue with best effort
     }
 
     return lockFile;
@@ -102,11 +101,8 @@ export async function read(lockFilePath: string): Promise<ILockFile> {
       return createEmptyLockFile(installLocation);
     }
 
-    // Malformed JSON - return empty lock file with warning
+    // Malformed JSON - return empty lock file (will be recreated)
     if (error instanceof SyntaxError) {
-      console.warn(
-        `Lock file corrupted (invalid JSON): ${lockFilePath}\n→ Solution: Lock file will be recreated with current installation\n→ Previous installations may need to be re-installed`
-      );
       const installLocation = path.dirname(lockFilePath);
       return createEmptyLockFile(installLocation);
     }

@@ -37,37 +37,26 @@ Examples:
 `,
 );
 
-// Lazy-load commands - only import and register when needed
-// Check if --help or --version requested (skip banner and command loading for speed)
-const isHelpOrVersion =
-  process.argv.includes('--help') ||
-  process.argv.includes('-h') ||
-  process.argv.includes('--version') ||
-  process.argv.includes('-V') ||
-  process.argv.length <= 2;
-
 // Use IIFE to support dynamic imports with async/await
 (async () => {
-  if (!isHelpOrVersion) {
-    // Only show banner and load commands if actually executing a command
-    const shouldShowBanner = !process.argv.includes('--no-banner');
+  // Show banner by default unless --no-banner is specified
+  const shouldShowBanner = !process.argv.includes('--no-banner');
 
-    if (shouldShowBanner) {
-      // Lazy-load banner only when needed
-      const { displayBanner } = await import('./lib/banner.js');
-      displayBanner();
-    }
-
-    // Lazy-load command modules only when needed
-    const { createPublishCommand } = await import('./commands/publish.js');
-    const { createInstallCommand } = await import('./commands/install.js');
-    const { createSearchCommand } = await import('./commands/search.js');
-
-    // Register commands
-    program.addCommand(createPublishCommand());
-    program.addCommand(createSearchCommand());
-    program.addCommand(createInstallCommand());
+  if (shouldShowBanner) {
+    // Lazy-load banner only when needed
+    const { displayBanner } = await import('./lib/banner.js');
+    displayBanner();
   }
+
+  // Lazy-load command modules
+  const { createPublishCommand } = await import('./commands/publish.js');
+  const { createInstallCommand } = await import('./commands/install.js');
+  const { createSearchCommand } = await import('./commands/search.js');
+
+  // Register commands
+  program.addCommand(createPublishCommand());
+  program.addCommand(createSearchCommand());
+  program.addCommand(createInstallCommand());
 
   // Parse command-line arguments
   program.parse(process.argv);

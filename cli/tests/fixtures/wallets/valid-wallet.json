@@ -1,0 +1,11 @@
+{
+  "kty": "RSA",
+  "e": "AQAB",
+  "n": "mock_n_value_base64url_encoded_public_modulus_for_testing_purposes_only_do_not_use_in_production",
+  "d": "mock_d_value_base64url_encoded_private_exponent_for_testing_purposes_only",
+  "p": "mock_p_value_base64url_encoded",
+  "q": "mock_q_value_base64url_encoded",
+  "dp": "mock_dp_value_base64url_encoded",
+  "dq": "mock_dq_value_base64url_encoded",
+  "qi": "mock_qi_value_base64url_encoded"
+}

@@ -41,7 +41,7 @@ export function createInstallCommand(): Command {
 
   cmd
     .description('Install a skill and its dependencies')
-    .argument('<name>', 'Name of skill to install')
+    .argument('<name>', 'Name of skill to install (supports name@version format)')
     .option('-g, --global', 'Install to ~/.claude/skills/ (global)')
     .option('--force', 'Overwrite existing installations without confirmation')
     .option('--verbose', 'Show detailed dependency tree and progress')
@@ -51,13 +51,16 @@ export function createInstallCommand(): Command {
       `
 Examples:
   $ skills install ao-basics
-    Install skill to local project directory (.claude/skills/)
+    Install latest version to local project directory
+
+  $ skills install ao-basics@1.0.0
+    Install specific version
 
   $ skills install arweave-fundamentals -g
     Install to global directory (~/.claude/skills/)
 
-  $ skills install permamind-integration --force
-    Force reinstall, overwriting existing installation
+  $ skills install permamind-integration@2.1.0 --force
+    Force install specific version, overwriting existing
 
   $ skills install cli-development --verbose
     Show detailed dependency tree and installation progress
@@ -65,8 +68,8 @@ Examples:
   $ skills install agent-skills-best-practices --no-lock
     Install without updating skills-lock.json
 
-  $ skills install ao-basics --global --verbose
-    Combine options: global installation with verbose output
+  $ skills install ao-basics@1.2.0 --global --verbose
+    Combine options: specific version, global install, verbose output
 
 Workflow:
   1. Searches AO registry for skill by name
@@ -122,7 +125,7 @@ export function resolveInstallLocation(options: IInstallOptions): string {
  * @returns Installation result with metrics
  */
 export async function execute(
-  skillName: string,
+  skillNameWithVersion: string,
   options: IInstallOptions
 ): Promise<IInstallResult> {
   const startTime = performance.now();
@@ -130,6 +133,11 @@ export async function execute(
   let spinner: Ora | INoOpSpinner | undefined;
 
   try {
+    // Parse name@version format
+    const [skillName, requestedVersion] = skillNameWithVersion.includes('@')
+      ? skillNameWithVersion.split('@')
+      : [skillNameWithVersion, undefined];
+
     // Task 3: Resolve installation location
     const installLocation = resolveInstallLocation(options);
 
@@ -148,8 +156,8 @@ export async function execute(
     // Task 9: Installation progress indicators
     spinner = createSpinner(INSTALL_PHASES.QUERY_REGISTRY, interactive);
 
-    // Task 4: Query registry for skill metadata
-    const metadataOrNull = await getSkill(skillName);
+    // Task 4: Query registry for skill metadata (with optional version)
+    const metadataOrNull = await getSkill(skillName, requestedVersion);
 
     if (metadataOrNull === null) {
       spinner.fail();

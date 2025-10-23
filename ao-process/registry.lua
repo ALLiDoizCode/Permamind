@@ -16,20 +16,25 @@ end
 -- GLOBAL STATE
 -- ============================================================================
 
--- Skills registry indexed by skill name
--- Schema per architecture/database-schema.md
+-- Skills registry with version history support
+-- Schema: Skills[skill-name] = { versions = {...}, latest = "1.0.0" }
 Skills = {}
 -- Skills[skill-name] = {
---   name = "skill-name",              -- string, unique identifier
---   version = "1.0.0",                -- string, semantic version
---   description = "Skill description", -- string, max 1024 chars
---   author = "Author Name",           -- string, display name
---   owner = "abc123...xyz789",        -- string (43-char Arweave address from msg.From)
---   tags = {"tag1", "tag2"},          -- Lua table (array)
---   arweaveTxId = "def456...uvw012",  -- string (43-char TXID)
---   dependencies = {"dep1", "dep2"},  -- Lua table (array of skill names)
---   publishedAt = 1234567890,         -- number (Unix timestamp from msg.Timestamp)
---   updatedAt = 1234567890            -- number (Unix timestamp from msg.Timestamp)
+--   latest = "1.0.0",                 -- string, latest version number
+--   versions = {
+--     ["1.0.0"] = {
+--       name = "skill-name",          -- string, unique identifier
+--       version = "1.0.0",            -- string, semantic version
+--       description = "Skill description", -- string, max 1024 chars
+--       author = "Author Name",       -- string, display name
+--       owner = "abc123...xyz789",    -- string (43-char Arweave address)
+--       tags = {"tag1", "tag2"},      -- Lua table (array)
+--       arweaveTxId = "def456...uvw012", -- string (43-char TXID)
+--       dependencies = {"dep1", "dep2"}, -- Lua table (array)
+--       publishedAt = 1234567890,     -- number (Unix timestamp)
+--       updatedAt = 1234567890        -- number (Unix timestamp)
+--     }
+--   }
 -- }
 
 -- ============================================================================
@@ -97,9 +102,9 @@ Handlers.add("info",
     local metadata = {
       process = {
         name = "Agent Skills Registry",
-        version = "1.1.0",
+        version = "2.0.0",
         adpVersion = "1.0",
-        capabilities = {"register", "update", "search", "retrieve"},
+        capabilities = {"register", "update", "search", "retrieve", "version-history"},
         messageSchemas = {
           ["Register-Skill"] = {
             required = {"Action", "Name", "Version", "Description", "Author", "ArweaveTxId"},
@@ -110,9 +115,14 @@ Handlers.add("info",
             optional = {"Tags", "Dependencies"}
           },
           ["Search-Skills"] = {
-            required = {"Action", "Query"}
+            required = {"Action"},
+            optional = {"Query"}
           },
           ["Get-Skill"] = {
+            required = {"Action", "Name"},
+            optional = {"Version"}
+          },
+          ["Get-Skill-Versions"] = {
             required = {"Action", "Name"}
           },
           ["Info"] = {
@@ -120,7 +130,7 @@ Handlers.add("info",
           }
         }
       },
-      handlers = {"Register-Skill", "Update-Skill", "Search-Skills", "Get-Skill", "Info"},
+      handlers = {"Register-Skill", "Update-Skill", "Search-Skills", "Get-Skill", "Get-Skill-Versions", "Info"},
       documentation = {
         adpCompliance = "v1.0",
         selfDocumenting = true,
@@ -225,14 +235,17 @@ Handlers.add("register-skill",
       return
     end
 
-    -- Check for duplicate skill name
+    -- Check if skill name exists
     if Skills[name] then
-      ao.send({
-        Target = msg.From,
-        Action = "Error",
-        Error = "Skill with name '" .. name .. "' already exists"
-      })
-      return
+      -- Check if this specific version already exists
+      if Skills[name].versions and Skills[name].versions[version] then
+        ao.send({
+          Target = msg.From,
+          Action = "Error",
+          Error = "Skill '" .. name .. "' version '" .. version .. "' already exists. Use Update-Skill to modify it."
+        })
+        return
+      end
     end
 
     -- Parse optional fields (Tags and Dependencies are JSON strings in message tags)
@@ -246,8 +259,8 @@ Handlers.add("register-skill",
     -- Get timestamp from message (NEVER use os.time())
     local timestamp = tonumber(msg.Timestamp) or 0
 
-    -- Store skill metadata
-    Skills[name] = {
+    -- Create skill metadata
+    local skillMetadata = {
       name = name,
       version = version,
       description = description,
@@ -259,6 +272,20 @@ Handlers.add("register-skill",
       publishedAt = timestamp,
       updatedAt = timestamp
     }
+
+    -- Initialize skill entry if it doesn't exist
+    if not Skills[name] then
+      Skills[name] = {
+        latest = version,
+        versions = {}
+      }
+    end
+
+    -- Store this version
+    Skills[name].versions[version] = skillMetadata
+
+    -- Update latest version pointer
+    Skills[name].latest = version
 
     -- Send success response
     ao.send({
@@ -294,7 +321,7 @@ Handlers.add("update-skill",
     end
 
     -- Check if skill exists
-    if not Skills[name] then
+    if not Skills[name] or not Skills[name].versions then
       ao.send({
         Target = msg.From,
         Action = "Error",
@@ -303,8 +330,19 @@ Handlers.add("update-skill",
       return
     end
 
-    -- Verify ownership (only owner can update)
-    if Skills[name].owner ~= msg.From then
+    -- Check if this specific version exists
+    if not Skills[name].versions[version] then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Skill '" .. name .. "' version '" .. version .. "' does not exist. Use Register-Skill to create a new version"
+      })
+      return
+    end
+
+    -- Verify ownership (check owner from any existing version)
+    local existingVersion = Skills[name].versions[version]
+    if existingVersion.owner ~= msg.From then
       ao.send({
         Target = msg.From,
         Action = "Error",
@@ -390,19 +428,22 @@ Handlers.add("update-skill",
     -- Get timestamp from message
     local timestamp = tonumber(msg.Timestamp) or 0
 
-    -- Update skill metadata (preserve original publishedAt)
-    Skills[name] = {
+    -- Update skill metadata for this specific version (preserve original publishedAt)
+    Skills[name].versions[version] = {
       name = name,
       version = version,
       description = description,
       author = author,
-      owner = Skills[name].owner, -- Keep original owner
+      owner = existingVersion.owner, -- Preserve original owner
       tags = tags,
       arweaveTxId = arweaveTxId,
       dependencies = dependencies,
-      publishedAt = Skills[name].publishedAt, -- Preserve original publish date
+      publishedAt = existingVersion.publishedAt, -- Preserve original publish date
       updatedAt = timestamp
     }
+
+    -- Update latest version pointer if this is newer
+    Skills[name].latest = version
 
     -- Send success response
     ao.send({
@@ -416,7 +457,7 @@ Handlers.add("update-skill",
 )
 
 -- Search-Skills Handler
--- Searches for skills matching a query string
+-- Searches for skills matching a query string (returns latest version of each)
 -- Returns all skills if query is empty
 Handlers.add("search-skills",
   Handlers.utils.hasMatchingTag("Action", "Search-Skills"),
@@ -426,38 +467,48 @@ Handlers.add("search-skills",
     -- Search across all skills (O(n) iteration)
     local results = {}
 
-    -- If query is empty, return all skills
+    -- If query is empty, return all skills (latest versions)
     if not query or query == "" then
-      for skillName, skill in pairs(Skills) do
-        table.insert(results, skill)
-      end
-    else
-      -- Search with query filter
-      for skillName, skill in pairs(Skills) do
-        local matches = false
-
-        -- Match against skill name (case-insensitive substring)
-        if contains(skill.name, query) then
-          matches = true
-        end
-
-        -- Match against description (case-insensitive substring)
-        if contains(skill.description, query) then
-          matches = true
-        end
-
-        -- Match against tags (case-insensitive element match)
-        if skill.tags and type(skill.tags) == "table" then
-          for _, tag in ipairs(skill.tags) do
-            if contains(tag, query) then
-              matches = true
-              break
-            end
+      for skillName, skillEntry in pairs(Skills) do
+        if skillEntry.versions and skillEntry.latest then
+          local latestVersion = skillEntry.versions[skillEntry.latest]
+          if latestVersion then
+            table.insert(results, latestVersion)
           end
         end
+      end
+    else
+      -- Search with query filter (search in latest version metadata)
+      for skillName, skillEntry in pairs(Skills) do
+        if skillEntry.versions and skillEntry.latest then
+          local skill = skillEntry.versions[skillEntry.latest]
+          if skill then
+            local matches = false
 
-        if matches then
-          table.insert(results, skill)
+            -- Match against skill name (case-insensitive substring)
+            if contains(skill.name, query) then
+              matches = true
+            end
+
+            -- Match against description (case-insensitive substring)
+            if contains(skill.description, query) then
+              matches = true
+            end
+
+            -- Match against tags (case-insensitive element match)
+            if skill.tags and type(skill.tags) == "table" then
+              for _, tag in ipairs(skill.tags) do
+                if contains(tag, query) then
+                  matches = true
+                  break
+                end
+              end
+            end
+
+            if matches then
+              table.insert(results, skill)
+            end
+          end
         end
       end
     end
@@ -472,10 +523,10 @@ Handlers.add("search-skills",
   end
 )
 
--- Get-Skill Handler
--- Retrieves a specific skill by name
-Handlers.add("get-skill",
-  Handlers.utils.hasMatchingTag("Action", "Get-Skill"),
+-- Get-Skill-Versions Handler
+-- Lists all available versions of a skill
+Handlers.add("get-skill-versions",
+  Handlers.utils.hasMatchingTag("Action", "Get-Skill-Versions"),
   function(msg)
     local name = msg.Name
 
@@ -488,10 +539,10 @@ Handlers.add("get-skill",
       return
     end
 
-    -- Lookup skill (O(1) operation)
-    local skill = Skills[name]
+    -- Lookup skill
+    local skillEntry = Skills[name]
 
-    if not skill then
+    if not skillEntry or not skillEntry.versions then
       ao.send({
         Target = msg.From,
         Action = "Error",
@@ -500,11 +551,78 @@ Handlers.add("get-skill",
       return
     end
 
+    -- Build version list
+    local versionList = {}
+    for versionNum, _ in pairs(skillEntry.versions) do
+      table.insert(versionList, versionNum)
+    end
+
+    -- Send version list with latest indicator
+    ao.send({
+      Target = msg.From,
+      Action = "Skill-Versions",
+      Data = json.encode({
+        name = name,
+        latest = skillEntry.latest,
+        versions = versionList
+      })
+    })
+  end
+)
+
+-- Get-Skill Handler
+-- Retrieves a specific skill by name and optional version
+-- If version not specified, returns latest version
+Handlers.add("get-skill",
+  Handlers.utils.hasMatchingTag("Action", "Get-Skill"),
+  function(msg)
+    local name = msg.Name
+    local requestedVersion = msg.Version -- Optional version parameter
+
+    if not name or name == "" then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Name is required"
+      })
+      return
+    end
+
+    -- Lookup skill (O(1) operation)
+    local skillEntry = Skills[name]
+
+    if not skillEntry or not skillEntry.versions then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Skill '" .. name .. "' not found"
+      })
+      return
+    end
+
+    -- Determine which version to return
+    local versionToReturn = requestedVersion
+    if not versionToReturn or versionToReturn == "" then
+      versionToReturn = skillEntry.latest -- Default to latest version
+    end
+
+    -- Get the specific version
+    local skillMetadata = skillEntry.versions[versionToReturn]
+
+    if not skillMetadata then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Skill '" .. name .. "' version '" .. versionToReturn .. "' not found"
+      })
+      return
+    end
+
     -- Send skill metadata
     ao.send({
       Target = msg.From,
       Action = "Skill-Found",
-      Data = json.encode(skill)
+      Data = json.encode(skillMetadata)
     })
   end
 )

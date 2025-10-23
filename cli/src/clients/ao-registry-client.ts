@@ -273,25 +273,28 @@ export async function searchSkills(
 }
 
 /**
- * Get a specific skill by name from the AO registry
+ * Get a specific skill by name and optional version from the AO registry
  *
  * Sends a dryrun query to retrieve metadata for a specific skill.
+ * If version is not specified, returns the latest version.
  * This is a read-only operation and will be retried on network failures.
  *
  * @param name - Skill name to retrieve
+ * @param version - Optional specific version (defaults to latest)
  * @returns Skill metadata, or null if not found
  * @throws {NetworkError} If query fails after retries
  * @throws {ConfigurationError} If registry process ID not configured
  *
  * @example
  * ```typescript
+ * // Get latest version
  * const skill = await getSkill('ao-basics');
- * if (skill) {
- *   console.log(`Found skill: ${skill.name} v${skill.version}`);
- * }
+ *
+ * // Get specific version
+ * const oldVersion = await getSkill('ao-basics', '1.0.0');
  * ```
  */
-export async function getSkill(name: string): Promise<ISkillMetadata | null> {
+export async function getSkill(name: string, version?: string): Promise<ISkillMetadata | null> {
   // Check cache first
   const now = Date.now();
   const cached = skillCache.get(name);
@@ -303,14 +306,21 @@ export async function getSkill(name: string): Promise<ISkillMetadata | null> {
   const processId = await getRegistryProcessId();
 
   const executeQuery = async (): Promise<ISkillMetadata | null> => {
-    logger.debug('Sending Get-Skill dryrun query', { processId, name });
+    logger.debug('Sending Get-Skill dryrun query', { processId, name, version: version || 'latest' });
+
+    const tags: Array<{ name: string; value: string }> = [
+      { name: 'Action', value: 'Get-Skill' },
+      { name: 'Name', value: name },
+    ];
+
+    // Add version tag if specified
+    if (version) {
+      tags.push({ name: 'Version', value: version });
+    }
 
     const result = (await dryrun({
       process: processId,
-      tags: [
-        { name: 'Action', value: 'Get-Skill' },
-        { name: 'Name', value: name },
-      ],
+      tags,
     })) as IAODryrunResult;
 
     // Parse response from Messages[0].Data

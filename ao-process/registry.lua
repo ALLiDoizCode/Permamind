@@ -299,6 +299,11 @@ Handlers.add("register-skill",
       Version = version,
       Success = "true"
     })
+
+    -- Update HTTP-exposed state
+    if updateHTTPState then
+      updateHTTPState()
+    end
   end
 )
 
@@ -457,6 +462,11 @@ Handlers.add("update-skill",
       Version = version,
       Success = "true"
     })
+
+    -- Update HTTP-exposed state
+    if updateHTTPState then
+      updateHTTPState()
+    end
   end
 )
 
@@ -854,7 +864,36 @@ function listVersions(name)
   }
 end
 
+-- ============================================================================
+-- HTTP STATE EXPOSURE (patch@1.0 device)
+-- ============================================================================
+
+-- Handler to update HTTP-exposed state after skill registration/update
+function updateHTTPState()
+  -- Expose Skills table via patch@1.0 for direct HTTP access
+  -- Access at: https://forward.computer/{process-id}/~patch@1.0/compute/skills
+  ao.send({
+    Target = ao.id,
+    Tags = {
+      { name = "Device", value = "patch@1.0" }
+    },
+    Data = json.encode({
+      skills = Skills
+    })
+  })
+end
+
+-- Initial state exposure
+HTTPStateSync = HTTPStateSync or 'INCOMPLETE'
+
+if HTTPStateSync == 'INCOMPLETE' then
+  updateHTTPState()
+  HTTPStateSync = 'COMPLETE'
+  print("HTTP state exposure initialized via patch@1.0")
+end
+
 -- Process initialization complete
 print("Agent Skills Registry process initialized (ADP v1.0 compliant)")
-print("HTTP-accessible functions: searchSkills, getSkill, listVersions")
-print("HTTP access via: https://forward.computer/{process-id}/~process@1.0/compute/{function}")
+print("HTTP-accessible state: skills")
+print("Access: https://forward.computer/{process-id}/~patch@1.0/compute/skills")
+print("Note: Global functions searchSkills, getSkill, listVersions available in Lua context")

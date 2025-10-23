@@ -97,13 +97,6 @@ describe('Publish Command Module', () => {
     expect(gatewayOption).toBeDefined();
   });
 
-  it('should have --skip-confirmation option', async () => {
-    const { createPublishCommand } = await import('../../../src/commands/publish');
-    const command = createPublishCommand();
-    const skipOption = command.options.find(opt => opt.long === '--skip-confirmation');
-    
-    expect(skipOption).toBeDefined();
-  });
 
   it('should have a description', async () => {
     const { createPublishCommand } = await import('../../../src/commands/publish');

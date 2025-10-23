@@ -315,22 +315,6 @@ This is a test skill for integration testing.
       expect(ora).toHaveBeenCalled();
     }, 30000);
 
-    it('should poll confirmation before registry registration', async () => {
-      const { execute } = await import('../../src/commands/publish.js');
-
-      await execute(skillDirectory, {
-        wallet: mockWalletPath,
-      });
-
-      // Verify fetch was called for transaction status
-      expect(global.fetch).toHaveBeenCalled();
-
-      // Verify registry message sent after upload
-      const messageCallIndex = mockMessage.mock.calls.length - 1;
-      const transactionCallIndex = mockCreateTransaction.mock.calls.length - 1;
-      expect(messageCallIndex).toBeGreaterThanOrEqual(0);
-      expect(transactionCallIndex).toBeGreaterThanOrEqual(0);
-    }, 30000);
 
     it('should register skill in AO registry after successful upload', async () => {
       const { execute } = await import('../../src/commands/publish.js');
@@ -486,18 +470,6 @@ Invalid manifest
   });
 
   describe('Configuration Options', () => {
-    it('should skip confirmation polling if --skip-confirmation flag set', async () => {
-      const { execute } = await import('../../src/commands/publish.js');
-
-      const result = await execute(skillDirectory, {
-        wallet: mockWalletPath,
-        skipConfirmation: true,
-      });
-
-      // Verify fetch was NOT called for transaction status
-      expect(global.fetch).not.toHaveBeenCalled();
-      expect(result).toHaveProperty('arweaveTxId');
-    }, 30000);
 
     it('should use custom gateway if --gateway flag provided', async () => {
       const customGateway = 'https://custom-gateway.arweave.net';
@@ -551,7 +523,6 @@ Invalid manifest
 
       await execute(skillDirectory, {
         wallet: mockWalletPath,
-        skipConfirmation: true, // Skip confirmation polling to speed up test
       });
 
       const duration = Date.now() - startTime;

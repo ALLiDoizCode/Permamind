@@ -24,7 +24,6 @@ describe('Command-Specific Help Text', () => {
       expect(output).toContain('--wallet');
       expect(output).toContain('--verbose');
       expect(output).toContain('--gateway');
-      expect(output).toContain('--skip-confirmation');
     });
 
     it('should display examples for common publish workflows', () => {

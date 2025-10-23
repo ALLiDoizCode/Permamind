@@ -299,11 +299,6 @@ Handlers.add("register-skill",
       Version = version,
       Success = "true"
     })
-
-    -- Update HTTP-exposed state
-    if updateHTTPState then
-      updateHTTPState()
-    end
   end
 )
 
@@ -462,11 +457,6 @@ Handlers.add("update-skill",
       Version = version,
       Success = "true"
     })
-
-    -- Update HTTP-exposed state
-    if updateHTTPState then
-      updateHTTPState()
-    end
   end
 )
 
@@ -864,51 +854,22 @@ function listVersions(name)
   }
 end
 
--- ============================================================================
--- HTTP STATE EXPOSURE (patch@1.0 device)
--- ============================================================================
-
--- Handler to update HTTP-exposed state after skill registration/update
-function updateHTTPState()
-  -- Expose all query endpoints via patch@1.0 for direct HTTP access
-  ao.send({
-    Target = ao.id,
-    Tags = {
-      { name = "Device", value = "patch@1.0" }
-    },
-    Data = json.encode({
-      -- Raw data
-      skills = Skills,
-
-      -- Query functions (will be callable via HTTP)
-      search = searchSkills,
-      get = getSkill,
-      versions = listVersions
-    })
-  })
-end
-
--- Initial state exposure
-HTTPStateSync = HTTPStateSync or 'INCOMPLETE'
-
-if HTTPStateSync == 'INCOMPLETE' then
-  updateHTTPState()
-  HTTPStateSync = 'COMPLETE'
-  print("HTTP state exposure initialized via patch@1.0")
-end
-
 -- Process initialization complete
 print("Agent Skills Registry process initialized (ADP v1.0 compliant)")
 print("")
-print("=== HTTP Access via patch@1.0 ===")
-print("Base URL: https://forward.computer/{process-id}/~patch@1.0/compute")
+print("=== HTTP Access via ~process@1.0/compute ===")
+print("Base URL: https://forward.computer/{process-id}/~process@1.0/compute")
 print("")
-print("Endpoints:")
-print("  GET /skills - Full registry with version history")
-print("  GET /search?query=ao - Search skills by query")
-print("  GET /get?name=ao&version=1.0.0 - Get specific skill version")
-print("  GET /get?name=ao - Get latest version")
-print("  GET /versions?name=ao - List all versions of skill")
+print("State Access:")
+print("  GET /Skills - Raw Skills table (JSON)")
+print("")
+print("Function Access (call with query parameters):")
+print("  GET /searchSkills - Returns searchSkills function")
+print("  GET /getSkill - Returns getSkill function")
+print("  GET /listVersions - Returns listVersions function")
+print("")
+print("Note: Functions are callable in Lua context")
+print("      Example: searchSkills('ao') returns matching skills")
 print("")
 print("Message Handlers: Info, Register-Skill, Update-Skill, Search-Skills,")
 print("                  List-Skills, Get-Skill, Get-Skill-Versions")

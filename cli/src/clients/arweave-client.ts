@@ -421,52 +421,91 @@ export async function checkTransactionStatus(
       throw new Error(`Gateway returned status ${response.status}`);
     }
 
-    // Get response content type
-    const contentType = response.headers.get('content-type') || '';
+    // Get response content type (with safe header access for test mocks)
+    const contentType = response.headers?.get?.('content-type') || '';
 
-    // Handle plain text "Pending" response
-    if (contentType.includes('text/plain')) {
-      const text = await response.text();
-      const lowerText = text.toLowerCase().trim();
+    // Try JSON first (for mocked responses that only have .json())
+    if (typeof response.json === 'function' && !contentType.includes('text/plain')) {
+      try {
+        const statusData = (await response.json()) as {
+          block_height?: number;
+          number_of_confirmations?: number;
+        };
 
+        // Transaction is confirmed if it has confirmations
+        if (
+          statusData.block_height !== undefined &&
+          statusData.number_of_confirmations !== undefined &&
+          statusData.number_of_confirmations > 0
+        ) {
+          return 'confirmed';
+        }
+
+        // Transaction is in a block but awaiting confirmations
+        if (statusData.block_height !== undefined) {
+          return 'confirming';
+        }
+
+        return 'pending';
+      } catch (jsonError) {
+        // If JSON parsing fails, try text fallback if available
+        if (typeof response.text === 'function') {
+          const responseText = await response.text();
+          const lowerText = responseText.toLowerCase().trim();
+
+          if (lowerText === 'pending' || lowerText.includes('pending')) {
+            return 'pending';
+          }
+        }
+
+        // Otherwise assume pending
+        logger.warn(`Failed to parse transaction status response`);
+        return 'pending';
+      }
+    }
+
+    // For real fetch responses, check text first to handle plain text "Pending"
+    if (typeof response.text === 'function') {
+      const responseText = await response.text();
+      const lowerText = responseText.toLowerCase().trim();
+
+      // Check if it's plain text "Pending"
       if (lowerText === 'pending' || lowerText.includes('pending')) {
         return 'pending';
       }
 
-      // Unknown text response, treat as pending
-      return 'pending';
+      // Try parsing as JSON
+      try {
+        const statusData = JSON.parse(responseText) as {
+          block_height?: number;
+          number_of_confirmations?: number;
+        };
+
+        // Transaction is confirmed if it has confirmations
+        if (
+          statusData.block_height !== undefined &&
+          statusData.number_of_confirmations !== undefined &&
+          statusData.number_of_confirmations > 0
+        ) {
+          return 'confirmed';
+        }
+
+        // Transaction is in a block but awaiting confirmations
+        if (statusData.block_height !== undefined) {
+          return 'confirming';
+        }
+
+        return 'pending';
+      } catch (jsonError) {
+        logger.warn(`Failed to parse transaction status response: ${responseText}`);
+        return 'pending';
+      }
     }
 
-    // Parse JSON response
-    const statusData = (await response.json()) as {
-      block_height?: number;
-      number_of_confirmations?: number;
-    };
-
-    // Transaction is confirmed if it has confirmations
-    if (
-      statusData.block_height !== undefined &&
-      statusData.number_of_confirmations !== undefined &&
-      statusData.number_of_confirmations > 0
-    ) {
-      return 'confirmed';
-    }
-
-    // Transaction is in a block but awaiting confirmations
-    if (statusData.block_height !== undefined) {
-      return 'confirming';
-    }
-
+    // Fallback: unknown response format
     return 'pending';
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
-
-    // Don't throw on JSON parse errors - treat as pending
-    if (err.message.includes('JSON') || err.message.includes('Unexpected token')) {
-      logger.warn(`Failed to parse transaction status response, treating as pending: ${err.message}`);
-      return 'pending';
-    }
-
     throw new NetworkError(
       `[NetworkError] Failed to check transaction status. -> Solution: Verify network connection and try again`,
       err,

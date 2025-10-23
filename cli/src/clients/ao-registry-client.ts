@@ -207,6 +207,107 @@ export async function updateSkill(
 }
 
 /**
+ * List skills with pagination and filtering
+ *
+ * Sends a dryrun query to retrieve a paginated list of skills with optional filters.
+ * This is a read-only operation and will be retried on network failures.
+ *
+ * @param options - Pagination and filter options
+ * @returns Paginated list of skills with metadata
+ * @throws {NetworkError} If query fails after retries
+ * @throws {ConfigurationError} If registry process ID not configured
+ *
+ * @example
+ * ```typescript
+ * // List first page (10 skills)
+ * const page1 = await listSkills({ limit: 10, offset: 0 });
+ *
+ * // Filter by author
+ * const perplexSkills = await listSkills({ author: 'Permamind Team' });
+ *
+ * // Filter by tags
+ * const aoSkills = await listSkills({ filterTags: ['ao', 'tutorial'] });
+ * ```
+ */
+export async function listSkills(options?: {
+  limit?: number;
+  offset?: number;
+  author?: string;
+  filterTags?: string[];
+  filterName?: string;
+}): Promise<{
+  skills: ISkillMetadata[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    returned: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}> {
+  const processId = await getRegistryProcessId();
+
+  const executeQuery = async () => {
+    logger.debug('Sending List-Skills dryrun query', { processId, options });
+
+    const tags: Array<{ name: string; value: string }> = [
+      { name: 'Action', value: 'List-Skills' },
+    ];
+
+    // Add optional parameters
+    if (options?.limit !== undefined) {
+      tags.push({ name: 'Limit', value: String(options.limit) });
+    }
+    if (options?.offset !== undefined) {
+      tags.push({ name: 'Offset', value: String(options.offset) });
+    }
+    if (options?.author) {
+      tags.push({ name: 'Author', value: options.author });
+    }
+    if (options?.filterName) {
+      tags.push({ name: 'FilterName', value: options.filterName });
+    }
+    if (options?.filterTags && options.filterTags.length > 0) {
+      tags.push({ name: 'FilterTags', value: JSON.stringify(options.filterTags) });
+    }
+
+    const result = (await dryrun({
+      process: processId,
+      tags,
+    })) as IAODryrunResult;
+
+    // Parse response from Messages[0].Data
+    if (!result.Messages || result.Messages.length === 0) {
+      logger.debug('No results found for list query');
+      return { skills: [], pagination: { total: 0, limit: 10, offset: 0, returned: 0, hasNextPage: false, hasPrevPage: false } };
+    }
+
+    const data = JSON.parse(result.Messages[0].Data) as {
+      skills: ISkillMetadata[];
+      pagination: {
+        total: number;
+        limit: number;
+        offset: number;
+        returned: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    };
+
+    logger.debug('List-Skills query successful', {
+      total: data.pagination.total,
+      returned: data.pagination.returned,
+    });
+
+    return data;
+  };
+
+  // Retry logic for dryrun queries
+  return await retryQuery(executeQuery, 'List-Skills');
+}
+
+/**
  * Search for skills in the AO registry
  *
  * Sends a dryrun query to the registry process to search for skills matching the query.

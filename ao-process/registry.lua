@@ -104,7 +104,7 @@ Handlers.add("info",
         name = "Agent Skills Registry",
         version = "2.0.0",
         adpVersion = "1.0",
-        capabilities = {"register", "update", "search", "retrieve", "version-history"},
+        capabilities = {"register", "update", "search", "retrieve", "version-history", "pagination", "filtering"},
         messageSchemas = {
           ["Register-Skill"] = {
             required = {"Action", "Name", "Version", "Description", "Author", "ArweaveTxId"},
@@ -118,6 +118,10 @@ Handlers.add("info",
             required = {"Action"},
             optional = {"Query"}
           },
+          ["List-Skills"] = {
+            required = {"Action"},
+            optional = {"Limit", "Offset", "Author", "FilterTags", "FilterName"}
+          },
           ["Get-Skill"] = {
             required = {"Action", "Name"},
             optional = {"Version"}
@@ -130,7 +134,7 @@ Handlers.add("info",
           }
         }
       },
-      handlers = {"Register-Skill", "Update-Skill", "Search-Skills", "Get-Skill", "Get-Skill-Versions", "Info"},
+      handlers = {"Register-Skill", "Update-Skill", "Search-Skills", "List-Skills", "Get-Skill", "Get-Skill-Versions", "Info"},
       documentation = {
         adpCompliance = "v1.0",
         selfDocumenting = true,
@@ -565,6 +569,111 @@ Handlers.add("get-skill-versions",
         name = name,
         latest = skillEntry.latest,
         versions = versionList
+      })
+    })
+  end
+)
+
+-- List-Skills Handler
+-- Paginated listing of skills with optional filtering
+-- Supports filtering by: author, tags, name pattern
+Handlers.add("list-skills",
+  Handlers.utils.hasMatchingTag("Action", "List-Skills"),
+  function(msg)
+    -- Pagination parameters
+    local limit = tonumber(msg.Limit) or 10
+    local offset = tonumber(msg.Offset) or 0
+
+    -- Filter parameters (all optional)
+    local filterAuthor = msg.Author
+    local filterTags = safeJsonDecode(msg.FilterTags, nil)
+    local filterName = msg.FilterName
+
+    -- Validate limit range
+    if limit < 1 then limit = 1 end
+    if limit > 100 then limit = 100 end -- Max 100 per page
+
+    if offset < 0 then offset = 0 end
+
+    -- Collect all skills (latest versions) that match filters
+    local allMatches = {}
+
+    for skillName, skillEntry in pairs(Skills) do
+      if skillEntry.versions and skillEntry.latest then
+        local skill = skillEntry.versions[skillEntry.latest]
+        if skill then
+          local matches = true
+
+          -- Filter by author (case-insensitive exact match)
+          if filterAuthor and filterAuthor ~= "" then
+            if toLower(skill.author) ~= toLower(filterAuthor) then
+              matches = false
+            end
+          end
+
+          -- Filter by name pattern (case-insensitive substring)
+          if filterName and filterName ~= "" then
+            if not contains(skill.name, filterName) then
+              matches = false
+            end
+          end
+
+          -- Filter by tags (must have ALL specified tags)
+          if filterTags and type(filterTags) == "table" and #filterTags > 0 then
+            for _, requiredTag in ipairs(filterTags) do
+              local hasTag = false
+              if skill.tags and type(skill.tags) == "table" then
+                for _, skillTag in ipairs(skill.tags) do
+                  if toLower(skillTag) == toLower(requiredTag) then
+                    hasTag = true
+                    break
+                  end
+                end
+              end
+              if not hasTag then
+                matches = false
+                break
+              end
+            end
+          end
+
+          if matches then
+            table.insert(allMatches, skill)
+          end
+        end
+      end
+    end
+
+    -- Calculate pagination
+    local total = #allMatches
+    local startIndex = offset + 1
+    local endIndex = offset + limit
+    if endIndex > total then endIndex = total end
+
+    -- Extract page of results
+    local pageResults = {}
+    for i = startIndex, endIndex do
+      table.insert(pageResults, allMatches[i])
+    end
+
+    -- Build pagination metadata
+    local hasNextPage = endIndex < total
+    local hasPrevPage = offset > 0
+
+    -- Send paginated results
+    ao.send({
+      Target = msg.From,
+      Action = "Skills-List",
+      Data = json.encode({
+        skills = pageResults,
+        pagination = {
+          total = total,
+          limit = limit,
+          offset = offset,
+          returned = #pageResults,
+          hasNextPage = hasNextPage,
+          hasPrevPage = hasPrevPage
+        }
       })
     })
   end

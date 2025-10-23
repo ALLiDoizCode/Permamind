@@ -12,12 +12,12 @@ The Skills Registry exposes state and query functions via HyperBEAM's HTTP paths
 
 ## Access Patterns
 
-### 1. Direct State Access
+### 1. Direct State Access (with JSON serialization)
 
-Access the raw Skills table:
+Access the raw Skills table and serialize to JSON:
 
 ```bash
-GET https://forward.computer/{process-id}/~process@1.0/compute/Skills
+GET https://forward.computer/{process-id}/~process@1.0/compute/Skills/~json@1.0
 ```
 
 **Returns:** Complete Skills table with version history in JSON format
@@ -42,32 +42,35 @@ Call global functions with parameters using the ~message@1.0 device:
 #### Search Skills
 
 ```bash
-# Search for "ao" skills
-GET /{process-id}/~message@1.0&query="ao"/searchSkills
+# Search for "ao" skills (with JSON serialization)
+GET /{process-id}/~message@1.0&query="ao"/searchSkills/~json@1.0
 
 # List all skills (empty query)
-GET /{process-id}/~message@1.0&query=""/searchSkills
+GET /{process-id}/~message@1.0&query=""/searchSkills/~json@1.0
+
+# Alternative: Access via Lua execution
+GET /{process-id}/~process@1.0/compute/~lua@5.3a&code=return%20searchSkills("ao")/~json@1.0
 ```
 
-**Returns:** Array of matching skills (latest versions)
+**Returns:** Array of matching skills (latest versions) as JSON
 
 #### Get Specific Skill
 
 ```bash
-# Get latest version
-GET /{process-id}/~message@1.0&name="ao"/getSkill
+# Get latest version (with JSON serialization)
+GET /{process-id}/~message@1.0&name="ao"/getSkill/~json@1.0
 
 # Get specific version
-GET /{process-id}/~message@1.0&name="ao"&version="1.0.0"/getSkill
+GET /{process-id}/~message@1.0&name="ao"&version="1.0.0"/getSkill/~json@1.0
 ```
 
-**Returns:** Skill metadata or error object
+**Returns:** Skill metadata or error object as JSON
 
 #### List Versions
 
 ```bash
-# List all versions of a skill
-GET /{process-id}/~message@1.0&name="ao"/listVersions
+# List all versions of a skill (with JSON serialization)
+GET /{process-id}/~message@1.0&name="ao"/listVersions/~json@1.0
 ```
 
 **Returns:**
@@ -102,10 +105,10 @@ Use HyperBEAM's type casting syntax for complex parameters:
 ### Example 1: Search Registry
 
 ```bash
-# Using forward.computer node
-curl "https://forward.computer/RMIivqgsdvZobdv6ekkPIicDmX-925VcnivRzRFv_TQ/~message@1.0&query=\"ao\"/searchSkills"
+# Using forward.computer node (with JSON serialization)
+curl "https://forward.computer/RMIivqgsdvZobdv6ekkPIicDmX-925VcnivRzRFv_TQ/~message@1.0&query=\"ao\"/searchSkills/~json@1.0"
 
-# Expected response: Array of skills matching "ao"
+# Expected response: Array of skills matching "ao" as JSON
 [
   {
     "name": "ao",
@@ -120,9 +123,9 @@ curl "https://forward.computer/RMIivqgsdvZobdv6ekkPIicDmX-925VcnivRzRFv_TQ/~mess
 ### Example 2: Get Skill with Version
 
 ```bash
-curl "https://forward.computer/RMIivqgsdvZobdv6ekkPIicDmX-925VcnivRzRFv_TQ/~message@1.0&name=\"ao\"&version=\"1.0.0\"/getSkill"
+curl "https://forward.computer/RMIivqgsdvZobdv6ekkPIicDmX-925VcnivRzRFv_TQ/~message@1.0&name=\"ao\"&version=\"1.0.0\"/getSkill/~json@1.0"
 
-# Expected response: Specific version metadata
+# Expected response: Specific version metadata as JSON
 {
   "name": "ao",
   "version": "1.0.0",
@@ -134,9 +137,9 @@ curl "https://forward.computer/RMIivqgsdvZobdv6ekkPIicDmX-925VcnivRzRFv_TQ/~mess
 ### Example 3: Raw State Access
 
 ```bash
-curl "https://forward.computer/RMIivqgsdvZobdv6ekkPIicDmX-925VcnivRzRFv_TQ/~process@1.0/compute/Skills"
+curl "https://forward.computer/RMIivqgsdvZobdv6ekkPIicDmX-925VcnivRzRFv_TQ/~process@1.0/compute/Skills/~json@1.0"
 
-# Expected response: Full registry structure
+# Expected response: Full registry structure as JSON
 {
   "ao": {
     "latest": "1.0.2",
@@ -158,23 +161,23 @@ After deploying the registry, verify each endpoint:
 PROCESS_ID="RMIivqgsdvZobdv6ekkPIicDmX-925VcnivRzRFv_TQ"
 BASE_URL="https://forward.computer"
 
-# Test 1: Raw state access
-curl "$BASE_URL/$PROCESS_ID/~process@1.0/compute/Skills"
+# Test 1: Raw state access (with JSON serialization)
+curl "$BASE_URL/$PROCESS_ID/~process@1.0/compute/Skills/~json@1.0"
 
 # Test 2: Search all skills
-curl "$BASE_URL/$PROCESS_ID/~message@1.0&query=\"\"/searchSkills"
+curl "$BASE_URL/$PROCESS_ID/~message@1.0&query=\"\"/searchSkills/~json@1.0"
 
 # Test 3: Search specific query
-curl "$BASE_URL/$PROCESS_ID/~message@1.0&query=\"ao\"/searchSkills"
+curl "$BASE_URL/$PROCESS_ID/~message@1.0&query=\"ao\"/searchSkills/~json@1.0"
 
 # Test 4: Get skill (latest)
-curl "$BASE_URL/$PROCESS_ID/~message@1.0&name=\"ao\"/getSkill"
+curl "$BASE_URL/$PROCESS_ID/~message@1.0&name=\"ao\"/getSkill/~json@1.0"
 
 # Test 5: Get skill (specific version)
-curl "$BASE_URL/$PROCESS_ID/~message@1.0&name=\"ao\"&version=\"1.0.0\"/getSkill"
+curl "$BASE_URL/$PROCESS_ID/~message@1.0&name=\"ao\"&version=\"1.0.0\"/getSkill/~json@1.0"
 
 # Test 6: List versions
-curl "$BASE_URL/$PROCESS_ID/~message@1.0&name=\"ao\"/listVersions"
+curl "$BASE_URL/$PROCESS_ID/~message@1.0&name=\"ao\"/listVersions/~json@1.0"
 ```
 
 ## Troubleshooting

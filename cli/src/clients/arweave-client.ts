@@ -124,9 +124,10 @@ function isRetryableError(error: Error): boolean {
 function validateGatewayUrl(url: string): void {
   if (!url.startsWith('https://')) {
     throw new ValidationError(
-      `Gateway URL must use HTTPS for security → Solution: Use an HTTPS gateway URL (e.g., https://arweave.net)`,
+      `[ValidationError] Gateway URL must use HTTPS for security. -> Solution: Use an HTTPS gateway URL (e.g., https://arweave.net)`,
       'gateway',
-      url
+      url,
+      'HTTPS URL (e.g., https://arweave.net)'
     );
   }
 }
@@ -245,7 +246,7 @@ export async function uploadBundle(
     // Check if wallet has sufficient balance
     if (balanceWinston < costWinston) {
       throw new AuthorizationError(
-        `Insufficient funds (${formatWinstonToAR(balanceWinston)}) for transaction (estimated cost: ${formatWinstonToAR(costWinston)}) → Solution: Add funds to wallet address ${truncateAddress(address)}`,
+        `[AuthorizationError] Insufficient funds (${formatWinstonToAR(balanceWinston)}) for transaction (estimated cost: ${formatWinstonToAR(costWinston)}). -> Solution: Add funds to wallet address ${truncateAddress(address)}`,
         address,
         balanceWinston
       );
@@ -257,9 +258,10 @@ export async function uploadBundle(
 
     const err = error instanceof Error ? error : new Error(String(error));
     throw new NetworkError(
-      `Failed to check wallet balance → Solution: Verify network connection and try again`,
+      `[NetworkError] Failed to check wallet balance. -> Solution: Verify network connection and try again`,
       err,
-      gatewayUrl
+      gatewayUrl,
+      'connection_failure'
     );
   }
 
@@ -333,35 +335,39 @@ export async function uploadBundle(
     // Check for specific error types
     if ((err as NodeJS.ErrnoException).code === 'ABORT_ERR') {
       throw new NetworkError(
-        `Upload failed: network timeout after ${UPLOAD_TIMEOUT_MS / 1000} seconds → Solution: Check your internet connection and try again. If the issue persists, try a different gateway using --gateway flag`,
+        `[NetworkError] Upload timeout after ${UPLOAD_TIMEOUT_MS / 1000} seconds. -> Solution: Check your internet connection and try again. If the issue persists, try a different gateway using --gateway flag`,
         err,
-        gatewayUrl
+        gatewayUrl,
+        'timeout'
       );
     }
 
-    // Gateway errors
+    // Gateway errors (502/503)
     if (err.message.includes('502') || err.message.includes('503')) {
       throw new NetworkError(
-        `Gateway unavailable (${gatewayUrl} returned ${err.message.match(/\d{3}/)?.[0]}) → Solution: Try an alternative gateway: --gateway https://g8way.io`,
+        `[NetworkError] Gateway unavailable (${gatewayUrl} returned ${err.message.match(/\d{3}/)?.[0]}). -> Solution: Try an alternative gateway: --gateway https://g8way.io`,
         err,
-        gatewayUrl
+        gatewayUrl,
+        'gateway_error'
       );
     }
 
     // Invalid transaction errors
     if (err.message.toLowerCase().includes('invalid') || err.message.toLowerCase().includes('malformed')) {
       throw new ValidationError(
-        `Invalid transaction → Solution: Ensure bundle is a valid tar.gz file and metadata is correct`,
+        `[ValidationError] Invalid transaction. -> Solution: Ensure bundle is a valid tar.gz file and metadata is correct`,
         'transaction',
-        err.message
+        err.message,
+        'valid tar.gz file with correct metadata'
       );
     }
 
     // Generic network error
     throw new NetworkError(
-      `Upload failed → Solution: ${err.message}`,
+      `[NetworkError] Upload failed. -> Solution: ${err.message}`,
       err,
-      gatewayUrl
+      gatewayUrl,
+      'connection_failure'
     );
   }
 
@@ -438,9 +444,10 @@ export async function checkTransactionStatus(
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     throw new NetworkError(
-      `Failed to check transaction status → Solution: Verify network connection and try again`,
+      `[NetworkError] Failed to check transaction status. -> Solution: Verify network connection and try again`,
       err,
-      gatewayUrl
+      gatewayUrl,
+      'connection_failure'
     );
   }
 }
@@ -525,9 +532,10 @@ export async function downloadBundle(
   // Validate TXID length (43 characters)
   if (txId.length !== 43) {
     throw new ValidationError(
-      `Invalid Arweave TXID length (expected 43, got ${txId.length}) → Solution: Verify transaction ID format`,
+      `[ValidationError] Invalid Arweave TXID length (expected 43, got ${txId.length}). -> Solution: Verify transaction ID format`,
       'txId',
-      txId
+      txId,
+      '43-character Arweave transaction ID'
     );
   }
 
@@ -551,9 +559,10 @@ export async function downloadBundle(
         if (!response.ok) {
           if (response.status === 404) {
             throw new NetworkError(
-              `Bundle not found (TXID: ${txId}) → Solution: Verify transaction ID or wait for network propagation`,
+              `[NetworkError] Bundle not found (TXID: ${txId}). -> Solution: Verify transaction ID or wait for network propagation`,
               new Error('404 Not Found'),
-              gatewayUrl
+              gatewayUrl,
+              'not_found'
             );
           }
           throw new Error(`Gateway returned status ${response.status}: ${response.statusText}`);
@@ -568,9 +577,10 @@ export async function downloadBundle(
           !contentType.includes('tar')
         ) {
           throw new ValidationError(
-            `Invalid bundle Content-Type (expected application/x-tar+gzip or application/gzip, got ${contentType}) → Solution: Ensure TXID points to a valid skill bundle`,
+            `[ValidationError] Invalid bundle Content-Type (expected application/x-tar+gzip or application/gzip, got ${contentType}). -> Solution: Ensure TXID points to a valid skill bundle`,
             'contentType',
-            contentType
+            contentType,
+            'application/x-tar+gzip or application/gzip'
           );
         }
 
@@ -636,26 +646,29 @@ export async function downloadBundle(
         // Check for timeout/abort errors
         if (err.name === 'AbortError' || (err as NodeJS.ErrnoException).code === 'ABORT_ERR') {
           throw new NetworkError(
-            `Download failed: network timeout after ${timeout / 1000} seconds → Solution: Check your internet connection and try again. If the issue persists, try a different gateway using --gateway flag`,
+            `[NetworkError] Download timeout after ${timeout / 1000} seconds. -> Solution: Check your internet connection and try again. If the issue persists, try a different gateway using --gateway flag`,
             err,
-            gatewayUrl
+            gatewayUrl,
+            'timeout'
           );
         }
 
         // Gateway errors (502/503)
         if (err.message.includes('502') || err.message.includes('503')) {
           throw new NetworkError(
-            `Gateway unavailable (${gatewayUrl} returned ${err.message.match(/\d{3}/)?.[0]}) → Solution: Try an alternative gateway: --gateway https://g8way.io`,
+            `[NetworkError] Gateway unavailable (${gatewayUrl} returned ${err.message.match(/\d{3}/)?.[0]}). -> Solution: Try an alternative gateway: --gateway https://g8way.io`,
             err,
-            gatewayUrl
+            gatewayUrl,
+            'gateway_error'
           );
         }
 
         // Generic network error
         throw new NetworkError(
-          `Failed to download bundle → Solution: ${err.message}`,
+          `[NetworkError] Failed to download bundle. -> Solution: ${err.message}`,
           err,
-          gatewayUrl
+          gatewayUrl,
+          'connection_failure'
         );
       } finally {
         clearTimeout(timeoutId);

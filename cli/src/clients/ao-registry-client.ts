@@ -25,6 +25,24 @@ import { NetworkError, ConfigurationError } from '../types/errors.js';
 const MAX_RETRY_ATTEMPTS = 2; // 2 attempts for queries only
 const RETRY_DELAY_MS = 5000; // 5 seconds between retries
 const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds default timeout
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache expiration
+
+/**
+ * Cache entry structure with timestamp for TTL expiration
+ */
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+/**
+ * In-memory cache for search results and skill metadata
+ *
+ * Reduces redundant network requests for frequently queried data.
+ * Cache entries expire after CACHE_TTL_MS (5 minutes).
+ */
+const searchCache = new Map<string, CacheEntry<ISkillMetadata[]>>();
+const skillCache = new Map<string, CacheEntry<ISkillMetadata | null>>();
 
 /**
  * Get AO Registry Process ID from environment or config
@@ -52,7 +70,7 @@ async function getRegistryProcessId(): Promise<string> {
 
   // No registry configured
   throw new ConfigurationError(
-    'AO Registry Process ID not configured → Solution: Set AO_REGISTRY_PROCESS_ID environment variable or add "registry" field to .skillsrc',
+    '[ConfigurationError] AO Registry Process ID not configured. -> Solution: Set AO_REGISTRY_PROCESS_ID environment variable or add "registry" field to .skillsrc',
     'registry'
   );
 }
@@ -122,9 +140,10 @@ export async function registerSkill(
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new NetworkError(
-      `Failed to register skill in AO registry → Solution: Check your network connection and ensure the AO registry process is available. Try again in a few moments.`,
+      `[NetworkError] Failed to register skill in AO registry. -> Solution: Check your network connection and ensure the AO registry process is available. Try again in a few moments.`,
       error instanceof Error ? error : new Error(errorMessage),
-      'ao-registry'
+      'ao-registry',
+      'gateway_error'
     );
   }
 }
@@ -150,6 +169,14 @@ export async function registerSkill(
 export async function searchSkills(
   query: string
 ): Promise<ISkillMetadata[]> {
+  // Check cache first
+  const now = Date.now();
+  const cached = searchCache.get(query);
+  if (cached && (now - cached.timestamp) < CACHE_TTL_MS) {
+    logger.debug('Search results retrieved from cache', { query, age: now - cached.timestamp });
+    return cached.data;
+  }
+
   const processId = await getRegistryProcessId();
 
   const executeQuery = async (): Promise<ISkillMetadata[]> => {
@@ -178,7 +205,13 @@ export async function searchSkills(
   };
 
   // Retry logic for dryrun queries
-  return await retryQuery(executeQuery, 'Search-Skills');
+  const results = await retryQuery(executeQuery, 'Search-Skills');
+
+  // Cache results
+  searchCache.set(query, { data: results, timestamp: now });
+  logger.debug('Search results cached', { query, resultCount: results.length });
+
+  return results;
 }
 
 /**
@@ -201,6 +234,14 @@ export async function searchSkills(
  * ```
  */
 export async function getSkill(name: string): Promise<ISkillMetadata | null> {
+  // Check cache first
+  const now = Date.now();
+  const cached = skillCache.get(name);
+  if (cached && (now - cached.timestamp) < CACHE_TTL_MS) {
+    logger.debug('Skill metadata retrieved from cache', { name, age: now - cached.timestamp });
+    return cached.data;
+  }
+
   const processId = await getRegistryProcessId();
 
   const executeQuery = async (): Promise<ISkillMetadata | null> => {
@@ -227,7 +268,13 @@ export async function getSkill(name: string): Promise<ISkillMetadata | null> {
   };
 
   // Retry logic for dryrun queries
-  return await retryQuery(executeQuery, 'Get-Skill');
+  const result = await retryQuery(executeQuery, 'Get-Skill');
+
+  // Cache result (even if null - skill not found)
+  skillCache.set(name, { data: result, timestamp: now });
+  logger.debug('Skill metadata cached', { name, found: !!result });
+
+  return result;
 }
 
 /**
@@ -298,9 +345,10 @@ async function withTimeout<T>(
         () =>
           reject(
             new NetworkError(
-              `${actionName} query timed out after ${timeoutMs / 1000} seconds → Solution: The AO registry process may be slow or unresponsive. Try again or check network connectivity.`,
+              `[NetworkError] ${actionName} query timed out after ${timeoutMs / 1000} seconds. -> Solution: The AO registry process may be slow or unresponsive. Try again or check network connectivity.`,
               new Error('Timeout exceeded'),
-              'ao-registry'
+              'ao-registry',
+              'timeout'
             )
           ),
         timeoutMs
@@ -352,9 +400,10 @@ async function retryQuery<T>(
 
   // All attempts failed
   throw new NetworkError(
-    `Failed to execute ${actionName} query after ${MAX_RETRY_ATTEMPTS} attempts → Solution: Check your network connection and ensure the AO registry process is available. Try again in a few moments.`,
+    `[NetworkError] Failed to execute ${actionName} query after ${MAX_RETRY_ATTEMPTS} attempts. -> Solution: Check your network connection and ensure the AO registry process is available. Try again in a few moments.`,
     lastError!,
-    'ao-registry'
+    'ao-registry',
+    'connection_failure'
   );
 }
 
@@ -366,4 +415,24 @@ async function retryQuery<T>(
  */
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Clear all cached search results and skill metadata
+ *
+ * Useful for testing or when fresh data is required.
+ * This function is exported for use in testing and administrative operations.
+ *
+ * @example
+ * ```typescript
+ * clearCache(); // Clear all cached queries and skill metadata
+ * ```
+ */
+export function clearCache(): void {
+  searchCache.clear();
+  skillCache.clear();
+  logger.debug('Cache cleared', {
+    searchCacheSize: 0,
+    skillCacheSize: 0,
+  });
 }

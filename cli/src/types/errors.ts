@@ -4,8 +4,48 @@
  * This module defines specialized error types for different failure scenarios
  * in the manifest parsing and validation workflow.
  *
- * All errors follow the pattern: "Error description → Solution: ..."
+ * All errors follow the pattern: "[ErrorType] Problem description. -> Solution: Action to take."
  */
+
+/**
+ * Standard exit codes for CLI commands
+ *
+ * - SUCCESS (0): Operation completed successfully or user cancelled intentionally
+ * - USER_ERROR (1): User-correctable error (validation, config, authorization)
+ * - SYSTEM_ERROR (2): System error (network, file system, unexpected errors)
+ */
+export enum ExitCode {
+  SUCCESS = 0,
+  USER_ERROR = 1,
+  SYSTEM_ERROR = 2,
+}
+
+/**
+ * Map error instance to appropriate exit code
+ *
+ * @param error - Error instance to map
+ * @returns Exit code (0, 1, or 2)
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await command();
+ * } catch (error) {
+ *   process.exit(getExitCode(error));
+ * }
+ * ```
+ */
+export function getExitCode(error: unknown): number {
+  if (error instanceof ValidationError) return ExitCode.USER_ERROR;
+  if (error instanceof ConfigurationError) return ExitCode.USER_ERROR;
+  if (error instanceof AuthorizationError) return ExitCode.USER_ERROR;
+  if (error instanceof DependencyError) return ExitCode.USER_ERROR;
+  if (error instanceof UserCancelledError) return ExitCode.SUCCESS;
+  if (error instanceof NetworkError) return ExitCode.SYSTEM_ERROR;
+  if (error instanceof FileSystemError) return ExitCode.SYSTEM_ERROR;
+  if (error instanceof ParseError) return ExitCode.SYSTEM_ERROR;
+  return ExitCode.SYSTEM_ERROR; // Default for unexpected errors
+}
 
 /**
  * Error thrown when skill manifest fails JSON schema validation
@@ -15,22 +55,28 @@
  * @example
  * ```typescript
  * throw new ValidationError(
- *   'Skill name contains uppercase letters → Solution: Use only lowercase letters, numbers, and hyphens',
+ *   '[ValidationError] Skill name contains uppercase letters. -> Solution: Use only lowercase letters, numbers, and hyphens',
  *   'name',
- *   'My-Skill'
+ *   'My-Skill',
+ *   'lowercase letters, numbers, and hyphens',
+ *   'name must match pattern ^[a-z0-9-]+$'
  * );
  * ```
  */
 export class ValidationError extends Error {
   /**
-   * @param message - User-friendly error message with solution guidance
+   * @param message - User-friendly error message with solution guidance (format: "[ValidationError] Problem. -> Solution: Action.")
    * @param field - Name of the field that failed validation
    * @param value - The invalid value that was provided
+   * @param expected - Optional description of expected format/value
+   * @param schemaError - Optional JSON Schema validation error details
    */
   constructor(
     message: string,
     public field: string,
-    public value: unknown
+    public value: unknown,
+    public expected?: string,
+    public schemaError?: string
   ) {
     super(message);
     this.name = 'ValidationError';
@@ -172,22 +218,25 @@ export class ConfigurationError extends Error {
  * @example
  * ```typescript
  * throw new NetworkError(
- *   'Upload failed: network timeout after 60 seconds → Solution: Check your internet connection',
+ *   '[NetworkError] Upload timeout after 60 seconds. -> Solution: Check your internet connection and retry',
  *   originalError,
- *   'https://arweave.net'
+ *   'https://arweave.net',
+ *   'timeout'
  * );
  * ```
  */
 export class NetworkError extends Error {
   /**
-   * @param message - User-friendly error message with solution guidance
+   * @param message - User-friendly error message with solution guidance (format: "[NetworkError] Problem. -> Solution: Action.")
    * @param cause - Original error that caused the network failure
    * @param gatewayUrl - Gateway URL that was being accessed
+   * @param errorType - Specific network error type (timeout, gateway_error, connection_failure, not_found)
    */
   constructor(
     message: string,
     public cause: Error,
-    public gatewayUrl: string
+    public gatewayUrl: string,
+    public errorType: 'timeout' | 'gateway_error' | 'connection_failure' | 'not_found' = 'connection_failure'
   ) {
     super(message);
     this.name = 'NetworkError';

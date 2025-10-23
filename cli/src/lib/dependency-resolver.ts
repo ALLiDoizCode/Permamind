@@ -27,6 +27,22 @@ import logger from '../utils/logger';
 const DEFAULT_MAX_DEPTH = 10;
 const DEFAULT_SKIP_INSTALLED = true;
 const DEFAULT_VERBOSE = false;
+const LRU_CACHE_MAX_SIZE = 100; // Maximum number of cached dependency trees
+
+/**
+ * LRU Cache entry with timestamp for age tracking
+ */
+interface CacheEntry {
+  metadata: ISkillMetadata | null;
+  timestamp: number;
+}
+
+/**
+ * Performance optimization: LRU cache for resolved skill metadata
+ * Persists across multiple resolve() calls to avoid redundant network requests
+ * Cache entries never expire (only evicted when cache is full via LRU)
+ */
+const persistentCache = new Map<string, CacheEntry>();
 
 /**
  * Performance optimization: cache for skill metadata promises during resolution
@@ -186,19 +202,57 @@ async function buildDependencyNode(
     logger.debug(`Fetching metadata for '${skillName}'`, { depth });
   }
 
-  // Check promise cache first (performance optimization - deduplicates concurrent requests)
-  let metadataPromise = metadataCache.get(skillName);
+  // Check persistent LRU cache first
+  const cached = persistentCache.get(skillName);
+  let metadata: ISkillMetadata | null;
 
-  // Fetch from registry if not cached
-  if (!metadataPromise) {
-    // Create and cache the promise immediately (before awaiting)
-    // This ensures concurrent requests share the same promise
-    metadataPromise = getSkill(skillName);
-    metadataCache.set(skillName, metadataPromise);
+  if (cached) {
+    // Cache hit - return cached metadata
+    metadata = cached.metadata;
+
+    // Update LRU order by deleting and re-adding (moves to end of Map)
+    persistentCache.delete(skillName);
+    persistentCache.set(skillName, { metadata, timestamp: Date.now() });
+
+    if (options.verbose) {
+      logger.debug(`Cache hit for '${skillName}'`, { depth });
+    }
+  } else {
+    // Cache miss - fetch from network
+
+    // Check promise cache for concurrent request deduplication
+    let metadataPromise = metadataCache.get(skillName);
+
+    // Fetch from registry if not in promise cache
+    if (!metadataPromise) {
+      // Create and cache the promise immediately (before awaiting)
+      // This ensures concurrent requests share the same promise
+      metadataPromise = getSkill(skillName);
+      metadataCache.set(skillName, metadataPromise);
+    }
+
+    // Await the (possibly shared) promise
+    metadata = await metadataPromise;
+
+    // Add to persistent cache
+    persistentCache.set(skillName, { metadata, timestamp: Date.now() });
+
+    // LRU eviction: if cache exceeds max size, evict oldest entry
+    if (persistentCache.size > LRU_CACHE_MAX_SIZE) {
+      const firstKey = persistentCache.keys().next().value as string;
+      if (firstKey) {
+        persistentCache.delete(firstKey);
+
+        if (options.verbose) {
+          logger.debug(`LRU cache eviction: removed '${firstKey}'`);
+        }
+      }
+    }
+
+    if (options.verbose) {
+      logger.debug(`Cache miss for '${skillName}' - fetched from network`, { depth });
+    }
   }
-
-  // Await the (possibly shared) promise
-  const metadata = await metadataPromise;
 
   if (!metadata) {
     const fullPath = [...path, skillName];
@@ -292,4 +346,22 @@ function flattenTree(
   for (const dep of node.dependencies) {
     flattenTree(dep, flatList, visitor);
   }
+}
+
+/**
+ * Clear the persistent LRU cache of dependency metadata
+ *
+ * Useful for testing or when fresh data is required.
+ * This function is exported for use in testing and administrative operations.
+ *
+ * @example
+ * ```typescript
+ * clearDependencyCache(); // Clear all cached dependency metadata
+ * ```
+ */
+export function clearDependencyCache(): void {
+  persistentCache.clear();
+  logger.debug('Dependency cache cleared', {
+    cacheSize: 0,
+  });
 }

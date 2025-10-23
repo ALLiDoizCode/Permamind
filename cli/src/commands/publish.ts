@@ -27,6 +27,10 @@ import * as arweaveClient from '../clients/arweave-client.js';
 import * as aoRegistryClient from '../clients/ao-registry-client.js';
 import { loadConfig, resolveWalletPath } from '../lib/config-loader.js';
 import logger from '../utils/logger.js';
+import {
+  formatError,
+  generateErrorContext,
+} from '../lib/error-formatter.js';
 import { IPublishOptions, IPublishResult } from '../types/commands.js';
 import { ISkillMetadata } from '../types/ao-registry.js';
 import { ISkillManifest } from '../types/skill.js';
@@ -35,8 +39,8 @@ import {
   ValidationError,
   AuthorizationError,
   NetworkError,
-  FileSystemError,
   ConfigurationError,
+  getExitCode,
 } from '../types/errors.js';
 
 /**
@@ -62,12 +66,46 @@ export function createPublishCommand(): Command {
       '--skip-confirmation',
       'Skip transaction confirmation polling (faster, less reliable)'
     )
+    .addHelpText(
+      'after',
+      `
+Examples:
+  $ skills publish ./my-skill
+    Publish skill using default configuration from .skillsrc
+
+  $ skills publish ./my-skill --wallet ~/custom-wallet.json
+    Publish with a custom wallet (overrides .skillsrc)
+
+  $ skills publish ./my-skill --gateway https://g8way.io
+    Publish to a specific Arweave gateway
+
+  $ skills publish ./my-skill --verbose
+    Enable detailed logging for debugging upload issues
+
+  $ skills publish ./my-skill --skip-confirmation
+    Skip transaction confirmation (faster but less reliable)
+
+  $ skills publish ./my-skill --wallet ~/wallet.json --verbose
+    Combine options: custom wallet with verbose logging
+
+Workflow:
+  1. Validates skill directory and SKILL.md manifest
+  2. Creates .tar.gz bundle of skill files
+  3. Uploads bundle to Arweave network
+  4. Polls for transaction confirmation
+  5. Registers skill in AO registry
+  6. Displays success message with Transaction ID
+
+Documentation:
+  Troubleshooting: https://github.com/permamind/skills/blob/main/docs/troubleshooting.md
+`,
+    )
     .action(async (directory: string, options: IPublishOptions) => {
       try {
         await execute(directory, options);
         process.exit(0);
       } catch (error: unknown) {
-        handleError(error);
+        handleError(error, options.verbose);
         process.exit(getExitCode(error));
       }
     });
@@ -177,7 +215,7 @@ async function validateDirectory(directory: string): Promise<string> {
     const dirStat = await fs.stat(directory);
     if (!dirStat.isDirectory()) {
       throw new ValidationError(
-        `Path is not a directory: ${directory} → Solution: Provide a valid directory path containing SKILL.md`,
+        `[ValidationError] Path is not a directory: ${directory}. -> Solution: Provide a valid directory path containing SKILL.md`,
         'directory',
         directory
       );
@@ -189,7 +227,7 @@ async function validateDirectory(directory: string): Promise<string> {
       await fs.access(skillMdPath);
     } catch (error) {
       throw new ValidationError(
-        `SKILL.md not found in ${directory} → Solution: Create a SKILL.md file with YAML frontmatter. See https://github.com/anthropics/agent-skills for manifest format`,
+        `[ValidationError] SKILL.md not found in ${directory}. -> Solution: Create a SKILL.md file with YAML frontmatter. See https://github.com/anthropics/agent-skills for manifest format`,
         'skill.md',
         'missing'
       );
@@ -207,7 +245,7 @@ async function validateDirectory(directory: string): Promise<string> {
       error.code === 'ENOENT'
     ) {
       throw new ValidationError(
-        `Directory not found: ${directory} → Solution: Ensure the skill directory exists and the path is correct. Run 'skills publish ./my-skill' from the parent directory`,
+        `[ValidationError] Directory not found: ${directory}. -> Solution: Ensure the skill directory exists and the path is correct. Run 'skills publish ./my-skill' from the parent directory`,
         'directory',
         directory
       );
@@ -236,7 +274,7 @@ async function parseAndValidateManifest(skillMdPath: string): Promise<ISkillMani
     if (!validationResult.valid) {
       spinner.fail('SKILL.md validation failed');
       throw new ValidationError(
-        `SKILL.md validation failed:\n${validationResult.errors?.join('\n')} → Solution: Fix the validation errors in your SKILL.md frontmatter`,
+        `[ValidationError] SKILL.md validation failed:\n${validationResult.errors?.join('\n')}. -> Solution: Fix the validation errors in your SKILL.md frontmatter`,
         'manifest',
         validationResult.errors
       );
@@ -269,7 +307,7 @@ async function loadAndCheckWallet(options: IPublishOptions): Promise<JWK> {
     const walletPath = resolveWalletPath(options.wallet, config);
     if (!walletPath) {
       throw new ConfigurationError(
-        'Wallet not configured → Solution: Provide wallet path with --wallet flag or add "wallet" field to .skillsrc',
+        '[ConfigurationError] Wallet not configured. -> Solution: Provide wallet path with --wallet flag or add "wallet" field to .skillsrc',
         'wallet'
       );
     }
@@ -298,7 +336,7 @@ async function loadAndCheckWallet(options: IPublishOptions): Promise<JWK> {
     if (walletInfo.balance === 0) {
       spinnerBalance.fail('Insufficient wallet balance');
       throw new AuthorizationError(
-        `Insufficient funds (0 AR) for transaction → Solution: Add funds to wallet address ${walletInfo.address}. Visit https://faucet.arweave.net for testnet AR`,
+        `[AuthorizationError] Insufficient funds (0 AR) for transaction. -> Solution: Add funds to wallet address ${walletInfo.address}. Visit https://faucet.arweave.net for testnet AR`,
         walletInfo.address,
         0
       );
@@ -540,9 +578,10 @@ async function getRegistryResponse(messageId: string): Promise<{
         const errorMsg = responseMsg.Tags?.find((t) => t.name === 'Error')?.value;
         spinner.fail(`Registry error: ${errorMsg}`);
         throw new NetworkError(
-          `Skill registration failed: ${errorMsg} → Solution: Check your skill metadata and try again`,
+          `[NetworkError] Skill registration failed: ${errorMsg}. -> Solution: Check your skill metadata and try again`,
           new Error(errorMsg || 'Unknown registry error'),
-          'ao-registry'
+          'ao-registry',
+          'gateway_error'
         );
       }
     }
@@ -550,9 +589,10 @@ async function getRegistryResponse(messageId: string): Promise<{
     // No response message found
     spinner.fail('No response message from registry');
     throw new NetworkError(
-      'Registry did not return a response message → Solution: Verify the AO registry process is responding correctly',
+      '[NetworkError] Registry did not return a response message. -> Solution: Verify the AO registry process is responding correctly',
       new Error('Empty response'),
-      'ao-registry'
+      'ao-registry',
+      'gateway_error'
     );
   } catch (error: unknown) {
     spinner.fail('Failed to read registry response');
@@ -598,44 +638,31 @@ function displaySuccess(result: IPublishResult): void {
  * Task 17: Handle errors and display user-friendly messages
  *
  * @param error - Error object
+ * @param verbose - Whether to show verbose error output (stack traces)
  */
-function handleError(error: unknown): void {
-  if (error instanceof ValidationError) {
-    logger.error(chalk.red(`Validation Error: ${error.message}`));
-  } else if (error instanceof AuthorizationError) {
-    logger.error(chalk.red(`Authorization Error: ${error.message}`));
-  } else if (error instanceof NetworkError) {
-    logger.error(chalk.red(`Network Error: ${error.message}`));
-  } else if (error instanceof FileSystemError) {
-    logger.error(chalk.red(`File System Error: ${error.message}`));
-  } else if (error instanceof ConfigurationError) {
-    logger.error(chalk.red(`Configuration Error: ${error.message}`));
+function handleError(error: unknown, verbose = false): void {
+  if (!(error instanceof Error)) {
+    const errorMessage = String(error);
+    logger.error(chalk.red(`[Error] Unexpected error: ${errorMessage}`));
+    return;
+  }
+
+  // Generate error context for verbose mode
+  const context = generateErrorContext('publish');
+
+  // Format error based on verbose mode
+  const formatted = formatError(error, verbose, context);
+
+  // Output formatted error
+  if (verbose) {
+    // Verbose: JSON output (no chalk colors for machine-readable format)
+    process.stderr.write(formatted + '\n');
   } else {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error(chalk.red(`Unexpected Error: ${errorMessage}`));
+    // Normal: Human-readable with colors
+    logger.error(chalk.red(formatted));
   }
 }
 
-/**
- * Task 17: Get exit code based on error type
- *
- * @param error - Error object
- * @returns Exit code (1=user error, 2=system error, 3=auth error)
- */
-function getExitCode(error: unknown): number {
-  if (error instanceof ValidationError) {
-    return 1; // User error
-  } else if (error instanceof ConfigurationError) {
-    return 1; // User error
-  } else if (error instanceof AuthorizationError) {
-    return 3; // Authorization error
-  } else if (error instanceof NetworkError) {
-    return 2; // System error
-  } else if (error instanceof FileSystemError) {
-    return 2; // System error
-  }
-  return 2; // Default: system error
-}
 
 /**
  * Format bytes to human-readable string

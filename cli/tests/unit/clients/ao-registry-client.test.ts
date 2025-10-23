@@ -54,6 +54,9 @@ describe('AO Registry Client', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    // Clear AO registry cache to prevent test interference
+    aoRegistryClient.clearCache();
+
     // Setup environment variable for registry process ID
     process.env.AO_REGISTRY_PROCESS_ID = mockProcessId;
 

@@ -736,5 +736,125 @@ Handlers.add("get-skill",
   end
 )
 
+-- ============================================================================
+-- HTTP-ACCESSIBLE STATE (for ~process@1.0/compute access)
+-- ============================================================================
+
+-- Expose Skills table for HTTP access
+-- Access via: /{process-id}/~process@1.0/compute/Skills
+-- Returns: Full Skills table with version history
+
+-- HTTP-accessible search function
+-- Access via: /{process-id}/~process@1.0/compute/searchSkills?query=ao
+function searchSkills(query)
+  local results = {}
+
+  query = query or ""
+
+  -- If query is empty, return all skills (latest versions)
+  if query == "" then
+    for skillName, skillEntry in pairs(Skills) do
+      if skillEntry.versions and skillEntry.latest then
+        local latestVersion = skillEntry.versions[skillEntry.latest]
+        if latestVersion then
+          table.insert(results, latestVersion)
+        end
+      end
+    end
+  else
+    -- Search with query filter (search in latest version metadata)
+    for skillName, skillEntry in pairs(Skills) do
+      if skillEntry.versions and skillEntry.latest then
+        local skill = skillEntry.versions[skillEntry.latest]
+        if skill then
+          local matches = false
+
+          -- Match against skill name
+          if contains(skill.name, query) then
+            matches = true
+          end
+
+          -- Match against description
+          if contains(skill.description, query) then
+            matches = true
+          end
+
+          -- Match against tags
+          if skill.tags and type(skill.tags) == "table" then
+            for _, tag in ipairs(skill.tags) do
+              if contains(tag, query) then
+                matches = true
+                break
+              end
+            end
+          end
+
+          if matches then
+            table.insert(results, skill)
+          end
+        end
+      end
+    end
+  end
+
+  return results
+end
+
+-- HTTP-accessible getSkill function
+-- Access via: /{process-id}/~process@1.0/compute/getSkill?name=ao&version=1.0.0
+function getSkill(name, version)
+  if not name or name == "" then
+    return {error = "Name is required"}
+  end
+
+  local skillEntry = Skills[name]
+
+  if not skillEntry or not skillEntry.versions then
+    return {error = "Skill '" .. name .. "' not found"}
+  end
+
+  -- Determine which version to return
+  local versionToReturn = version
+  if not versionToReturn or versionToReturn == "" then
+    versionToReturn = skillEntry.latest
+  end
+
+  -- Get the specific version
+  local skillMetadata = skillEntry.versions[versionToReturn]
+
+  if not skillMetadata then
+    return {error = "Skill '" .. name .. "' version '" .. versionToReturn .. "' not found"}
+  end
+
+  return skillMetadata
+end
+
+-- HTTP-accessible listVersions function
+-- Access via: /{process-id}/~process@1.0/compute/listVersions?name=ao
+function listVersions(name)
+  if not name or name == "" then
+    return {error = "Name is required"}
+  end
+
+  local skillEntry = Skills[name]
+
+  if not skillEntry or not skillEntry.versions then
+    return {error = "Skill '" .. name .. "' not found"}
+  end
+
+  local versionList = {}
+  for versionNum, _ in pairs(skillEntry.versions) do
+    table.insert(versionList, versionNum)
+  end
+
+  return {
+    name = name,
+    latest = skillEntry.latest,
+    versions = versionList
+  }
+end
+
 -- Process initialization complete
 print("Agent Skills Registry process initialized (ADP v1.0 compliant)")
+print("HTTP-accessible functions: searchSkills, getSkill, listVersions")
+print("HTTP access via: https://forward.computer/{process-id}/~process@1.0/compute/{function}")

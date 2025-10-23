@@ -509,13 +509,22 @@ async function getRegistryResponse(messageId: string): Promise<{
   const spinner = ora('Reading registry response...').start();
 
   try {
+    // Load config to get registry process ID
+    const config = await loadConfig();
+    if (!config.registry) {
+      throw new ConfigurationError(
+        '[ConfigurationError] AO registry process ID not configured. -> Solution: Add "registry" field to your .skillsrc file',
+        'registry'
+      );
+    }
+
     // Import aoconnect for result reading
     const { result } = await import('@permaweb/aoconnect');
 
     // Read message result directly (no polling needed)
     const response = (await result({
       message: messageId,
-      process: process.env.AO_REGISTRY_PROCESS_ID || '',
+      process: config.registry,
     })) as {
       Messages?: Array<{
         Tags?: Array<{ name: string; value: string }>;

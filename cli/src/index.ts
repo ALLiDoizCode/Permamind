@@ -9,6 +9,7 @@
  */
 
 import { Command } from 'commander';
+import packageJson from '../package.json';
 
 // Initialize Commander program
 const program = new Command();
@@ -16,7 +17,7 @@ const program = new Command();
 program
   .name('skills')
   .description('CLI tool for publishing, searching, and installing Claude Agent Skills')
-  .version('0.1.0')
+  .version(packageJson.version)
   .option('--no-banner', 'Suppress ASCII banner display');
 
 // Add comprehensive help text with documentation links and examples

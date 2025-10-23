@@ -149,6 +149,64 @@ export async function registerSkill(
 }
 
 /**
+ * Update an existing skill in the AO registry
+ *
+ * Sends an Update-Skill message to the AO registry process with updated metadata.
+ * This is a state-changing operation and will NOT be retried on failure.
+ * Only the skill owner can update a skill.
+ *
+ * @param metadata - Complete skill metadata including arweaveTxId
+ * @param wallet - Wallet JWK for signing the message
+ * @returns AO message ID for the update transaction
+ * @throws {NetworkError} If message sending fails
+ * @throws {ConfigurationError} If registry process ID not configured
+ */
+export async function updateSkill(
+  metadata: ISkillMetadata,
+  wallet: JWK
+): Promise<string> {
+  const processId = await getRegistryProcessId();
+
+  try {
+    logger.debug('Sending Update-Skill message to AO registry', {
+      processId,
+      skillName: metadata.name,
+      version: metadata.version,
+    });
+
+    // Create data item signer from wallet JWK
+    const signer = createDataItemSigner(wallet);
+
+    // Send message with Update-Skill action
+    const messageId = await message({
+      process: processId,
+      tags: [
+        { name: 'Action', value: 'Update-Skill' },
+        { name: 'Name', value: metadata.name },
+        { name: 'Version', value: metadata.version },
+        { name: 'Description', value: metadata.description },
+        { name: 'Author', value: metadata.author },
+        { name: 'Tags', value: JSON.stringify(metadata.tags) },
+        { name: 'ArweaveTxId', value: metadata.arweaveTxId },
+        { name: 'Dependencies', value: JSON.stringify(metadata.dependencies) },
+      ],
+      signer,
+    });
+
+    logger.debug('Update-Skill message sent successfully', { messageId });
+    return messageId;
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new NetworkError(
+      `[NetworkError] Failed to update skill in AO registry. -> Solution: Check your network connection and ensure the AO registry process is available. Try again in a few moments.`,
+      error instanceof Error ? error : new Error(errorMessage),
+      'ao-registry',
+      'gateway_error'
+    );
+  }
+}
+
+/**
  * Search for skills in the AO registry
  *
  * Sends a dryrun query to the registry process to search for skills matching the query.

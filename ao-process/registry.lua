@@ -97,11 +97,15 @@ Handlers.add("info",
     local metadata = {
       process = {
         name = "Agent Skills Registry",
-        version = "1.0.0",
+        version = "1.1.0",
         adpVersion = "1.0",
-        capabilities = {"register", "search", "retrieve"},
+        capabilities = {"register", "update", "search", "retrieve"},
         messageSchemas = {
           ["Register-Skill"] = {
+            required = {"Action", "Name", "Version", "Description", "Author", "ArweaveTxId"},
+            optional = {"Tags", "Dependencies"}
+          },
+          ["Update-Skill"] = {
             required = {"Action", "Name", "Version", "Description", "Author", "ArweaveTxId"},
             optional = {"Tags", "Dependencies"}
           },
@@ -116,7 +120,7 @@ Handlers.add("info",
           }
         }
       },
-      handlers = {"Register-Skill", "Search-Skills", "Get-Skill", "Info"},
+      handlers = {"Register-Skill", "Update-Skill", "Search-Skills", "Get-Skill", "Info"},
       documentation = {
         adpCompliance = "v1.0",
         selfDocumenting = true,
@@ -260,6 +264,150 @@ Handlers.add("register-skill",
     ao.send({
       Target = msg.From,
       Action = "Skill-Registered",
+      Name = name,
+      Version = version,
+      Success = "true"
+    })
+  end
+)
+
+-- Update-Skill Handler
+-- Updates an existing skill with new version and metadata
+Handlers.add("update-skill",
+  Handlers.utils.hasMatchingTag("Action", "Update-Skill"),
+  function(msg)
+    -- Extract and validate required fields
+    local name = msg.Name
+    local version = msg.Version
+    local description = msg.Description
+    local author = msg.Author
+    local arweaveTxId = msg.Arweavetxid or msg.ArweaveTxId
+
+    -- Validate required fields
+    if not name or name == "" then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Name is required"
+      })
+      return
+    end
+
+    -- Check if skill exists
+    if not Skills[name] then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Skill '" .. name .. "' does not exist. Use Register-Skill to create a new skill"
+      })
+      return
+    end
+
+    -- Verify ownership (only owner can update)
+    if Skills[name].owner ~= msg.From then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Unauthorized: Only the skill owner can update this skill"
+      })
+      return
+    end
+
+    -- Validate required fields
+    if not version or version == "" then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Version is required"
+      })
+      return
+    end
+
+    if not description or description == "" then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Description is required"
+      })
+      return
+    end
+
+    if not author or author == "" then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Author is required"
+      })
+      return
+    end
+
+    if not arweaveTxId or arweaveTxId == "" then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "ArweaveTxId is required"
+      })
+      return
+    end
+
+    -- Validate formats
+    if not isValidVersion(version) then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Invalid version format. Expected semantic version (e.g., 1.0.0)"
+      })
+      return
+    end
+
+    if not isValidTxId(arweaveTxId) then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Invalid ArweaveTxId format. Expected 43-character transaction ID"
+      })
+      return
+    end
+
+    -- Validate description length
+    if #description > 1024 then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Description exceeds maximum length of 1024 characters"
+      })
+      return
+    end
+
+    -- Parse optional fields
+    local tags = safeJsonDecode(msg.Tags, {})
+    local dependencies = safeJsonDecode(msg.Dependencies, {})
+
+    -- Validate parsed arrays are tables
+    if type(tags) ~= "table" then tags = {} end
+    if type(dependencies) ~= "table" then dependencies = {} end
+
+    -- Get timestamp from message
+    local timestamp = tonumber(msg.Timestamp) or 0
+
+    -- Update skill metadata (preserve original publishedAt)
+    Skills[name] = {
+      name = name,
+      version = version,
+      description = description,
+      author = author,
+      owner = Skills[name].owner, -- Keep original owner
+      tags = tags,
+      arweaveTxId = arweaveTxId,
+      dependencies = dependencies,
+      publishedAt = Skills[name].publishedAt, -- Preserve original publish date
+      updatedAt = timestamp
+    }
+
+    -- Send success response
+    ao.send({
+      Target = msg.From,
+      Action = "Skill-Updated",
       Name = name,
       Version = version,
       Success = "true"

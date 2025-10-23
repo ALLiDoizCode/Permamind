@@ -38,7 +38,6 @@ import { JWK } from '../types/arweave.js';
 import {
   ValidationError,
   AuthorizationError,
-  NetworkError,
   ConfigurationError,
   getExitCode,
 } from '../types/errors.js';
@@ -150,17 +149,14 @@ export async function execute(
     options
   );
 
-  // Task 14: Register in AO registry and verify response
+  // Task 14: Register or update in AO registry
   const registryMessageId = await registerInAORegistry(
     manifest,
     uploadResult.txId,
     wallet
   );
 
-  // Task 15.1: Get registry response message (validates registration success)
-  await getRegistryResponse(registryMessageId);
-
-  // Task 16: Display success message
+  // Task 15: Display success message
   displaySuccess({
     skillName: manifest.name,
     version: manifest.version,
@@ -452,9 +448,25 @@ async function registerInAORegistry(
   arweaveTxId: string,
   wallet: JWK
 ): Promise<string> {
-  const spinner = ora('Registering skill in AO registry...').start();
+  let spinner = ora('Checking if skill exists...').start();
 
   try {
+    // Check if skill already exists in registry
+    let existingSkill: ISkillMetadata | null = null;
+    try {
+      const foundSkill = await aoRegistryClient.getSkill(manifest.name);
+      if (foundSkill) {
+        spinner.succeed(`Found existing skill: ${manifest.name}@${foundSkill.version}`);
+        existingSkill = foundSkill;
+      } else {
+        spinner.succeed('Skill does not exist, will register as new');
+      }
+    } catch {
+      // Skill doesn't exist, will register as new
+      spinner.succeed('Skill does not exist, will register as new');
+      existingSkill = null;
+    }
+
     // Derive wallet address for owner field
     const Arweave = (await import('arweave')).default;
     const arweave = Arweave.init({
@@ -479,103 +491,29 @@ async function registerInAORegistry(
       updatedAt: Date.now(),
     };
 
-    // Register in AO registry
-    const messageId = await aoRegistryClient.registerSkill(metadata, wallet);
-
-    spinner.succeed(`Skill registered: ${messageId}`);
-    logger.debug('Registry registration successful', { messageId });
+    // Use Update-Skill if skill exists, otherwise Register-Skill
+    let messageId: string;
+    if (existingSkill) {
+      spinner = ora('Updating skill in AO registry...').start();
+      messageId = await aoRegistryClient.updateSkill(metadata, wallet);
+      spinner.succeed(`Skill updated: ${messageId}`);
+      logger.debug('Registry update successful', { messageId });
+    } else {
+      spinner = ora('Registering skill in AO registry...').start();
+      messageId = await aoRegistryClient.registerSkill(metadata, wallet);
+      spinner.succeed(`Skill registered: ${messageId}`);
+      logger.debug('Registry registration successful', { messageId });
+    }
 
     return messageId;
   } catch (error: unknown) {
-    spinner.fail('Registry registration failed');
+    spinner.fail('Registry operation failed');
     throw error;
   }
 }
 
 /**
- * Task 15.1: Get registry response message
- *
- * @param messageId - AO message ID to read response from
- * @returns Registry response with success/error details
- * @throws {NetworkError} If response indicates registration failure or no response found
- */
-async function getRegistryResponse(messageId: string): Promise<{
-  success: boolean;
-  action: string;
-  skillName?: string;
-  version?: string;
-  error?: string;
-}> {
-  const spinner = ora('Reading registry response...').start();
-
-  try {
-    // Load config to get registry process ID
-    const config = await loadConfig();
-    if (!config.registry) {
-      throw new ConfigurationError(
-        '[ConfigurationError] AO registry process ID not configured. -> Solution: Add "registry" field to your .skillsrc file',
-        'registry'
-      );
-    }
-
-    // Import aoconnect for result reading
-    const { result } = await import('@permaweb/aoconnect');
-
-    // Read message result directly (no polling needed)
-    const response = (await result({
-      message: messageId,
-      process: config.registry,
-    })) as {
-      Messages?: Array<{
-        Tags?: Array<{ name: string; value: string }>;
-      }>;
-    };
-
-    // Check if we have a response message
-    if (response.Messages && response.Messages.length > 0) {
-      const responseMsg = response.Messages[0];
-      const action = responseMsg.Tags?.find((t) => t.name === 'Action')?.value;
-
-      if (action === 'Skill-Registered') {
-        const name = responseMsg.Tags?.find((t) => t.name === 'Name')?.value;
-        const version = responseMsg.Tags?.find((t) => t.name === 'Version')?.value;
-        spinner.succeed(
-          `Registry confirmed: ${name} v${version} registered successfully`
-        );
-        return {
-          success: true,
-          action,
-          skillName: name,
-          version,
-        };
-      } else if (action === 'Error') {
-        const errorMsg = responseMsg.Tags?.find((t) => t.name === 'Error')?.value;
-        spinner.fail(`Registry error: ${errorMsg}`);
-        throw new NetworkError(
-          `[NetworkError] Skill registration failed: ${errorMsg}. -> Solution: Check your skill metadata and try again`,
-          new Error(errorMsg || 'Unknown registry error'),
-          'ao-registry',
-          'gateway_error'
-        );
-      }
-    }
-
-    // No response message found
-    spinner.fail('No response message from registry');
-    throw new NetworkError(
-      '[NetworkError] Registry did not return a response message. -> Solution: Verify the AO registry process is responding correctly',
-      new Error('Empty response'),
-      'ao-registry',
-      'gateway_error'
-    );
-  } catch (error: unknown) {
-    spinner.fail('Failed to read registry response');
-    throw error;
-  }
-}
-
-/**
- * Task 16: Display success message with all relevant IDs
+ * Task 15: Display success message with all relevant IDs
  *
  * @param result - Publish result
  */

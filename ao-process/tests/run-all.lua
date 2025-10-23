@@ -17,7 +17,9 @@ local testFiles = {
   "info-handler.test.lua",
   "register-skill.test.lua",
   "search-skills.test.lua",
-  "get-skill.test.lua"
+  "get-skill.test.lua",
+  "version-history.test.lua",
+  "list-skills.test.lua"
 }
 
 for _, testFile in ipairs(testFiles) do

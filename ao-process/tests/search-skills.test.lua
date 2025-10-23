@@ -125,7 +125,7 @@ local function runTests()
 
   print("✓ Test 5: No results for non-matching query")
 
-  -- Test 6: Empty query error
+  -- Test 6: Empty query returns all skills
   helper.sentMessages = {}
   helper.sendMessage({
     Action = "Search-Skills",
@@ -134,9 +134,12 @@ local function runTests()
   })
 
   local emptyQueryResponse = helper.getLastMessage()
-  helper.assertEqual(emptyQueryResponse.Action, "Error", "Should return error for empty query")
+  helper.assertEqual(emptyQueryResponse.Action, "Search-Results", "Should return all skills for empty query")
 
-  print("✓ Test 6: Empty query rejected")
+  local allSkills = json.decode(emptyQueryResponse.Data)
+  helper.assertEqual(#allSkills, 3, "Should return all 3 registered skills")
+
+  print("✓ Test 6: Empty query returns all skills")
 
   -- Test 7: Case-insensitive search
   helper.sentMessages = {}

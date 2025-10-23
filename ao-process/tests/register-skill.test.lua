@@ -33,13 +33,16 @@ local function runTests()
   helper.assertEqual(response.Name, samples.validSkill1.Name, "Response should include skill name")
   helper.assertEqual(response.Success, "true", "Success flag should be 'true'")
 
-  -- Verify skill stored in registry
+  -- Verify skill stored in registry (new versioned structure)
   helper.assertNotNil(Skills[samples.validSkill1.Name], "Skill should be stored in registry")
-  helper.assertEqual(Skills[samples.validSkill1.Name].version, samples.validSkill1.Version, "Version should match")
+  helper.assertNotNil(Skills[samples.validSkill1.Name].versions, "Versions table should exist")
+  helper.assertNotNil(Skills[samples.validSkill1.Name].versions[samples.validSkill1.Version], "Specific version should exist")
+  helper.assertEqual(Skills[samples.validSkill1.Name].latest, samples.validSkill1.Version, "Latest should match registered version")
+  helper.assertEqual(Skills[samples.validSkill1.Name].versions[samples.validSkill1.Version].version, samples.validSkill1.Version, "Version should match")
 
   print("✓ Test 1: Valid skill registration successful")
 
-  -- Test 2: Duplicate skill name error
+  -- Test 2: Duplicate skill version error
   helper.reset()
   helper.setupMockAO()
   dofile("../registry.lua")
@@ -47,14 +50,14 @@ local function runTests()
   -- Register first skill
   helper.sendMessage(registerMsg)
 
-  -- Try to register duplicate
+  -- Try to register same skill with same version (duplicate)
   helper.sendMessage(registerMsg)
 
   local duplicateResponse = helper.getLastMessage()
-  helper.assertEqual(duplicateResponse.Action, "Error", "Should return error for duplicate")
+  helper.assertEqual(duplicateResponse.Action, "Error", "Should return error for duplicate version")
   helper.assertNotNil(duplicateResponse.Error, "Error message should be present")
 
-  print("✓ Test 2: Duplicate skill name rejected")
+  print("✓ Test 2: Duplicate skill version rejected")
 
   -- Test 3: Missing required field (Name)
   helper.reset()
@@ -163,13 +166,15 @@ local function runTests()
   helper.sendMessage(ownerTestMsg)
 
   helper.assertNotNil(Skills["owner-test-skill"], "Skill should be registered")
-  helper.assertEqual(Skills["owner-test-skill"].owner, ownerTestMsg.From, "Owner should match msg.From")
+  helper.assertNotNil(Skills["owner-test-skill"].versions, "Versions should exist")
+  helper.assertNotNil(Skills["owner-test-skill"].versions["1.0.0"], "Version 1.0.0 should exist")
+  helper.assertEqual(Skills["owner-test-skill"].versions["1.0.0"].owner, ownerTestMsg.From, "Owner should match msg.From")
 
   print("✓ Test 7: Owner field correctly set to msg.From")
 
   -- Test 8: Verify timestamp handling (msg.Timestamp, not os.time)
-  helper.assertNotNil(Skills["owner-test-skill"].publishedAt, "publishedAt should be set")
-  helper.assertEqual(Skills["owner-test-skill"].publishedAt, tonumber(ownerTestMsg.Timestamp), "publishedAt should use msg.Timestamp")
+  helper.assertNotNil(Skills["owner-test-skill"].versions["1.0.0"].publishedAt, "publishedAt should be set")
+  helper.assertEqual(Skills["owner-test-skill"].versions["1.0.0"].publishedAt, tonumber(ownerTestMsg.Timestamp), "publishedAt should use msg.Timestamp")
 
   print("✓ Test 8: Timestamp correctly uses msg.Timestamp")
 

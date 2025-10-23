@@ -421,6 +421,23 @@ export async function checkTransactionStatus(
       throw new Error(`Gateway returned status ${response.status}`);
     }
 
+    // Get response content type
+    const contentType = response.headers.get('content-type') || '';
+
+    // Handle plain text "Pending" response
+    if (contentType.includes('text/plain')) {
+      const text = await response.text();
+      const lowerText = text.toLowerCase().trim();
+
+      if (lowerText === 'pending' || lowerText.includes('pending')) {
+        return 'pending';
+      }
+
+      // Unknown text response, treat as pending
+      return 'pending';
+    }
+
+    // Parse JSON response
     const statusData = (await response.json()) as {
       block_height?: number;
       number_of_confirmations?: number;
@@ -443,6 +460,13 @@ export async function checkTransactionStatus(
     return 'pending';
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
+
+    // Don't throw on JSON parse errors - treat as pending
+    if (err.message.includes('JSON') || err.message.includes('Unexpected token')) {
+      logger.warn(`Failed to parse transaction status response, treating as pending: ${err.message}`);
+      return 'pending';
+    }
+
     throw new NetworkError(
       `[NetworkError] Failed to check transaction status. -> Solution: Verify network connection and try again`,
       err,

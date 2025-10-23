@@ -62,10 +62,6 @@ export function createPublishCommand(): Command {
     .option('--wallet <path>', 'Custom wallet path (overrides config)')
     .option('--verbose', 'Enable detailed logging')
     .option('--gateway <url>', 'Custom Arweave gateway URL (overrides config)')
-    .option(
-      '--skip-confirmation',
-      'Skip transaction confirmation polling (faster, less reliable)'
-    )
     .addHelpText(
       'after',
       `
@@ -82,9 +78,6 @@ Examples:
   $ skills publish ./my-skill --verbose
     Enable detailed logging for debugging upload issues
 
-  $ skills publish ./my-skill --skip-confirmation
-    Skip transaction confirmation (faster but less reliable)
-
   $ skills publish ./my-skill --wallet ~/wallet.json --verbose
     Combine options: custom wallet with verbose logging
 
@@ -92,9 +85,8 @@ Workflow:
   1. Validates skill directory and SKILL.md manifest
   2. Creates .tar.gz bundle of skill files
   3. Uploads bundle to Arweave network
-  4. Polls for transaction confirmation
-  5. Registers skill in AO registry
-  6. Displays success message with Transaction ID
+  4. Registers skill in AO registry
+  5. Displays success message with Transaction ID
 
 Documentation:
   Troubleshooting: https://github.com/permamind/skills/blob/main/docs/troubleshooting.md
@@ -158,16 +150,7 @@ export async function execute(
     options
   );
 
-  // Task 14: Poll transaction confirmation (unless skipped)
-  if (!options.skipConfirmation) {
-    await pollTransactionConfirmation(uploadResult.txId);
-  } else {
-    logger.warn(
-      'Skipping confirmation polling (--skip-confirmation flag set)'
-    );
-  }
-
-  // Task 15: Register in AO registry and verify response
+  // Task 14: Register in AO registry and verify response
   const registryMessageId = await registerInAORegistry(
     manifest,
     uploadResult.txId,
@@ -456,25 +439,7 @@ async function uploadBundleWithProgress(
 }
 
 /**
- * Task 14: Poll transaction confirmation
- *
- * @param txId - Transaction ID to poll
- * @throws {NetworkError} If confirmation times out
- */
-async function pollTransactionConfirmation(txId: string): Promise<void> {
-  const spinner = ora('Waiting for transaction confirmation...').start();
-
-  try {
-    await arweaveClient.pollConfirmation(txId);
-    spinner.succeed('Transaction confirmed');
-  } catch (error: unknown) {
-    spinner.fail('Transaction confirmation failed');
-    throw error;
-  }
-}
-
-/**
- * Task 15: Register skill in AO registry
+ * Task 14: Register skill in AO registry
  *
  * @param manifest - Skill manifest
  * @param arweaveTxId - Arweave transaction ID

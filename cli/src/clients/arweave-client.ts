@@ -421,11 +421,13 @@ export async function checkTransactionStatus(
       throw new Error(`Gateway returned status ${response.status}`);
     }
 
-    // Get response content type (with safe header access for test mocks)
-    const contentType = response.headers?.get?.('content-type') || '';
+    // Determine if this is a real fetch response or a test mock
+    // Real fetch responses have both .text() and .json(), but mocks may only have .json()
+    const isRealFetch = typeof response.text === 'function' && typeof response.json === 'function';
+    const isMockResponse = typeof response.json === 'function' && typeof response.text !== 'function';
 
-    // Try JSON first (for mocked responses that only have .json())
-    if (typeof response.json === 'function' && !contentType.includes('text/plain')) {
+    // For test mocks (only have .json()), try JSON parsing directly
+    if (isMockResponse) {
       try {
         const statusData = (await response.json()) as {
           block_height?: number;
@@ -448,24 +450,14 @@ export async function checkTransactionStatus(
 
         return 'pending';
       } catch (jsonError) {
-        // If JSON parsing fails, try text fallback if available
-        if (typeof response.text === 'function') {
-          const responseText = await response.text();
-          const lowerText = responseText.toLowerCase().trim();
-
-          if (lowerText === 'pending' || lowerText.includes('pending')) {
-            return 'pending';
-          }
-        }
-
-        // Otherwise assume pending
-        logger.warn(`Failed to parse transaction status response`);
+        logger.warn(`Failed to parse transaction status response from mock`);
         return 'pending';
       }
     }
 
-    // For real fetch responses, check text first to handle plain text "Pending"
-    if (typeof response.text === 'function') {
+    // For real fetch responses, read as text first (can only read once!)
+    // Then try to parse as JSON or check if it's plain text
+    if (isRealFetch) {
       const responseText = await response.text();
       const lowerText = responseText.toLowerCase().trim();
 

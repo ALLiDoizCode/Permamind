@@ -417,48 +417,48 @@ Handlers.add("update-skill",
 
 -- Search-Skills Handler
 -- Searches for skills matching a query string
+-- Returns all skills if query is empty
 Handlers.add("search-skills",
   Handlers.utils.hasMatchingTag("Action", "Search-Skills"),
   function(msg)
     local query = msg.Query
 
-    if not query or query == "" then
-      ao.send({
-        Target = msg.From,
-        Action = "Error",
-        Error = "Query is required"
-      })
-      return
-    end
-
     -- Search across all skills (O(n) iteration)
     local results = {}
 
-    for skillName, skill in pairs(Skills) do
-      local matches = false
-
-      -- Match against skill name (case-insensitive substring)
-      if contains(skill.name, query) then
-        matches = true
+    -- If query is empty, return all skills
+    if not query or query == "" then
+      for skillName, skill in pairs(Skills) do
+        table.insert(results, skill)
       end
+    else
+      -- Search with query filter
+      for skillName, skill in pairs(Skills) do
+        local matches = false
 
-      -- Match against description (case-insensitive substring)
-      if contains(skill.description, query) then
-        matches = true
-      end
+        -- Match against skill name (case-insensitive substring)
+        if contains(skill.name, query) then
+          matches = true
+        end
 
-      -- Match against tags (case-insensitive element match)
-      if skill.tags and type(skill.tags) == "table" then
-        for _, tag in ipairs(skill.tags) do
-          if contains(tag, query) then
-            matches = true
-            break
+        -- Match against description (case-insensitive substring)
+        if contains(skill.description, query) then
+          matches = true
+        end
+
+        -- Match against tags (case-insensitive element match)
+        if skill.tags and type(skill.tags) == "table" then
+          for _, tag in ipairs(skill.tags) do
+            if contains(tag, query) then
+              matches = true
+              break
+            end
           end
         end
-      end
 
-      if matches then
-        table.insert(results, skill)
+        if matches then
+          table.insert(results, skill)
+        end
       end
     end
 

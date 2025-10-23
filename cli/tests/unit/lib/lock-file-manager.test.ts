@@ -194,7 +194,8 @@ describe('Lock File Manager', () => {
       expect(JSON.parse(content)).toEqual(lockFile);
     });
 
-    it('should clean up temp file on error', async () => {
+    // Skip on Windows - invalid path handling differs
+    (process.platform === 'win32' ? it.skip : it)('should clean up temp file on error', async () => {
       const lockFilePath = '/invalid/path/lock.json';
       const tempPath = `${lockFilePath}.tmp`;
       const lockFile = createEmptyLockFile(tempDir);

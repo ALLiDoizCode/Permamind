@@ -22,9 +22,9 @@ import { NetworkError, ConfigurationError } from '../types/errors.js';
 /**
  * Constants for AO operations
  */
-const MAX_RETRY_ATTEMPTS = 2; // 2 attempts for queries only
-const RETRY_DELAY_MS = 5000; // 5 seconds between retries
-const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds default timeout
+const MAX_RETRY_ATTEMPTS = 3; // 3 attempts for queries only
+const RETRY_DELAY_MS = 8000; // 8 seconds between retries (avoid rate limiting)
+const DEFAULT_TIMEOUT_MS = 45000; // 45 seconds default timeout (CU queries can be slow)
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache expiration
 
 /**
@@ -319,7 +319,13 @@ export async function getSkill(name: string): Promise<ISkillMetadata | null> {
       return null;
     }
 
-    const data = JSON.parse(result.Messages[0].Data) as ISkillMetadata | null;
+    // Check if response is HTML (gateway error)
+    const responseData = result.Messages[0].Data;
+    if (typeof responseData === 'string' && responseData.trim().startsWith('<')) {
+      throw new Error(`CU gateway returned HTML error page instead of JSON. This may be due to rate limiting or gateway issues.`);
+    }
+
+    const data = JSON.parse(responseData) as ISkillMetadata | null;
     logger.debug('Get-Skill query successful', { name, found: !!data });
 
     return data;
@@ -440,6 +446,9 @@ async function retryQuery<T>(
     } catch (error: unknown) {
       lastError = error instanceof Error ? error : new Error(String(error));
 
+      // Log the actual error for debugging
+      logger.warn(`${actionName} query attempt ${attempt} failed: ${lastError.message} (${lastError.name})`);
+
       // Fast fail on timeout errors - do not retry
       if (lastError.message.includes('timed out')) {
         throw lastError;
@@ -456,9 +465,9 @@ async function retryQuery<T>(
     }
   }
 
-  // All attempts failed
+  // All attempts failed - include the actual error details
   throw new NetworkError(
-    `[NetworkError] Failed to execute ${actionName} query after ${MAX_RETRY_ATTEMPTS} attempts. -> Solution: Check your network connection and ensure the AO registry process is available. Try again in a few moments.`,
+    `[NetworkError] Failed to execute ${actionName} query after ${MAX_RETRY_ATTEMPTS} attempts. -> Solution: Check your network connection and ensure the AO registry process is available. Try again in a few moments. Last error: ${lastError!.message}`,
     lastError!,
     'ao-registry',
     'connection_failure'

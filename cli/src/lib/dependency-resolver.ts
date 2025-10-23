@@ -234,6 +234,10 @@ async function buildDependencyNode(
     // Await the (possibly shared) promise
     metadata = await metadataPromise;
 
+    // Add small delay to avoid CU gateway rate limiting
+    // Only delay for non-cached queries to avoid hitting rate limits
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     // Add to persistent cache
     persistentCache.set(skillName, { metadata, timestamp: Date.now() });
 

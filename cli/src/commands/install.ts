@@ -42,8 +42,7 @@ export function createInstallCommand(): Command {
   cmd
     .description('Install a skill and its dependencies')
     .argument('<name>', 'Name of skill to install')
-    .option('--global', 'Install to ~/.claude/skills/ (default)', true)
-    .option('--local', 'Install to .claude/skills/ (project-specific)')
+    .option('-g, --global', 'Install to ~/.claude/skills/ (global)')
     .option('--force', 'Overwrite existing installations without confirmation')
     .option('--verbose', 'Show detailed dependency tree and progress')
     .option('--no-lock', 'Skip lock file generation')
@@ -52,10 +51,10 @@ export function createInstallCommand(): Command {
       `
 Examples:
   $ skills install ao-basics
-    Install skill to global directory (~/.claude/skills/)
+    Install skill to local project directory (.claude/skills/)
 
-  $ skills install arweave-fundamentals --local
-    Install to local project directory (.claude/skills/)
+  $ skills install arweave-fundamentals -g
+    Install to global directory (~/.claude/skills/)
 
   $ skills install permamind-integration --force
     Force reinstall, overwriting existing installation
@@ -66,8 +65,8 @@ Examples:
   $ skills install agent-skills-best-practices --no-lock
     Install without updating skills-lock.json
 
-  $ skills install ao-basics --local --verbose
-    Combine options: local installation with verbose output
+  $ skills install ao-basics --global --verbose
+    Combine options: global installation with verbose output
 
 Workflow:
   1. Searches AO registry for skill by name
@@ -86,15 +85,6 @@ Documentation:
       let spinner: Ora | INoOpSpinner | undefined;
 
       try {
-        // Validate mutually exclusive flags
-        if (options.global === true && options.local === true) {
-          spinner = createSpinner('', interactive);
-          spinner.fail(
-            'Cannot use both --global and --local flags → Solution: Choose one installation location'
-          );
-          process.exit(1);
-          return;
-        }
 
         await execute(skillName, options);
         process.exit(0);
@@ -116,12 +106,13 @@ Documentation:
  * @returns Absolute path to installation directory
  */
 export function resolveInstallLocation(options: IInstallOptions): string {
-  if (options.local === true) {
-    return path.join(process.cwd(), '.claude', 'skills');
+  // If --global flag is explicitly set, use global directory
+  if (options.global === true) {
+    return path.join(os.homedir(), '.claude', 'skills');
   }
 
-  // Default to global
-  return path.join(os.homedir(), '.claude', 'skills');
+  // Default to local (project-specific)
+  return path.join(process.cwd(), '.claude', 'skills');
 }
 
 /**

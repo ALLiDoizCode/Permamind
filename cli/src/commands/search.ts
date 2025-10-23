@@ -16,11 +16,12 @@ import chalk from 'chalk';
 import * as aoRegistryClient from '../clients/ao-registry-client.js';
 import { formatSearchResults } from '../formatters/search-results.js';
 import logger from '../utils/logger.js';
-import { ISkillMetadata } from '../types/ao-registry.js';
 import {
-  NetworkError,
-  ConfigurationError,
-} from '../types/errors.js';
+  formatError,
+  generateErrorContext,
+} from '../lib/error-formatter.js';
+import { ISkillMetadata } from '../types/ao-registry.js';
+import { getExitCode } from '../types/errors.js';
 
 /**
  * Options for search command
@@ -71,7 +72,7 @@ export function createSearchCommand(): Command {
         await execute(query, options);
         process.exit(0);
       } catch (error: unknown) {
-        handleError(error);
+        handleError(error, options.verbose);
         process.exit(getExitCode(error));
       }
     });
@@ -91,6 +92,9 @@ Examples:
   $ skills search "" --tag tutorial          # List all tutorial skills
   $ skills search crypto --json              # Output results as JSON
   $ skills search --verbose --tag ao         # Verbose mode with tag filter
+
+Documentation:
+  Troubleshooting: https://github.com/permamind/skills/blob/main/docs/troubleshooting.md
 `);
 
   return cmd;
@@ -350,44 +354,28 @@ async function logVerboseMetadata(
  * Handle errors and display user-friendly messages
  *
  * @param error - Error object
+ * @param verbose - Whether to show verbose error output (stack traces)
  */
-function handleError(error: unknown): void {
-  if (error instanceof NetworkError) {
-    // Check error message for specific error types
-    if (error.message.includes('timed out')) {
-      logger.error(
-        chalk.red(
-          `Registry query timed out → Solution: Check network connection and try again`
-        )
-      );
-    } else if (error.message.includes('registry process')) {
-      logger.error(chalk.red(`Network failure → Solution: Retry search command`));
-    } else {
-      logger.error(chalk.red(`Network Error: ${error.message}`));
-    }
-  } else if (error instanceof ConfigurationError) {
-    logger.error(
-      chalk.red(
-        `Registry process unavailable → Solution: Verify REGISTRY_PROCESS_ID in .skillsrc or AO_REGISTRY_PROCESS_ID environment variable`
-      )
-    );
+function handleError(error: unknown, verbose = false): void {
+  if (!(error instanceof Error)) {
+    const errorMessage = String(error);
+    logger.error(chalk.red(`[Error] Unexpected error: ${errorMessage}`));
+    return;
+  }
+
+  // Generate error context for verbose mode
+  const context = generateErrorContext('search');
+
+  // Format error based on verbose mode
+  const formatted = formatError(error, verbose, context);
+
+  // Output formatted error
+  if (verbose) {
+    // Verbose: JSON output (no chalk colors for machine-readable format)
+    process.stderr.write(formatted + '\n');
   } else {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error(chalk.red(`Unexpected Error: ${errorMessage}`));
+    // Normal: Human-readable with colors
+    logger.error(chalk.red(formatted));
   }
 }
 
-/**
- * Get exit code based on error type
- *
- * @param error - Error object
- * @returns Exit code (1=user error, 2=system error)
- */
-function getExitCode(error: unknown): number {
-  if (error instanceof ConfigurationError) {
-    return 1; // User error
-  } else if (error instanceof NetworkError) {
-    return 2; // System error
-  }
-  return 2; // Default: system error
-}

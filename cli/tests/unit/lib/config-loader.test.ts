@@ -126,7 +126,8 @@ describe('Config Loader', () => {
       }
     });
 
-    it('should handle permission errors when reading config', async () => {
+    // Skip on Windows - file permissions work differently
+    (process.platform === 'win32' ? it.skip : it)('should handle permission errors when reading config', async () => {
       // Create config file
       const restrictedConfigPath = path.join(
         fixturesPath,

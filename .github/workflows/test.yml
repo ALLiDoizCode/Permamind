@@ -12,11 +12,12 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: [20.x]
 
     steps:
       - name: Checkout code
@@ -28,18 +29,36 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - name: Setup Lua
+      - name: Setup Lua (Unix)
+        if: runner.os != 'Windows'
         uses: leafo/gh-actions-lua@v10
         with:
           luaVersion: "5.3"
 
+      - name: Setup Lua (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install lua -y
+          refreshenv
+        shell: powershell
+        continue-on-error: true
+
       - name: Install dependencies
         run: npm install
+
+      - name: Build CLI
+        run: npm run build
 
       - name: Run tests
         run: npm run test:once
 
+      - name: Run performance regression tests
+        run: npm test -- cli/tests/performance/regression.test.ts --no-watch
+        env:
+          NODE_ENV: test
+
       - name: Run AO process tests
+        if: runner.os != 'Windows'
         run: npm run test:ao
 
       - name: Run lint (if configured)

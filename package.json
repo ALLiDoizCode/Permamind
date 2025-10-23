@@ -1,6 +1,6 @@
 {
   "name": "@permamind/skills",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Decentralized registry for Claude Agent Skills with CLI tooling for publish, search, and install operations",
   "private": true,
   "workspaces": [

@@ -32,6 +32,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Build
+        run: npm run build --if-present
+
       - name: Run tests
         run: npm run test:once
 
@@ -40,9 +43,6 @@ jobs:
 
       - name: Run lint (if configured)
         run: npm run lint --if-present
-
-      - name: Check build
-        run: npm run build --if-present
 
   publish:
     needs: test

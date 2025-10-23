@@ -38,7 +38,7 @@ Examples:
 );
 
 // Use IIFE to support dynamic imports with async/await
-(async () => {
+(async (): Promise<void> => {
   // Show banner by default unless --no-banner is specified
   const shouldShowBanner = !process.argv.includes('--no-banner');
 
@@ -60,4 +60,8 @@ Examples:
 
   // Parse command-line arguments
   program.parse(process.argv);
-})();
+})().catch((error: Error) => {
+  // eslint-disable-next-line no-console
+  console.error('Fatal error during CLI initialization:', error.message);
+  process.exit(1);
+});

@@ -35,7 +35,7 @@ export enum ExitCode {
  * }
  * ```
  */
-export function getExitCode(error: Error | unknown): number {
+export function getExitCode(error: unknown): number {
   if (error instanceof ValidationError) return ExitCode.USER_ERROR;
   if (error instanceof ConfigurationError) return ExitCode.USER_ERROR;
   if (error instanceof AuthorizationError) return ExitCode.USER_ERROR;

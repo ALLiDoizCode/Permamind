@@ -32,8 +32,8 @@ function getVersion(): string {
   try {
     // Read package.json from cli directory using __dirname (CommonJS)
     const packagePath = join(__dirname, '../../package.json');
-    const packageJson = JSON.parse(readFileSync(packagePath, 'utf-8'));
-    cachedVersion = packageJson.version || '0.0.0';
+    const packageJson = JSON.parse(readFileSync(packagePath, 'utf-8')) as { version?: string };
+    cachedVersion = packageJson.version ?? '0.0.0';
     return cachedVersion;
   } catch (error) {
     // Fallback if package.json can't be read
@@ -49,6 +49,7 @@ function getVersion(): string {
 export function displayBanner(): void {
   const version = getVersion();
 
+  // eslint-disable-next-line no-console
   console.log(
     chalk.cyan(`
    _____ _    _ _ _
@@ -59,5 +60,6 @@ export function displayBanner(): void {
  |_____/|_|\\_\\_|_|_|___/
 `),
   );
+  // eslint-disable-next-line no-console
   console.log(chalk.dim(`  Agent Skills Registry CLI v${version}\n`));
 }

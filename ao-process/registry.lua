@@ -870,15 +870,20 @@ end
 
 -- Handler to update HTTP-exposed state after skill registration/update
 function updateHTTPState()
-  -- Expose Skills table via patch@1.0 for direct HTTP access
-  -- Access at: https://forward.computer/{process-id}/~patch@1.0/compute/skills
+  -- Expose all query endpoints via patch@1.0 for direct HTTP access
   ao.send({
     Target = ao.id,
     Tags = {
       { name = "Device", value = "patch@1.0" }
     },
     Data = json.encode({
-      skills = Skills
+      -- Raw data
+      skills = Skills,
+
+      -- Query functions (will be callable via HTTP)
+      search = searchSkills,
+      get = getSkill,
+      versions = listVersions
     })
   })
 end
@@ -894,6 +899,16 @@ end
 
 -- Process initialization complete
 print("Agent Skills Registry process initialized (ADP v1.0 compliant)")
-print("HTTP-accessible state: skills")
-print("Access: https://forward.computer/{process-id}/~patch@1.0/compute/skills")
-print("Note: Global functions searchSkills, getSkill, listVersions available in Lua context")
+print("")
+print("=== HTTP Access via patch@1.0 ===")
+print("Base URL: https://forward.computer/{process-id}/~patch@1.0/compute")
+print("")
+print("Endpoints:")
+print("  GET /skills - Full registry with version history")
+print("  GET /search?query=ao - Search skills by query")
+print("  GET /get?name=ao&version=1.0.0 - Get specific skill version")
+print("  GET /get?name=ao - Get latest version")
+print("  GET /versions?name=ao - List all versions of skill")
+print("")
+print("Message Handlers: Info, Register-Skill, Update-Skill, Search-Skills,")
+print("                  List-Skills, Get-Skill, Get-Skill-Versions")

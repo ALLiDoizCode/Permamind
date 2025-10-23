@@ -26,8 +26,8 @@ export interface ISkillMetadata {
   /** Searchable category tags */
   tags: string[];
 
-  /** Array of required skill names */
-  dependencies: string[];
+  /** Array of required skill dependencies with versions */
+  dependencies: Array<{ name: string; version: string } | string>;
 
   /** 43-character Arweave transaction ID */
   arweaveTxId: string;

@@ -1,10 +1,12 @@
 ---
 name: ao
-version: 1.0.1
+version: 1.0.2
 author: Permamind Team
 description: Learn AO protocol fundamentals - processes, message passing, handlers, and ADP compliance
 tags: ["ao", "blockchain", "tutorial"]
-dependencies: ["aolite"]
+dependencies:
+  - name: aolite
+    version: 1.0.1
 ---
 
 # AO Protocol Skill

@@ -39,12 +39,37 @@
     },
     "dependencies": {
       "type": "array",
-      "description": "Required skill dependencies (must be installed before this skill)",
+      "description": "Required skill dependencies with version specifications",
       "items": {
-        "type": "string",
-        "pattern": "^[a-z0-9-]+$",
-        "minLength": 1,
-        "maxLength": 64
+        "oneOf": [
+          {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Legacy format: skill name only (deprecated)"
+          },
+          {
+            "type": "object",
+            "required": ["name", "version"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z0-9-]+$",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "Dependency skill name"
+              },
+              "version": {
+                "type": "string",
+                "pattern": "^\\d+\\.\\d+\\.\\d+$",
+                "description": "Required semantic version"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Versioned dependency specification"
+          }
+        ]
       },
       "uniqueItems": true
     },

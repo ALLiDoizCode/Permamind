@@ -306,15 +306,22 @@ async function buildDependencyNode(
     const dependencies = metadata.dependencies || [];
 
     if (dependencies.length > 0 && options.verbose) {
-      logger.debug(`Found ${dependencies.length} dependencies: [${dependencies.join(', ')}]`, { skillName });
+      const depDescriptions = dependencies.map(dep =>
+        typeof dep === 'string' ? dep : `${dep.name}@${dep.version}`
+      );
+      logger.debug(`Found ${dependencies.length} dependencies: [${depDescriptions.join(', ')}]`, { skillName });
     }
 
     // Process dependencies (using Promise.all for performance)
     const newPath = [...path, skillName];
     const depNodes = await Promise.all(
-      dependencies.map((depName: string) =>
-        buildDependencyNode(depName, depth + 1, newPath, options)
-      )
+      dependencies.map((dep: string | { name: string; version: string }) => {
+        // Extract dependency name (support both string and object format)
+        const depName = typeof dep === 'string' ? dep : dep.name;
+        // TODO: Version checking will be implemented when we fetch dependencies
+        // For now, we just resolve by name and trust the registry has the right version
+        return buildDependencyNode(depName, depth + 1, newPath, options);
+      })
     );
 
     node.dependencies = depNodes;

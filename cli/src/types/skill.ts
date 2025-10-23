@@ -79,13 +79,20 @@ export interface ISkillManifest {
   /**
    * Required skill dependencies (optional)
    *
-   * Array of skill names that must be installed before this skill
-   * Each dependency name must match the skill name pattern: /^[a-z0-9-]+$/
+   * Array of dependency specifications with name and version
+   * Each dependency must specify both name and version for reproducibility
    * Defaults to empty array if not provided
    *
-   * @example ['arweave-fundamentals', 'ao-basics']
+   * @example
+   * [
+   *   { name: 'arweave-fundamentals', version: '1.0.0' },
+   *   { name: 'ao-basics', version: '2.1.0' }
+   * ]
+   *
+   * Legacy format (string array) is also supported but deprecated:
+   * ['arweave-fundamentals', 'ao-basics']
    */
-  dependencies?: string[];
+  dependencies?: Array<{ name: string; version: string } | string>;
 
   /**
    * License identifier (optional)

@@ -14,3 +14,6 @@ Create core Permaweb bootstrap skills (ao, arweave) to seed the ecosystem and de
 
 **Epic 5: Polish, Testing & Launch Readiness**
 Cross-platform testing, CLI UX polish, error handling refinement, and community launch preparation. Delivers production-ready platform with >95% installation reliability and prepares for Day 14 launch.
+
+**Epic 6: Web Frontend**
+Build a production-ready web frontend for the Agent Skills Registry that enables developers to discover, browse, and learn about agent skills through an intuitive terminal-themed interface. Complements the existing CLI tool with visual exploration capabilities, search with autocomplete, detailed skill pages, version history, and efficient filtering.

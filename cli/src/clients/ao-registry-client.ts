@@ -8,7 +8,15 @@
  * skill registry process on the AO network.
  */
 
-import { message, dryrun, result, createDataItemSigner } from '@permaweb/aoconnect';
+import { connect, createDataItemSigner } from '@permaweb/aoconnect';
+
+// Configure aoconnect with custom CU and MU
+const ao = connect({
+  MU_URL: 'https://ur-mu.randao.net',
+  CU_URL: 'https://ur-cu.randao.net',
+});
+
+const { message, dryrun, result } = ao;
 import { loadConfig } from '../lib/config-loader.js';
 import logger from '../utils/logger.js';
 import {
@@ -217,7 +225,11 @@ export async function updateSkill(
  * @param wallet - Wallet JWK for signing
  * @returns Result data from registry response
  * @private
+ *
+ * TODO: Integrate as fallback for searchSkills and getSkill when dryrun fails
+ * Requires wallet parameter to be passed through from commands
  */
+// @ts-ignore - Function will be used when message-based fallback is implemented
 async function queryViaMessage(
   action: string,
   tags: Array<{ name: string; value: string }>,
@@ -278,7 +290,7 @@ async function queryViaMessage(
       `[NetworkError] ${action} message query failed. -> Solution: ${err.message}`,
       err,
       'ao-registry',
-      'message_query_failure'
+      'connection_failure'
     );
   }
 }

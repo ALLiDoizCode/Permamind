@@ -1,12 +1,20 @@
 ---
 name: ao
-version: 1.0.2
+version: 1.0.3
 author: Permamind Team
 description: Learn AO protocol fundamentals - processes, message passing, handlers, and ADP compliance
 tags: ["ao", "blockchain", "tutorial"]
 dependencies:
   - name: aolite
     version: 1.0.1
+  - name: aoconnect
+    version: 1.0.0
+changelog: |
+  ## Added
+  - aoconnect dependency for JavaScript SDK integration
+
+  ## Changed
+  - Updated dependency chain to include aoconnect library
 ---
 
 # AO Protocol Skill

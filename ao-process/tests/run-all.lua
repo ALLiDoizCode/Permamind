@@ -19,7 +19,9 @@ local testFiles = {
   "search-skills.test.lua",
   "get-skill.test.lua",
   "version-history.test.lua",
-  "list-skills.test.lua"
+  "list-skills.test.lua",
+  "changelog.test.lua",
+  "download-tracking.test.lua"
 }
 
 for _, testFile in ipairs(testFiles) do

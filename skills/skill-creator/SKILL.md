@@ -1,11 +1,20 @@
 ---
 name: skill-creator
-version: 1.0.0
+version: 1.0.1
 author: Permamind Team
 description: Meta skill for creating new Claude Agent Skills - structure, best practices, and publishing workflow
 tags: ["meta", "creation", "tutorial", "best-practices"]
 dependencies: []
 license: MIT
+changelog: |
+  ## Added
+  - Changelog documentation and examples
+  - Version tracking best practices
+  - Markdown formatting guide for changelogs
+
+  ## Improved
+  - Version update workflow documentation
+  - SKILL.md format examples
 ---
 
 # Skill Creator - Meta Skill
@@ -226,6 +235,47 @@ Follow semantic versioning:
 - **Major (x.0.0)**: Breaking changes to skill interface or behavior
 - **Minor (0.x.0)**: New features, backward compatible
 - **Patch (0.0.x)**: Bug fixes, documentation improvements
+
+**Always include a changelog** when publishing new versions:
+
+```yaml
+version: 1.0.1
+changelog: |
+  ## Added
+  - New capability or feature
+
+  ## Fixed
+  - Bug fix description
+
+  ## Changed
+  - What was modified
+
+  ## Removed
+  - Deprecated features
+```
+
+**Changelog Best Practices:**
+- Use markdown formatting for readability
+- Group changes by type (Added, Fixed, Changed, Removed)
+- Be specific about what changed
+- Reference breaking changes clearly
+- Keep it concise but informative (max 2048 chars)
+
+**Example Changelog:**
+```yaml
+changelog: |
+  ## Added
+  - Support for batch operations
+  - New query parameter validation
+
+  ## Fixed
+  - Race condition in handler execution
+  - Memory leak in cache management
+
+  ## Changed
+  - Improved error messages for better debugging
+  - Updated dependencies to latest versions
+```
 
 ### 6. Dependency Management
 

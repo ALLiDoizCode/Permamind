@@ -38,6 +38,9 @@ export interface ISkillMetadata {
   /** Optional changelog for this version */
   changelog?: string;
 
+  /** Download count for this version */
+  downloadCount?: number;
+
   /** Unix timestamp */
   publishedAt: number;
 

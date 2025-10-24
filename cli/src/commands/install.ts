@@ -299,7 +299,26 @@ export async function execute(
         }
       }
 
-      // Task 10: Success message
+      // Task 10: Record download (fire-and-forget, non-critical)
+      try {
+        const { loadConfig, resolveWalletPath } = await import('../lib/config-loader.js');
+        const { load: loadWallet } = await import('../lib/wallet-manager.js');
+        const { recordDownload } = await import('../clients/ao-registry-client.js');
+        const logger = (await import('../utils/logger.js')).default;
+
+        const config = await loadConfig();
+        const walletPath = resolveWalletPath(undefined, config);
+
+        if (walletPath) {
+          const wallet = await loadWallet(walletPath);
+          await recordDownload(metadata.name, metadata.version, wallet);
+          logger.debug('Download recorded', { name: metadata.name, version: metadata.version });
+        }
+      } catch (error) {
+        // Silently ignore download tracking errors - non-critical feature
+      }
+
+      // Task 11: Success message
       const elapsedTime = (performance.now() - startTime) / 1000;
       const dependencyCount = installedSkills.length - 1; // Exclude root skill
 

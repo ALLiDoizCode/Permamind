@@ -399,6 +399,52 @@ export async function listSkills(options?: {
 }
 
 /**
+ * Record a download for a skill
+ *
+ * Sends a message to increment the download counter for a skill version.
+ * This is a fire-and-forget operation - no response needed.
+ *
+ * @param name - Skill name
+ * @param version - Version downloaded (optional, defaults to latest)
+ * @param wallet - Wallet JWK for signing
+ * @returns Message ID
+ */
+export async function recordDownload(
+  name: string,
+  version: string | undefined,
+  wallet: JWK
+): Promise<string> {
+  const processId = await getRegistryProcessId();
+
+  try {
+    const signer = createDataItemSigner(wallet);
+
+    const tags: Array<{ name: string; value: string }> = [
+      { name: 'Action', value: 'Record-Download' },
+      { name: 'Name', value: name },
+    ];
+
+    if (version) {
+      tags.push({ name: 'Version', value: version });
+    }
+
+    const messageId = await message({
+      process: processId,
+      tags,
+      signer,
+    });
+
+    logger.debug('Record-Download message sent', { name, version, messageId });
+    return messageId;
+  } catch (error: unknown) {
+    // Don't throw - download tracking is non-critical
+    // Just log and continue
+    logger.warn(`Failed to record download for ${name}: ${error}`);
+    return '';
+  }
+}
+
+/**
  * Search for skills in the AO registry
  *
  * Sends a dryrun query to the registry process to search for skills matching the query.

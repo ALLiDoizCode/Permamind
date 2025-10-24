@@ -129,12 +129,16 @@ Handlers.add("info",
           ["Get-Skill-Versions"] = {
             required = {"Action", "Name"}
           },
+          ["Record-Download"] = {
+            required = {"Action", "Name"},
+            optional = {"Version"}
+          },
           ["Info"] = {
             required = {"Action"}
           }
         }
       },
-      handlers = {"Register-Skill", "Update-Skill", "Search-Skills", "List-Skills", "Get-Skill", "Get-Skill-Versions", "Info"},
+      handlers = {"Register-Skill", "Update-Skill", "Search-Skills", "List-Skills", "Get-Skill", "Get-Skill-Versions", "Record-Download", "Info"},
       documentation = {
         adpCompliance = "v1.0",
         selfDocumenting = true,
@@ -275,6 +279,7 @@ Handlers.add("register-skill",
       arweaveTxId = arweaveTxId,
       dependencies = dependencies,
       changelog = changelog,
+      downloadCount = 0, -- Initialize download counter
       publishedAt = timestamp,
       updatedAt = timestamp
     }
@@ -736,6 +741,59 @@ Handlers.add("get-skill",
       Target = msg.From,
       Action = "Skill-Found",
       Data = json.encode(skillMetadata)
+    })
+  end
+)
+
+-- Record-Download Handler
+-- Increments download count for a skill version
+Handlers.add("record-download",
+  Handlers.utils.hasMatchingTag("Action", "Record-Download"),
+  function(msg)
+    local name = msg.Name
+    local version = msg.Version
+
+    if not name or name == "" then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Name is required"
+      })
+      return
+    end
+
+    -- Lookup skill
+    local skillEntry = Skills[name]
+
+    if not skillEntry or not skillEntry.versions then
+      -- Skill doesn't exist, ignore silently (don't fail installs)
+      return
+    end
+
+    -- Determine which version
+    local versionToCount = version
+    if not versionToCount or versionToCount == "" then
+      versionToCount = skillEntry.latest
+    end
+
+    -- Get the specific version
+    local skillMetadata = skillEntry.versions[versionToCount]
+
+    if not skillMetadata then
+      -- Version doesn't exist, ignore silently
+      return
+    end
+
+    -- Increment download count
+    skillMetadata.downloadCount = (skillMetadata.downloadCount or 0) + 1
+
+    -- Send confirmation (optional, for tracking)
+    ao.send({
+      Target = msg.From,
+      Action = "Download-Recorded",
+      Name = name,
+      Version = versionToCount,
+      DownloadCount = tostring(skillMetadata.downloadCount)
     })
   end
 )

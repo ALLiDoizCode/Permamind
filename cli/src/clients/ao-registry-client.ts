@@ -8,7 +8,7 @@
  * skill registry process on the AO network.
  */
 
-import { message, dryrun, createDataItemSigner } from '@permaweb/aoconnect';
+import { message, dryrun, result, createDataItemSigner } from '@permaweb/aoconnect';
 import { loadConfig } from '../lib/config-loader.js';
 import logger from '../utils/logger.js';
 import {
@@ -202,6 +202,83 @@ export async function updateSkill(
       error instanceof Error ? error : new Error(errorMessage),
       'ao-registry',
       'gateway_error'
+    );
+  }
+}
+
+/**
+ * Execute a query using message + result (fallback for dryrun failures)
+ *
+ * Sends a message to the registry and reads the response.
+ * More reliable than dryrun but requires wallet signing.
+ *
+ * @param action - Query action (e.g., 'Search-Skills', 'Get-Skill')
+ * @param tags - Additional tags for the query
+ * @param wallet - Wallet JWK for signing
+ * @returns Result data from registry response
+ * @private
+ */
+async function queryViaMessage(
+  action: string,
+  tags: Array<{ name: string; value: string }>,
+  wallet: JWK
+): Promise<any> {
+  const processId = await getRegistryProcessId();
+
+  try {
+    // Create signer from wallet
+    const signer = createDataItemSigner(wallet);
+
+    // Send query as message
+    const messageId = await message({
+      process: processId,
+      tags: [
+        { name: 'Action', value: action },
+        ...tags
+      ],
+      signer,
+    });
+
+    logger.debug(`${action} message sent`, { messageId });
+
+    // Wait for processing
+    await delay(2000);
+
+    // Read result
+    const response = (await result({
+      message: messageId,
+      process: processId,
+    })) as {
+      Messages?: Array<{
+        Data: string;
+        Tags?: Array<{ name: string; value: string }>;
+      }>;
+    };
+
+    // Parse response
+    if (!response.Messages || response.Messages.length === 0) {
+      logger.debug(`No response from ${action} message query`);
+      return null;
+    }
+
+    const responseMsg = response.Messages[0];
+    const responseAction = responseMsg.Tags?.find((t) => t.name === 'Action')?.value;
+
+    // Check for error response
+    if (responseAction === 'Error') {
+      const errorMsg = responseMsg.Tags?.find((t) => t.name === 'Error')?.value;
+      throw new Error(errorMsg || 'Unknown error from registry');
+    }
+
+    // Parse data
+    return JSON.parse(responseMsg.Data);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    throw new NetworkError(
+      `[NetworkError] ${action} message query failed. -> Solution: ${err.message}`,
+      err,
+      'ao-registry',
+      'message_query_failure'
     );
   }
 }

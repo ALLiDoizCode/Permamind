@@ -139,6 +139,7 @@ export async function registerSkill(
         { name: 'Tags', value: JSON.stringify(metadata.tags) },
         { name: 'ArweaveTxId', value: metadata.arweaveTxId },
         { name: 'Dependencies', value: JSON.stringify(metadata.dependencies) },
+        { name: 'Changelog', value: metadata.changelog || '' },
       ],
       signer,
     });
@@ -197,6 +198,7 @@ export async function updateSkill(
         { name: 'Tags', value: JSON.stringify(metadata.tags) },
         { name: 'ArweaveTxId', value: metadata.arweaveTxId },
         { name: 'Dependencies', value: JSON.stringify(metadata.dependencies) },
+        { name: 'Changelog', value: metadata.changelog || '' },
       ],
       signer,
     });

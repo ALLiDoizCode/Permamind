@@ -56,6 +56,19 @@ dependencies:
 dependencies: ["dependency-skill", "another-skill"]
 
 license: MIT                  # SPDX identifier or custom license
+
+# Changelog (optional, recommended for version updates)
+changelog: |
+  ## Added
+  - New feature X
+  - Support for Y
+
+  ## Fixed
+  - Bug in handler Z
+  - Performance improvement
+
+  ## Changed
+  - Updated documentation
 ```
 
 ## Creating a New Skill

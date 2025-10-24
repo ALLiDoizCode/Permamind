@@ -35,6 +35,9 @@ export interface ISkillMetadata {
   /** Optional license identifier */
   license?: string;
 
+  /** Optional changelog for this version */
+  changelog?: string;
+
   /** Unix timestamp */
   publishedAt: number;
 

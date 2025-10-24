@@ -102,6 +102,20 @@ export interface ISkillManifest {
    * @example 'MIT', 'Apache-2.0', 'GPL-3.0'
    */
   license?: string;
+
+  /**
+   * Changelog for this version (optional)
+   *
+   * Describes what changed in this version compared to previous versions.
+   * Supports markdown formatting.
+   *
+   * @example
+   * 'Added support for batch operations, fixed search bug, improved error messages'
+   *
+   * Or multi-line:
+   * '## Added\n- Batch operation support\n## Fixed\n- Search bug\n- Error messages'
+   */
+  changelog?: string;
 }
 
 /**

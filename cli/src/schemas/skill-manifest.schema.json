@@ -77,6 +77,12 @@
       "type": "string",
       "description": "SPDX license identifier or custom license string",
       "minLength": 1
+    },
+    "changelog": {
+      "type": "string",
+      "description": "Changes in this version (supports markdown)",
+      "minLength": 1,
+      "maxLength": 2048
     }
   },
   "additionalProperties": false

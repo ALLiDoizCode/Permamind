@@ -163,6 +163,7 @@ Handlers.add("register-skill",
     local description = msg.Description
     local author = msg.Author
     local arweaveTxId = msg.Arweavetxid or msg.ArweaveTxId
+    local changelog = msg.Changelog or ""
 
     -- Validate required fields
     if not name or name == "" then
@@ -273,6 +274,7 @@ Handlers.add("register-skill",
       tags = tags,
       arweaveTxId = arweaveTxId,
       dependencies = dependencies,
+      changelog = changelog,
       publishedAt = timestamp,
       updatedAt = timestamp
     }
@@ -313,6 +315,7 @@ Handlers.add("update-skill",
     local description = msg.Description
     local author = msg.Author
     local arweaveTxId = msg.Arweavetxid or msg.ArweaveTxId
+    local changelog = msg.Changelog or ""
 
     -- Validate required fields
     if not name or name == "" then
@@ -442,6 +445,7 @@ Handlers.add("update-skill",
       tags = tags,
       arweaveTxId = arweaveTxId,
       dependencies = dependencies,
+      changelog = changelog,
       publishedAt = existingVersion.publishedAt, -- Preserve original publish date
       updatedAt = timestamp
     }

@@ -13,6 +13,8 @@ The AO Registry Process is a Lua-based smart contract running on the AO decentra
 - **Skill Registration**: Register skill metadata with versioning, tags, and dependency tracking
 - **Search Functionality**: Case-insensitive search across skill names, descriptions, and tags
 - **Skill Retrieval**: O(1) lookup for specific skills by name
+- **Download Tracking**: Timestamp-based download tracking for analytics
+- **Download Statistics**: Time-based download statistics (7/30 days, all-time) for aggregate and per-skill queries
 - **Ownership Tracking**: Cryptographic ownership via Arweave addresses
 - **Self-Documenting**: Info handler provides machine-readable capability metadata
 
@@ -161,6 +163,124 @@ Retrieves a specific skill by name.
 }
 ```
 
+### Record-Download Handler
+
+**Action**: `Record-Download`
+
+Tracks download events with timestamps for analytics and statistics.
+
+**Required Tags**:
+- `Name` - Skill name
+
+**Optional Tags**:
+- `Version` - Specific version (defaults to latest version if omitted)
+
+**Request Example**:
+```lua
+{
+  Action = "Record-Download",
+  Name = "my-skill",
+  Version = "1.0.0"  -- Optional, defaults to latest
+}
+```
+
+**Success Response**:
+```lua
+{
+  Action = "Download-Recorded",
+  Name = "my-skill",
+  Version = "1.0.0",
+  DownloadCount = "42"  -- Total downloads for this version
+}
+```
+
+**Behavior**:
+- Records timestamp from `msg.Timestamp` (AO message timestamp)
+- Appends timestamp to `downloadTimestamps` array in skill metadata
+- Updates `downloadCount` field (derived from array length)
+- Maintains backward compatibility with existing `downloadCount` field
+- Gracefully handles non-existent skills/versions (silent failure)
+
+**Timestamp Tracking**:
+```lua
+-- Timestamps stored as array for time-based analytics
+downloadTimestamps = [1700100000, 1700200000, 1700300000]
+
+-- downloadCount derived from array length
+downloadCount = #downloadTimestamps  -- 3
+```
+
+### Get-Download-Stats Handler
+
+**Action**: `Get-Download-Stats`
+
+Returns time-based download statistics for aggregate or per-skill queries.
+
+**Optional Tags**:
+- `TimeRange` - Time range filter: `"7"` (last 7 days), `"30"` (last 30 days), `"all"` (all time, default)
+- `Scope` - Set to `"all"` for aggregate statistics across all skills
+- `Name` - Skill name for per-skill statistics
+- `Version` - Specific version for per-skill stats (defaults to latest)
+
+**Aggregate Statistics Example**:
+```lua
+{
+  Action = "Get-Download-Stats",
+  Scope = "all",
+  TimeRange = "all"  -- Optional, defaults to "all"
+}
+```
+
+**Aggregate Response**:
+```lua
+{
+  Action = "Download-Stats",
+  Data = json.encode({
+    totalSkills = 150,
+    downloadsTotal = 9012,
+    downloads7Days = 1234,   -- Only if TimeRange includes 7
+    downloads30Days = 5678   -- Only if TimeRange includes 30
+  })
+}
+```
+
+**Per-Skill Statistics Example**:
+```lua
+{
+  Action = "Get-Download-Stats",
+  Name = "my-skill",
+  TimeRange = "all"  -- "7", "30", or "all"
+}
+```
+
+**Per-Skill Response**:
+```lua
+{
+  Action = "Download-Stats",
+  Data = json.encode({
+    skillName = "my-skill",
+    version = "1.0.0",
+    downloadsTotal = 456,
+    downloads7Days = 78,     -- Only if TimeRange includes 7
+    downloads30Days = 234    -- Only if TimeRange includes 30
+  })
+}
+```
+
+**Error Response**:
+```lua
+{
+  Action = "Error",
+  Error = "Name parameter required for per-skill stats"
+}
+```
+
+**Time Range Calculations**:
+- `TimeRange = "7"`: Downloads in last 7 days (604,800 seconds)
+- `TimeRange = "30"`: Downloads in last 30 days (2,592,000 seconds)
+- `TimeRange = "all"`: All downloads + breakdown by 7/30 days
+- Time calculations use `msg.Timestamp` as current time reference
+
 ## Data Schema
 
 ### Skill Metadata Structure
@@ -175,6 +295,8 @@ Retrieves a specific skill by name.
   tags = {"tag1", "tag2"},          -- table (array)
   arweaveTxId = "def456...uvw012",  -- string (43-char TXID)
   dependencies = {"dep1", "dep2"},  -- table (array of skill names)
+  downloadCount = 42,               -- number (total downloads, derived from array length)
+  downloadTimestamps = {1700100000, 1700200000}, -- table (array of Unix timestamps)
   publishedAt = 1234567890,         -- number (Unix timestamp)
   updatedAt = 1234567890            -- number (Unix timestamp)
 }
@@ -195,16 +317,29 @@ lua run-all.lua
 - `register-skill.test.lua` - Registration validation and error handling
 - `search-skills.test.lua` - Search functionality across name/description/tags
 - `get-skill.test.lua` - Skill retrieval and not-found cases
+- `version-history.test.lua` - Version history tracking and retrieval
+- `list-skills.test.lua` - Pagination, filtering, and skill listing
+- `changelog.test.lua` - Changelog tracking for skill versions
+- `download-tracking.test.lua` - Download counting and recording
+- `download-stats.test.lua` - Timestamp tracking in download events
+- `get-download-stats.test.lua` - Time-based statistics queries
 
 **Test coverage**:
 - ✅ ADP v1.0 compliance
-- ✅ Valid skill registration
+- ✅ Valid skill registration and updates
 - ✅ Duplicate name detection
 - ✅ Missing required fields
 - ✅ Invalid format validation (version, TXID, description length)
 - ✅ Case-insensitive search
 - ✅ Owner/timestamp handling (msg.From, msg.Timestamp)
 - ✅ JSON parsing for tags/dependencies
+- ✅ Version history tracking and retrieval
+- ✅ Pagination and filtering (List-Skills)
+- ✅ Changelog tracking for version updates
+- ✅ Download timestamp tracking
+- ✅ Time-based download statistics (7/30 days, all-time)
+- ✅ Aggregate and per-skill statistics
+- ✅ Edge cases (no downloads, future timestamps, non-existent skills)
 
 ## AO Best Practices Compliance
 
@@ -232,11 +367,11 @@ See `deploy.md` for deployment instructions using `@permaweb/aoconnect`.
 
 ## Future Enhancements
 
-- Update-Skill handler (with ownership verification)
 - Delete-Skill handler (owner authorization)
 - Advanced indexing for tag-based queries
-- Version history tracking
-- Skill metrics and download counts
+- Download trends and forecasting
+- Skill popularity rankings
+- Download attribution (by user/wallet)
 
 ## License
 

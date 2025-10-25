@@ -105,9 +105,9 @@ Handlers.add("info",
     local metadata = {
       process = {
         name = "Agent Skills Registry",
-        version = "2.0.0",
+        version = "2.1.0",
         adpVersion = "1.0",
-        capabilities = {"register", "update", "search", "retrieve", "version-history", "pagination", "filtering"},
+        capabilities = {"register", "update", "search", "retrieve", "version-history", "pagination", "filtering", "download-stats"},
         messageSchemas = {
           ["Register-Skill"] = {
             required = {"Action", "Name", "Version", "Description", "Author", "ArweaveTxId"},
@@ -136,16 +136,20 @@ Handlers.add("info",
             required = {"Action", "Name"},
             optional = {"Version"}
           },
+          ["Get-Download-Stats"] = {
+            required = {"Action"},
+            optional = {"TimeRange", "Scope", "Name", "Version"}
+          },
           ["Info"] = {
             required = {"Action"}
           }
         }
       },
-      handlers = {"Register-Skill", "Update-Skill", "Search-Skills", "List-Skills", "Get-Skill", "Get-Skill-Versions", "Record-Download", "Info"},
+      handlers = {"Register-Skill", "Update-Skill", "Search-Skills", "List-Skills", "Get-Skill", "Get-Skill-Versions", "Record-Download", "Get-Download-Stats", "Info"},
       documentation = {
         adpCompliance = "v1.0",
         selfDocumenting = true,
-        description = "Decentralized registry for Claude Agent Skills with skill registration, search, and retrieval capabilities"
+        description = "Decentralized registry for Claude Agent Skills with skill registration, search, retrieval, and download statistics capabilities"
       }
     }
 
@@ -757,7 +761,7 @@ Handlers.add("get-skill",
 )
 
 -- Record-Download Handler
--- Increments download count for a skill version
+-- Tracks download timestamps and maintains download count for a skill version
 Handlers.add("record-download",
   Handlers.utils.hasMatchingTag("Action", "Record-Download"),
   function(msg)
@@ -795,8 +799,17 @@ Handlers.add("record-download",
       return
     end
 
-    -- Increment download count
-    skillMetadata.downloadCount = (skillMetadata.downloadCount or 0) + 1
+    -- Initialize downloadTimestamps array if it doesn't exist (first download)
+    if not skillMetadata.downloadTimestamps then
+      skillMetadata.downloadTimestamps = {}
+    end
+
+    -- Record timestamp from AO message (NEVER use os.time() in AO processes)
+    local timestamp = tonumber(msg.Timestamp) or 0
+    table.insert(skillMetadata.downloadTimestamps, timestamp)
+
+    -- Derive download count from timestamp array length (backward compatibility)
+    skillMetadata.downloadCount = #skillMetadata.downloadTimestamps
 
     -- Send confirmation (optional, for tracking)
     ao.send({
@@ -805,6 +818,167 @@ Handlers.add("record-download",
       Name = name,
       Version = versionToCount,
       DownloadCount = tostring(skillMetadata.downloadCount)
+    })
+  end
+)
+
+-- Get-Download-Stats Handler
+-- Returns time-based download statistics (aggregate or per-skill)
+Handlers.add("get-download-stats",
+  Handlers.utils.hasMatchingTag("Action", "Get-Download-Stats"),
+  function(msg)
+    local timeRange = msg.TimeRange or "all"  -- "7", "30", or "all"
+    local scope = msg.Scope  -- "all" for aggregate, nil for per-skill
+    local skillName = msg.Name  -- Skill name for per-skill stats
+    local skillVersion = msg.Version  -- Optional: specific version
+
+    -- Get current timestamp from message (AO runtime timestamp)
+    local currentTime = tonumber(msg.Timestamp) or 0
+
+    -- Calculate time boundaries for filtering (timestamps in seconds)
+    local sevenDaysAgo = currentTime - (7 * 24 * 60 * 60)  -- 7 days in seconds
+    local thirtyDaysAgo = currentTime - (30 * 24 * 60 * 60)  -- 30 days in seconds
+
+    -- Helper function to count downloads within time range
+    local function countDownloadsInRange(timestamps, sinceTime)
+      if not timestamps or type(timestamps) ~= "table" then
+        return 0
+      end
+
+      local count = 0
+      for _, timestamp in ipairs(timestamps) do
+        if tonumber(timestamp) and tonumber(timestamp) >= sinceTime then
+          count = count + 1
+        end
+      end
+      return count
+    end
+
+    -- Aggregate statistics (all skills)
+    if scope == "all" then
+      local totalSkills = 0
+      local downloads7Days = 0
+      local downloads30Days = 0
+      local downloadsTotal = 0
+
+      -- Iterate through all skills and sum download counts
+      for _, skillEntry in pairs(Skills) do
+        if skillEntry.versions then
+          totalSkills = totalSkills + 1
+
+          for _, versionData in pairs(skillEntry.versions) do
+            local timestamps = versionData.downloadTimestamps or {}
+
+            -- Count total downloads (all timestamps)
+            downloadsTotal = downloadsTotal + #timestamps
+
+            -- Count downloads within time ranges
+            if timeRange == "7" or timeRange == "all" then
+              downloads7Days = downloads7Days + countDownloadsInRange(timestamps, sevenDaysAgo)
+            end
+
+            if timeRange == "30" or timeRange == "all" then
+              downloads30Days = downloads30Days + countDownloadsInRange(timestamps, thirtyDaysAgo)
+            end
+          end
+        end
+      end
+
+      -- Build response with requested time ranges
+      local responseData = {
+        totalSkills = totalSkills,
+        downloadsTotal = downloadsTotal
+      }
+
+      if timeRange == "7" or timeRange == "all" then
+        responseData.downloads7Days = downloads7Days
+      end
+
+      if timeRange == "30" or timeRange == "all" then
+        responseData.downloads30Days = downloads30Days
+      end
+
+      ao.send({
+        Target = msg.From,
+        Action = "Download-Stats",
+        Data = json.encode(responseData)
+      })
+      return
+    end
+
+    -- Per-skill statistics
+    if not skillName or skillName == "" then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Name parameter required for per-skill stats"
+      })
+      return
+    end
+
+    -- Lookup skill
+    local skillEntry = Skills[skillName]
+
+    if not skillEntry or not skillEntry.versions then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Skill not found: " .. skillName
+      })
+      return
+    end
+
+    -- Determine which version to query
+    local versionToQuery = skillVersion
+    if not versionToQuery or versionToQuery == "" then
+      versionToQuery = skillEntry.latest
+    end
+
+    -- Get the specific version
+    local versionData = skillEntry.versions[versionToQuery]
+
+    if not versionData then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Version not found: " .. versionToQuery
+      })
+      return
+    end
+
+    -- Calculate per-skill download stats
+    local timestamps = versionData.downloadTimestamps or {}
+    local downloads7Days = 0
+    local downloads30Days = 0
+    local downloadsTotal = #timestamps
+
+    if timeRange == "7" or timeRange == "all" then
+      downloads7Days = countDownloadsInRange(timestamps, sevenDaysAgo)
+    end
+
+    if timeRange == "30" or timeRange == "all" then
+      downloads30Days = countDownloadsInRange(timestamps, thirtyDaysAgo)
+    end
+
+    -- Build per-skill response
+    local responseData = {
+      skillName = skillName,
+      version = versionToQuery,
+      downloadsTotal = downloadsTotal
+    }
+
+    if timeRange == "7" or timeRange == "all" then
+      responseData.downloads7Days = downloads7Days
+    end
+
+    if timeRange == "30" or timeRange == "all" then
+      responseData.downloads30Days = downloads30Days
+    end
+
+    ao.send({
+      Target = msg.From,
+      Action = "Download-Stats",
+      Data = json.encode(responseData)
     })
   end
 )

@@ -31,6 +31,9 @@ Skills = {}
 --       tags = {"tag1", "tag2"},      -- Lua table (array)
 --       arweaveTxId = "def456...uvw012", -- string (43-char TXID)
 --       dependencies = {"dep1", "dep2"}, -- Lua table (array)
+--       bundledFiles = {{name="SKILL.md", icon="📘", type="markdown", size="4.2 KB", description="Main skill file", level="Level 2", preview="content"}}, -- Lua table (array of file objects)
+--       changelog = "Version changes...", -- string (optional changelog)
+--       downloadCount = 0,            -- number (download counter)
 --       publishedAt = 1234567890,     -- number (Unix timestamp)
 --       updatedAt = 1234567890        -- number (Unix timestamp)
 --     }
@@ -108,11 +111,11 @@ Handlers.add("info",
         messageSchemas = {
           ["Register-Skill"] = {
             required = {"Action", "Name", "Version", "Description", "Author", "ArweaveTxId"},
-            optional = {"Tags", "Dependencies"}
+            optional = {"Tags", "Dependencies", "BundledFiles", "Changelog"}
           },
           ["Update-Skill"] = {
             required = {"Action", "Name", "Version", "Description", "Author", "ArweaveTxId"},
-            optional = {"Tags", "Dependencies"}
+            optional = {"Tags", "Dependencies", "BundledFiles", "Changelog"}
           },
           ["Search-Skills"] = {
             required = {"Action"},
@@ -257,13 +260,16 @@ Handlers.add("register-skill",
       end
     end
 
-    -- Parse optional fields (Tags and Dependencies are JSON strings in message tags)
+    -- Parse optional fields (Tags, Dependencies, and BundledFiles are JSON strings in message tags)
+    -- Note: Tag names are case-transformed by AO - "BundledFiles" becomes "Bundledfiles"
     local tags = safeJsonDecode(msg.Tags, {})
     local dependencies = safeJsonDecode(msg.Dependencies, {})
+    local bundledFiles = safeJsonDecode(msg.Bundledfiles or msg.BundledFiles, {})
 
     -- Validate parsed arrays are tables
     if type(tags) ~= "table" then tags = {} end
     if type(dependencies) ~= "table" then dependencies = {} end
+    if type(bundledFiles) ~= "table" then bundledFiles = {} end
 
     -- Get timestamp from message (NEVER use os.time())
     local timestamp = tonumber(msg.Timestamp) or 0
@@ -278,6 +284,7 @@ Handlers.add("register-skill",
       tags = tags,
       arweaveTxId = arweaveTxId,
       dependencies = dependencies,
+      bundledFiles = bundledFiles,
       changelog = changelog,
       downloadCount = 0, -- Initialize download counter
       publishedAt = timestamp,
@@ -430,12 +437,15 @@ Handlers.add("update-skill",
     end
 
     -- Parse optional fields
+    -- Note: Tag names are case-transformed by AO - "BundledFiles" becomes "Bundledfiles"
     local tags = safeJsonDecode(msg.Tags, {})
     local dependencies = safeJsonDecode(msg.Dependencies, {})
+    local bundledFiles = safeJsonDecode(msg.Bundledfiles or msg.BundledFiles, {})
 
     -- Validate parsed arrays are tables
     if type(tags) ~= "table" then tags = {} end
     if type(dependencies) ~= "table" then dependencies = {} end
+    if type(bundledFiles) ~= "table" then bundledFiles = {} end
 
     -- Get timestamp from message
     local timestamp = tonumber(msg.Timestamp) or 0
@@ -450,6 +460,7 @@ Handlers.add("update-skill",
       tags = tags,
       arweaveTxId = arweaveTxId,
       dependencies = dependencies,
+      bundledFiles = bundledFiles,
       changelog = changelog,
       publishedAt = existingVersion.publishedAt, -- Preserve original publish date
       updatedAt = timestamp

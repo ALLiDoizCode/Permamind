@@ -35,16 +35,16 @@ export function HeroSection() {
           {/* 2-line heading with shimmer */}
           <h1 className="text-5xl md:text-6xl font-bold font-mono mb-6 leading-tight">
             <span className="mono-gradient-animated">
-              Discover Agent Skills
+              Permamind
             </span>
             <br />
-            <span className="text-terminal-text">for Claude</span>
+            <span className="text-terminal-text">Agent Skills for Claude</span>
           </h1>
 
           {/* Subheading with purple // comment */}
           <p className="text-lg text-terminal-muted mb-8 font-mono">
             <span className="text-syntax-purple">// </span>
-            Extend Claude's capabilities with production-ready agent skills
+            Permanent, decentralized skills on Arweave & AO
             <span className="cursor-blink text-syntax-blue">_</span>
           </p>
 

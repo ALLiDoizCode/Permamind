@@ -36,7 +36,7 @@ const NotFound = lazy(() =>
 );
 
 /**
- * Root router configuration for the Agent Skills Registry
+ * Root router configuration for Permamind
  *
  * Routes:
  * - / : Homepage with hero section and featured skills

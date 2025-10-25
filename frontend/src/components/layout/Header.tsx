@@ -6,7 +6,7 @@ export function Header() {
     <header className="sticky top-0 z-50 bg-terminal-bg/95 backdrop-blur-sm border-b border-terminal-border">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          {/* Terminal Branding - $ agent-skills_ */}
+          {/* Terminal Branding - $ permamind_ */}
           <Link
             to="/"
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
@@ -15,7 +15,7 @@ export function Header() {
               $
             </span>
             <span className="font-mono font-bold text-terminal-text">
-              agent-skills
+              permamind
             </span>
             <span className="cursor-blink text-syntax-blue">_</span>
           </Link>

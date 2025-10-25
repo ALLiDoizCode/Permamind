@@ -13,7 +13,7 @@ export function Documentation() {
               Getting Started
             </h2>
             <p className="text-terminal-muted leading-relaxed mb-4">
-              Learn how to use the Claude Agent Skills Registry to discover, install, and manage agent skills for Claude.
+              Learn how to use Permamind to discover, install, and manage agent skills for Claude on the permanent web.
             </p>
           </section>
 

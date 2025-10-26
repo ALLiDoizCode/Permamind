@@ -1,0 +1,131 @@
+<svg width="1500" height="500" viewBox="0 0 1500 500" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark terminal background -->
+  <rect width="1500" height="500" fill="#10151B"/>
+
+  <!-- Gradient definitions -->
+  <defs>
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#61afef;stop-opacity:1">
+        <animate attributeName="stop-color" values="#61afef;#56b6c2;#98c379;#56b6c2;#61afef" dur="5s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="50%" style="stop-color:#56b6c2;stop-opacity:1">
+        <animate attributeName="stop-color" values="#56b6c2;#98c379;#56b6c2;#61afef;#56b6c2" dur="5s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="100%" style="stop-color:#98c379;stop-opacity:1">
+        <animate attributeName="stop-color" values="#98c379;#56b6c2;#61afef;#56b6c2;#98c379" dur="5s" repeatCount="indefinite"/>
+      </stop>
+    </linearGradient>
+
+    <!-- Grid pattern -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a1f26" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <!-- Subtle grid background -->
+  <rect width="1500" height="500" fill="url(#grid)" opacity="0.5"/>
+
+  <!-- Top border accent -->
+  <rect x="0" y="0" width="1500" height="3" fill="url(#accentGradient)"/>
+
+  <!-- Left section: Terminal prompt -->
+  <g transform="translate(100, 250)">
+    <!-- $ symbol -->
+    <text
+      x="0"
+      y="0"
+      font-family="JetBrains Mono, monospace"
+      font-size="100"
+      font-weight="bold"
+      fill="#98c379"
+    >$</text>
+
+    <!-- permamind text -->
+    <text
+      x="100"
+      y="0"
+      font-family="JetBrains Mono, monospace"
+      font-size="80"
+      font-weight="bold"
+      fill="#e2e8f0"
+    >permamind</text>
+
+    <!-- Blinking cursor -->
+    <rect
+      x="740"
+      y="-60"
+      width="20"
+      height="70"
+      fill="#61afef"
+    >
+      <animate
+        attributeName="opacity"
+        values="1;0;1"
+        dur="1s"
+        repeatCount="indefinite"
+      />
+    </rect>
+  </g>
+
+  <!-- Tagline -->
+  <text
+    x="100"
+    y="330"
+    font-family="JetBrains Mono, monospace"
+    font-size="24"
+    fill="#94a3b8"
+  >Agent Skills for Claude on Arweave &amp; AO</text>
+
+  <!-- Right section: Skills showcase -->
+  <g transform="translate(950, 120)">
+    <!-- Code window background -->
+    <rect width="500" height="320" fill="#1a1f26" rx="8" opacity="0.8"/>
+    <rect width="500" height="320" fill="none" stroke="#2d3748" stroke-width="1" rx="8"/>
+
+    <!-- Window controls -->
+    <circle cx="20" cy="20" r="5" fill="#e06c75" opacity="0.6"/>
+    <circle cx="40" cy="20" r="5" fill="#e5c07b" opacity="0.6"/>
+    <circle cx="60" cy="20" r="5" fill="#98c379" opacity="0.6"/>
+
+    <!-- Window title -->
+    <text x="85" y="25" font-family="JetBrains Mono, monospace" font-size="14" fill="#94a3b8">~/skills</text>
+
+    <!-- Skills commands -->
+    <text x="20" y="70" font-family="JetBrains Mono, monospace" font-size="16" fill="#98c379">$</text>
+    <text x="45" y="70" font-family="JetBrains Mono, monospace" font-size="16" fill="#e2e8f0"> skills </text>
+    <text x="130" y="70" font-family="JetBrains Mono, monospace" font-size="16" fill="#61afef">discover</text>
+
+    <text x="20" y="110" font-family="JetBrains Mono, monospace" font-size="14" fill="#56b6c2">→</text>
+    <text x="45" y="110" font-family="JetBrains Mono, monospace" font-size="14" fill="#94a3b8"> ao</text>
+    <text x="100" y="110" font-family="JetBrains Mono, monospace" font-size="14" fill="#5c6370" opacity="0.8">AO protocol &amp; processes</text>
+
+    <text x="20" y="140" font-family="JetBrains Mono, monospace" font-size="14" fill="#56b6c2">→</text>
+    <text x="45" y="140" font-family="JetBrains Mono, monospace" font-size="14" fill="#94a3b8"> aoconnect</text>
+    <text x="170" y="140" font-family="JetBrains Mono, monospace" font-size="14" fill="#5c6370" opacity="0.8">AO JS library</text>
+
+    <text x="20" y="180" font-family="JetBrains Mono, monospace" font-size="16" fill="#98c379">$</text>
+    <text x="45" y="180" font-family="JetBrains Mono, monospace" font-size="16" fill="#e2e8f0"> skills </text>
+    <text x="130" y="180" font-family="JetBrains Mono, monospace" font-size="16" fill="#e5c07b">install</text>
+    <text x="225" y="180" font-family="JetBrains Mono, monospace" font-size="16" fill="#94a3b8"> ao</text>
+
+    <text x="20" y="220" font-family="JetBrains Mono, monospace" font-size="14" fill="#98c379">✓</text>
+    <text x="45" y="220" font-family="JetBrains Mono, monospace" font-size="14" fill="#94a3b8"> Installed ao@1.0.0</text>
+
+    <text x="20" y="260" font-family="JetBrains Mono, monospace" font-size="16" fill="#98c379">$</text>
+    <text x="45" y="260" font-family="JetBrains Mono, monospace" font-size="16" fill="#e2e8f0"> skills </text>
+    <text x="130" y="260" font-family="JetBrains Mono, monospace" font-size="16" fill="#c678dd">publish</text>
+    <text x="240" y="260" font-family="JetBrains Mono, monospace" font-size="16" fill="#94a3b8"> my-skill</text>
+
+    <text x="20" y="295" font-family="JetBrains Mono, monospace" font-size="12" fill="#61afef">//</text>
+    <text x="45" y="295" font-family="JetBrains Mono, monospace" font-size="12" fill="#5c6370" opacity="0.8"> Discover. Install. Publish. Repeat.</text>
+  </g>
+
+  <!-- Bottom decorative line -->
+  <line x1="100" y1="400" x2="1400" y2="400" stroke="#2d3748" stroke-width="1" opacity="0.5"/>
+
+  <!-- Small tech icons/symbols at bottom -->
+  <text x="100" y="440" font-family="JetBrains Mono, monospace" font-size="18" fill="#61afef" opacity="0.6">npx permamind</text>
+  <text x="350" y="440" font-family="JetBrains Mono, monospace" font-size="18" fill="#56b6c2" opacity="0.6">⬡ Arweave</text>
+  <text x="550" y="440" font-family="JetBrains Mono, monospace" font-size="18" fill="#98c379" opacity="0.6">⚡ AO</text>
+  <text x="720" y="440" font-family="JetBrains Mono, monospace" font-size="18" fill="#c678dd" opacity="0.6">∞ Permaweb</text>
+</svg>

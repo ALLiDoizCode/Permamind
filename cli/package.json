@@ -1,6 +1,6 @@
 {
   "name": "@permamind/skills",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "CLI tool for publishing, searching, and installing Claude Agent Skills",
   "main": "dist/index.js",
   "bin": {

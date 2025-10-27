@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Creator - Simple Hero</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .hero h1 {
+            font-size: 64px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6ee7b7 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }
+
+        .hero p {
+            font-size: 24px;
+            color: #94a3b8;
+            max-width: 900px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .terminal-wrapper {
+            background: #1e293b;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid #334155;
+        }
+
+        .terminal-header {
+            background: #0f172a;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .terminal-dot.red { background: #ef4444; }
+        .terminal-dot.yellow { background: #f59e0b; }
+        .terminal-dot.green { background: #10b981; }
+
+        .terminal-title {
+            color: #64748b;
+            font-size: 13px;
+            margin-left: 12px;
+        }
+
+        .terminal-body {
+            padding: 50px 60px;
+        }
+
+        .command-section {
+            margin-bottom: 40px;
+        }
+
+        .label {
+            color: #6ee7b7;
+            font-size: 15px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .label-number {
+            background: #6ee7b7;
+            color: #0f172a;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .command-box {
+            background: #0f172a;
+            border: 2px solid #6ee7b7;
+            border-radius: 12px;
+            padding: 28px 36px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 0 20px rgba(110, 231, 183, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .command-box:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .prompt {
+            color: #6ee7b7;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .command {
+            color: #e2e8f0;
+            font-size: 22px;
+            line-height: 1.6;
+        }
+
+        .highlight {
+            color: #60a5fa;
+            font-weight: 700;
+            background: rgba(96, 165, 250, 0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .arrow {
+            color: #475569;
+            font-size: 40px;
+            text-align: center;
+            margin: 20px 0;
+            font-weight: 300;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>Build Your Own Skills</h1>
+            <p>Turn your expertise into permanent Claude skills with the skill-creator meta skill</p>
+        </div>
+
+        <div class="terminal-wrapper">
+            <div class="terminal-header">
+                <div class="terminal-dot red"></div>
+                <div class="terminal-dot yellow"></div>
+                <div class="terminal-dot green"></div>
+                <span class="terminal-title">terminal</span>
+            </div>
+            <div class="terminal-body">
+                <div class="command-section">
+                    <div class="label">
+                        <span class="label-number">1</span>
+                        Install
+                    </div>
+                    <div class="command-box">
+                        <span class="prompt">$</span>
+                        <span class="command">skills install <span class="highlight">skill-creator</span></span>
+                    </div>
+                </div>
+
+                <div class="arrow">↓</div>
+
+                <div class="command-section">
+                    <div class="label">
+                        <span class="label-number">2</span>
+                        Create
+                    </div>
+                    <div class="command-box">
+                        <span class="prompt">$</span>
+                        <span class="command">claude "Help me create a skill for <span class="highlight">[your expertise]</span>"</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

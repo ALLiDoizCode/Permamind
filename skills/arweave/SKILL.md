@@ -1,9 +1,9 @@
 ---
 name: arweave
-version: 1.0.0
+version: 1.1.0
 author: Permamind Team
-description: Learn Arweave permanent storage fundamentals - transactions, wallets, gateways, and data retrieval
-tags: ["arweave", "storage", "blockchain"]
+description: Master Arweave permanent storage - build Permaweb apps with transaction management, wallet security, gateway integration, data retrieval, and production-ready best practices for decentralized applications
+tags: ["arweave", "storage", "blockchain", "permaweb", "permanent-storage"]
 dependencies: []
 ---
 
@@ -34,17 +34,45 @@ Arweave's economic model ensures data permanence through a storage endowment fun
 
 ## When to Use This Skill
 
-This skill activates when you need to:
+**Activate this skill when you're working on:**
 
-- **Learn Arweave fundamentals** - Understand permanent storage, transaction model, and architecture
-- **Upload data to Arweave** - Create transactions and submit data for permanent storage
-- **Retrieve permanent data** - Query and download data using transaction IDs
-- **Work with Arweave wallets** - Manage JWK wallets, check balances, sign transactions
-- **Integrate gateways** - Configure gateway access, implement failover, handle retries
-- **Build Permaweb applications** - Create permanent websites, dApps, or content platforms
-- **Understand transaction structure** - Learn about tags, signatures, and finality
+### 🏗️ Building Permaweb Applications
+- Creating permanent websites, dApps, or content platforms on Arweave
+- Deploying decentralized applications with permanent data storage
+- Building NFT platforms, decentralized social networks, or content distribution systems
+- Implementing permanent documentation, knowledge bases, or archival systems
 
-If you're asking about "Arweave", "permanent storage", "Permaweb", "transaction IDs", or "Arweave gateways", this skill provides the foundational knowledge you need.
+### 💾 Data Storage & Retrieval
+- Uploading files, documents, images, or structured data for permanent storage
+- Implementing content-addressed permanent storage in your applications
+- Retrieving and managing permanently stored data using transaction IDs
+- Building backup systems or archival solutions with guaranteed permanence
+
+### 🔐 Wallet & Transaction Management
+- Managing Arweave JWK wallets securely in production environments
+- Implementing transaction creation, signing, and submission workflows
+- Handling wallet authentication, balance checking, and payment flows
+- Building secure key management systems for Arweave transactions
+
+### 🌐 Gateway Integration
+- Configuring robust gateway access with failover strategies
+- Implementing production-ready retry logic and timeout handling
+- Building resilient data access layers for Permaweb applications
+- Optimizing gateway performance and reliability
+
+### 📊 Advanced Integration Patterns
+- Integrating Arweave with AO processes for decentralized compute + storage
+- Using transaction tags for metadata, indexing, and application-specific features
+- Implementing cost estimation and transaction fee management
+- Building search, filtering, and discovery features using ArDB or ArGQL
+
+**Keywords that trigger this skill:**
+"Arweave", "permanent storage", "Permaweb", "transaction IDs", "Arweave gateways", "JWK wallet", "decentralized storage", "content addressing", "pay-once storage", "Arweave SDK"
+
+**When NOT to use this skill:**
+- For AO process development → Use the `ao` skill instead
+- For temporary/mutable storage needs → Use traditional databases
+- For high-frequency write operations → Consider hybrid storage approaches
 
 ## Arweave Transactions
 
@@ -634,5 +662,5 @@ arweave.transactions.getStatus(txid);
 
 ---
 
-**Version**: 1.0.0
-**Last Updated**: 2025-10-22
+**Version**: 1.1.0
+**Last Updated**: 2025-10-27

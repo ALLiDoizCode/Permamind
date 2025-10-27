@@ -24,7 +24,14 @@ describe('Cursor Behavior - Interactive Elements', () => {
     });
 
     it('should have cursor-pointer on all button variants', () => {
-      const variants = ['default', 'outline', 'ghost', 'destructive', 'secondary', 'command'] as const;
+      const variants = [
+        'default',
+        'outline',
+        'ghost',
+        'destructive',
+        'secondary',
+        'command',
+      ] as const;
 
       variants.forEach((variant) => {
         const { container } = render(<Button variant={variant}>Test</Button>);
@@ -82,11 +89,19 @@ describe('Cursor Behavior - Interactive Elements', () => {
       const { container } = render(<TabsExample />);
       const disabledTrigger = container.querySelector('[role="tab"][disabled]');
 
-      expect(disabledTrigger?.className).toContain('disabled:cursor-not-allowed');
+      expect(disabledTrigger?.className).toContain(
+        'disabled:cursor-not-allowed'
+      );
     });
 
     it('should have cursor-pointer on all tab variants', () => {
-      const variants = ['default', 'cli', 'underline', 'window', 'pills'] as const;
+      const variants = [
+        'default',
+        'cli',
+        'underline',
+        'window',
+        'pills',
+      ] as const;
 
       variants.forEach((variant) => {
         const { container } = render(

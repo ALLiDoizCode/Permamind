@@ -5,7 +5,13 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Timeline } from '@/components/Timeline';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card';
 import { CopyButton } from '@/components/CopyButton';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { ErrorMessage } from '@/components/ErrorMessage';
@@ -13,12 +19,16 @@ import { DependencyCard } from '@/components/DependencyCard';
 import { SmartStatsDisplay } from '@/components/SmartStatsDisplay';
 import { useState, useEffect } from 'react';
 import type { VersionInfo } from '@/types/ao';
+import { useArnsName } from '@/hooks/useArnsName';
 
 export function SkillDetail() {
   const { name } = useParams<{ name: string }>();
   const { skill, loading, error, refetch } = useSkill(name || '');
   const [versions, setVersions] = useState<VersionInfo[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(false);
+
+  // Resolve ArNS name for owner (wallet address)
+  const { arnsName } = useArnsName(skill?.owner || '');
 
   useEffect(() => {
     if (skill) {
@@ -57,7 +67,10 @@ export function SkillDetail() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       {/* Breadcrumbs */}
-      <Breadcrumbs path={[{ label: 'search', href: '/search' }, skill.name]} className="mb-6" />
+      <Breadcrumbs
+        path={[{ label: 'search', href: '/search' }, skill.name]}
+        className="mb-6"
+      />
 
       {/* Skill Header */}
       <div className="mb-8">
@@ -71,8 +84,17 @@ export function SkillDetail() {
           ))}
           <SmartStatsDisplay skill={skill} />
         </div>
-        <p className="text-sm text-terminal-muted">
-          by <span className="text-syntax-purple">{skill.author}</span>
+        <p className="text-sm text-terminal-muted font-mono">
+          <span className="text-syntax-purple">by</span>{' '}
+          <a
+            href={`https://www.ao.link/#/entity/${skill.owner}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-syntax-purple hover:text-syntax-cyan transition-colors underline-offset-2 hover:underline"
+            title={`View ${arnsName || skill.author} on AO Link`}
+          >
+            {arnsName || skill.author}
+          </a>
         </p>
       </div>
 
@@ -90,7 +112,12 @@ export function SkillDetail() {
           >
             dependencies
           </TabsTrigger>
-          <TabsTrigger value="versions" variant="cli" icon="🔖" count={versionsCount}>
+          <TabsTrigger
+            value="versions"
+            variant="cli"
+            icon="🔖"
+            count={versionsCount}
+          >
             versions
           </TabsTrigger>
         </TabsList>
@@ -116,7 +143,8 @@ export function SkillDetail() {
                   </div>
                 </div>
                 <p className="text-xs text-terminal-muted mt-2">
-                  This skill will activate automatically when Claude detects tasks matching the description.
+                  This skill will activate automatically when Claude detects
+                  tasks matching the description.
                 </p>
               </div>
 
@@ -148,7 +176,8 @@ export function SkillDetail() {
                     if (!preview) {
                       return (
                         <div>
-                          Use this skill when working with {skill.category || 'development'} tasks.
+                          Use this skill when working with{' '}
+                          {skill.category || 'development'} tasks.
                         </div>
                       );
                     }
@@ -156,13 +185,14 @@ export function SkillDetail() {
                     if (!bulletMatches || bulletMatches.length === 0) {
                       return (
                         <div>
-                          Use this skill when working with {skill.category || 'development'} tasks.
+                          Use this skill when working with{' '}
+                          {skill.category || 'development'} tasks.
                         </div>
                       );
                     }
-                    return bulletMatches.slice(0, 5).map((line, i) => (
-                      <div key={i}>{line}</div>
-                    ));
+                    return bulletMatches
+                      .slice(0, 5)
+                      .map((line, i) => <div key={i}>{line}</div>);
                   })()}
                 </div>
               </div>
@@ -171,29 +201,50 @@ export function SkillDetail() {
               <div className="pt-4 border-t border-terminal-border">
                 <div className="flex items-center gap-4 text-xs text-terminal-muted">
                   <div className="flex items-center gap-1">
-                    <Badge variant="green" className="text-xs">L2</Badge>
+                    <Badge variant="green" className="text-xs">
+                      L2
+                    </Badge>
                     <span>
                       {(() => {
-                        const l2Count = skill.bundledFiles?.filter(f => f.level === 'Level 2').length;
+                        const l2Count = skill.bundledFiles?.filter(
+                          (f) => f.level === 'Level 2'
+                        ).length;
                         // If no bundledFiles, assume at least 1 instruction file (SKILL.md)
                         return l2Count || 1;
-                      })()} instruction {(skill.bundledFiles?.filter(f => f.level === 'Level 2').length || 1) === 1 ? 'file' : 'files'}
+                      })()}{' '}
+                      instruction{' '}
+                      {(skill.bundledFiles?.filter((f) => f.level === 'Level 2')
+                        .length || 1) === 1
+                        ? 'file'
+                        : 'files'}
                     </span>
                   </div>
                   <span className="text-terminal-muted/40">•</span>
                   <div className="flex items-center gap-1">
-                    <Badge variant="purple" className="text-xs">L3</Badge>
+                    <Badge variant="purple" className="text-xs">
+                      L3
+                    </Badge>
                     <span>
-                      {skill.bundledFiles?.filter(f => f.level === 'Level 3').length || 0} resource {(skill.bundledFiles?.filter(f => f.level === 'Level 3').length || 0) === 1 ? 'file' : 'files'}
+                      {skill.bundledFiles?.filter((f) => f.level === 'Level 3')
+                        .length || 0}{' '}
+                      resource{' '}
+                      {(skill.bundledFiles?.filter((f) => f.level === 'Level 3')
+                        .length || 0) === 1
+                        ? 'file'
+                        : 'files'}
                     </span>
                   </div>
                   <span className="text-terminal-muted/40">•</span>
                   <span>
                     {(() => {
-                      const totalSize = skill.bundledFiles?.reduce((sum, f) => sum + parseFloat(f.size), 0);
+                      const totalSize = skill.bundledFiles?.reduce(
+                        (sum, f) => sum + parseFloat(f.size),
+                        0
+                      );
                       // If no bundledFiles, estimate based on typical skill size
                       return (totalSize || 10).toFixed(1);
-                    })()} KB total
+                    })()}{' '}
+                    KB total
                   </span>
                 </div>
               </div>
@@ -212,7 +263,9 @@ export function SkillDetail() {
                     <CardTitle>Dependency Overview</CardTitle>
                     <CardDescription>
                       This skill requires {skill.dependencies.length}{' '}
-                      {skill.dependencies.length === 1 ? 'dependency' : 'dependencies'}
+                      {skill.dependencies.length === 1
+                        ? 'dependency'
+                        : 'dependencies'}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -221,15 +274,21 @@ export function SkillDetail() {
                         <div className="text-2xl font-bold text-syntax-blue font-mono mb-1">
                           {skill.dependencies.length}
                         </div>
-                        <div className="text-xs text-terminal-muted">Total Dependencies</div>
+                        <div className="text-xs text-terminal-muted">
+                          Total Dependencies
+                        </div>
                       </div>
                       <div className="p-4 bg-terminal-bg rounded-lg border border-terminal-border">
                         <div className="text-2xl font-bold text-syntax-cyan font-mono mb-1">
-                          {skill.dependencies.filter(dep =>
-                            typeof dep === 'object' && dep.version
-                          ).length}
+                          {
+                            skill.dependencies.filter(
+                              (dep) => typeof dep === 'object' && dep.version
+                            ).length
+                          }
                         </div>
-                        <div className="text-xs text-terminal-muted">With Versions</div>
+                        <div className="text-xs text-terminal-muted">
+                          With Versions
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -246,8 +305,12 @@ export function SkillDetail() {
                   <CardContent>
                     <div className="space-y-3">
                       {skill.dependencies.map((dep, index) => {
-                        const depName = typeof dep === 'string' ? dep : dep.name;
-                        const depVersion = typeof dep === 'object' && dep.version ? dep.version : undefined;
+                        const depName =
+                          typeof dep === 'string' ? dep : dep.name;
+                        const depVersion =
+                          typeof dep === 'object' && dep.version
+                            ? dep.version
+                            : undefined;
                         return (
                           <DependencyCard
                             key={index}
@@ -270,17 +333,30 @@ export function SkillDetail() {
                   <CardContent>
                     <div className="text-xs text-terminal-muted space-y-2">
                       <div className="flex items-start gap-2">
-                        <Badge variant="cyan" className="text-xs flex-shrink-0">Auto-Install</Badge>
+                        <Badge variant="cyan" className="text-xs flex-shrink-0">
+                          Auto-Install
+                        </Badge>
                         <p>
-                          <strong className="text-terminal-text">Dependencies</strong> are automatically installed when you install this skill
-                          (~1-2s per dependency)
+                          <strong className="text-terminal-text">
+                            Dependencies
+                          </strong>{' '}
+                          are automatically installed when you install this
+                          skill (~1-2s per dependency)
                         </p>
                       </div>
                       <div className="flex items-start gap-2">
-                        <Badge variant="green" className="text-xs flex-shrink-0">Versioned</Badge>
+                        <Badge
+                          variant="green"
+                          className="text-xs flex-shrink-0"
+                        >
+                          Versioned
+                        </Badge>
                         <p>
-                          <strong className="text-terminal-text">Version-locked dependencies</strong> ensure compatibility
-                          (specific version installed as specified)
+                          <strong className="text-terminal-text">
+                            Version-locked dependencies
+                          </strong>{' '}
+                          ensure compatibility (specific version installed as
+                          specified)
                         </p>
                       </div>
                     </div>
@@ -290,7 +366,9 @@ export function SkillDetail() {
             ) : (
               <Card>
                 <CardContent className="p-6">
-                  <p className="text-terminal-muted text-center">No dependencies</p>
+                  <p className="text-terminal-muted text-center">
+                    No dependencies
+                  </p>
                 </CardContent>
               </Card>
             )}
@@ -304,8 +382,8 @@ export function SkillDetail() {
               Version History
             </h2>
             <p className="text-sm text-terminal-muted mb-6">
-              {versions.length} {versions.length === 1 ? 'release' : 'releases'} • Latest:{' '}
-              {versions[0]?.version || 'N/A'}
+              {versions.length} {versions.length === 1 ? 'release' : 'releases'}{' '}
+              • Latest: {versions[0]?.version || 'N/A'}
             </p>
             {versionsLoading ? (
               <p className="text-terminal-muted">Loading versions...</p>
@@ -326,7 +404,9 @@ export function SkillDetail() {
                 skillName={skill.name}
               />
             ) : (
-              <p className="text-terminal-muted">No version history available</p>
+              <p className="text-terminal-muted">
+                No version history available
+              </p>
             )}
           </Card>
         </TabsContent>

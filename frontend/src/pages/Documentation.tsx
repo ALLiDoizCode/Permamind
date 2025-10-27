@@ -13,7 +13,8 @@ export function Documentation() {
               Getting Started
             </h2>
             <p className="text-terminal-muted leading-relaxed mb-4">
-              Learn how to use Permamind to discover, install, and manage agent skills for Claude on the permanent web.
+              Learn how to use Permamind to discover, install, and manage agent
+              skills for Claude on the permanent web.
             </p>
           </section>
 
@@ -25,7 +26,9 @@ export function Documentation() {
               <div className="space-y-3 font-mono text-sm">
                 <div>
                   <span className="text-syntax-green">$</span>{' '}
-                  <span className="text-terminal-text">npm install -g @permamind/skills</span>
+                  <span className="text-terminal-text">
+                    npm install -g @permamind/skills
+                  </span>
                 </div>
                 <div>
                   <span className="text-syntax-green">$</span>{' '}
@@ -44,9 +47,10 @@ export function Documentation() {
               What are Agent Skills?
             </h2>
             <p className="text-terminal-muted leading-relaxed">
-              Agent Skills are modular capabilities that extend Claude's functionality.
-              They package specialized instructions, metadata, and resources to enable
-              Claude to operate as a domain expert rather than a generalist.
+              Agent Skills are modular capabilities that extend Claude's
+              functionality. They package specialized instructions, metadata,
+              and resources to enable Claude to operate as a domain expert
+              rather than a generalist.
             </p>
           </section>
         </div>

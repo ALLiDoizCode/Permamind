@@ -26,9 +26,7 @@ describe('Router Configuration', () => {
 
       // Wait for lazy loaded component - look for "skills found" heading
       await waitFor(() => {
-        expect(
-          screen.getByText(/skills found/i)
-        ).toBeTruthy();
+        expect(screen.getByText(/skills found/i)).toBeTruthy();
       });
     });
 

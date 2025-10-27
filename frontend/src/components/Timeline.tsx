@@ -77,7 +77,11 @@ export function Timeline({ versions, skillName }: TimelineProps) {
                   const formatted = trimmed.endsWith('.')
                     ? trimmed
                     : `${trimmed}.`;
-                  return <div key={`${ver.version}-changelog-${i}`}>• {formatted}</div>;
+                  return (
+                    <div key={`${ver.version}-changelog-${i}`}>
+                      • {formatted}
+                    </div>
+                  );
                 })}
             </div>
 

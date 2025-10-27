@@ -15,7 +15,9 @@ export function CliGuide() {
             <div className="bg-terminal-surface border border-terminal-border rounded-lg p-6">
               <code className="font-mono text-sm">
                 <span className="text-syntax-green">$</span>{' '}
-                <span className="text-terminal-text">npm install -g @permamind/skills</span>
+                <span className="text-terminal-text">
+                  npm install -g @permamind/skills
+                </span>
               </code>
             </div>
           </section>
@@ -26,29 +28,39 @@ export function CliGuide() {
             </h2>
             <div className="space-y-4">
               <div className="bg-terminal-surface border border-terminal-border rounded-lg p-6">
-                <h3 className="text-lg font-mono text-syntax-green mb-2">search</h3>
+                <h3 className="text-lg font-mono text-syntax-green mb-2">
+                  search
+                </h3>
                 <p className="text-terminal-muted text-sm mb-3">
                   Search for skills in the registry
                 </p>
                 <code className="font-mono text-sm">
                   <span className="text-syntax-green">$</span>{' '}
-                  <span className="text-terminal-text">skills search [query]</span>
+                  <span className="text-terminal-text">
+                    skills search [query]
+                  </span>
                 </code>
               </div>
 
               <div className="bg-terminal-surface border border-terminal-border rounded-lg p-6">
-                <h3 className="text-lg font-mono text-syntax-green mb-2">install</h3>
+                <h3 className="text-lg font-mono text-syntax-green mb-2">
+                  install
+                </h3>
                 <p className="text-terminal-muted text-sm mb-3">
                   Install a skill from the registry
                 </p>
                 <code className="font-mono text-sm">
                   <span className="text-syntax-green">$</span>{' '}
-                  <span className="text-terminal-text">skills install [skill-name]</span>
+                  <span className="text-terminal-text">
+                    skills install [skill-name]
+                  </span>
                 </code>
               </div>
 
               <div className="bg-terminal-surface border border-terminal-border rounded-lg p-6">
-                <h3 className="text-lg font-mono text-syntax-green mb-2">list</h3>
+                <h3 className="text-lg font-mono text-syntax-green mb-2">
+                  list
+                </h3>
                 <p className="text-terminal-muted text-sm mb-3">
                   List installed skills
                 </p>

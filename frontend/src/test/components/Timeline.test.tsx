@@ -223,9 +223,7 @@ describe('Timeline', () => {
     expect(screen.getByText('$ install')).toBeInTheDocument();
 
     // Arweave button and txid should not be present
-    expect(
-      screen.queryByText('view on arweave ↗')
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('view on arweave ↗')).not.toBeInTheDocument();
     expect(screen.queryByText(/^[a-z0-9]{7}$/)).not.toBeInTheDocument();
   });
 });

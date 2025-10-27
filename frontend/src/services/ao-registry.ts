@@ -550,7 +550,10 @@ export async function getDownloadStats(
     } catch (parseError) {
       // HTML error responses will fail JSON.parse
       if (import.meta.env.DEV) {
-        console.error('Failed to parse Get-Download-Stats response:', parseError);
+        console.error(
+          'Failed to parse Get-Download-Stats response:',
+          parseError
+        );
         if (
           typeof result.Messages[0].Data === 'string' &&
           result.Messages[0].Data.trim().startsWith('<')

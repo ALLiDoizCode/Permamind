@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { SkillMetadata } from '@/types/ao';
+import { useArnsName } from '@/hooks/useArnsName';
 
 interface SkillCardProps {
   skill: SkillMetadata;
@@ -23,6 +24,9 @@ function formatDownloads(downloads?: number): string {
 }
 
 export function SkillCard({ skill, onClick }: SkillCardProps) {
+  // Resolve ArNS name for owner (wallet address)
+  const { arnsName } = useArnsName(skill.owner || '');
+
   const handleClick = () => {
     if (onClick) {
       onClick();
@@ -39,6 +43,9 @@ export function SkillCard({ skill, onClick }: SkillCardProps) {
   // Get first 2 tags for display
   const displayTags = skill.tags?.slice(0, 2) || [];
   const firstTag = displayTags[0];
+
+  // Display ArNS name if available, otherwise fallback to address
+  const authorDisplay = arnsName || skill.author || 'Unknown';
 
   return (
     <Card
@@ -84,7 +91,16 @@ export function SkillCard({ skill, onClick }: SkillCardProps) {
         {/* Author attribution */}
         <div className="text-xs font-mono">
           <span className="text-syntax-purple">by</span>{' '}
-          <span className="text-syntax-cyan">{skill.author || 'Unknown'}</span>
+          <a
+            href={`https://www.ao.link/#/entity/${skill.owner}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-syntax-cyan hover:text-syntax-green transition-colors underline-offset-2 hover:underline"
+            onClick={(e) => e.stopPropagation()}
+            title={`View ${authorDisplay} on AO Link`}
+          >
+            {authorDisplay}
+          </a>
         </div>
 
         {/* License if available */}

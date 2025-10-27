@@ -215,7 +215,9 @@ export function SearchBar({
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0 space-y-1.5 text-left">
-                      <div className="font-semibold text-base">{skill.name}</div>
+                      <div className="font-semibold text-base">
+                        {skill.name}
+                      </div>
                       <div className="text-xs text-terminal-muted leading-relaxed line-clamp-2">
                         {skill.description}
                       </div>

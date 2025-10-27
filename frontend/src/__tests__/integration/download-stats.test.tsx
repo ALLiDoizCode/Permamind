@@ -150,10 +150,13 @@ describe('Download Stats Integration Tests', () => {
       );
 
       // Verify page renders (SmartStatsDisplay component mounts)
-      await waitFor(() => {
-        const headings = screen.getAllByText('test-skill');
-        expect(headings.length).toBeGreaterThan(0);
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          const headings = screen.getAllByText('test-skill');
+          expect(headings.length).toBeGreaterThan(0);
+        },
+        { timeout: 3000 }
+      );
     });
 
     it('falls back to simple count on stats fetch error', async () => {
@@ -170,9 +173,12 @@ describe('Download Stats Integration Tests', () => {
       );
 
       // Verify fallback to simple download count
-      await waitFor(() => {
-        expect(screen.getByText(/100 downloads/i)).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText(/100 downloads/i)).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
     });
   });
 

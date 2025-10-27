@@ -52,7 +52,9 @@ describe('Header', () => {
 
     const githubLink = screen.getByRole('link', { name: /github/i });
     expect(githubLink).toBeTruthy();
-    expect(githubLink.getAttribute('href')).toBe('https://github.com/ALLiDoizCode/Permamind');
+    expect(githubLink.getAttribute('href')).toBe(
+      'https://github.com/ALLiDoizCode/Permamind'
+    );
   });
 
   it('renders install cli link', () => {

@@ -32,7 +32,9 @@ describe('useDownloadStats Hook', () => {
 
       expect(result.current.stats).toEqual(mockStats);
       expect(result.current.error).toBeNull();
-      expect(aoRegistry.getDownloadStats).toHaveBeenCalledWith({ scope: 'all' });
+      expect(aoRegistry.getDownloadStats).toHaveBeenCalledWith({
+        scope: 'all',
+      });
     });
   });
 

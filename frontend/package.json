@@ -20,6 +20,7 @@
     "deploy:prod": "npm run deploy"
   },
   "dependencies": {
+    "@ar.io/sdk": "^3.21.0",
     "@permaweb/aoconnect": "^0.0.90",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.13",
@@ -54,6 +55,7 @@
     "tailwindcss": "^4.1.16",
     "typescript": "^5.3.3",
     "vite": "^5.4.21",
+    "vite-plugin-node-polyfills": "^0.24.0",
     "vitest": "^4.0.3"
   }
 }

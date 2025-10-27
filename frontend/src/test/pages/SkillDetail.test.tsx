@@ -69,7 +69,11 @@ description: Test skill
 
   const mockVersions = [
     { version: '1.0.0', publishedAt: Date.now(), arweaveTxId: 'tx1' },
-    { version: '0.9.0', publishedAt: Date.now() - 86400000, arweaveTxId: 'tx2' },
+    {
+      version: '0.9.0',
+      publishedAt: Date.now() - 86400000,
+      arweaveTxId: 'tx2',
+    },
   ];
 
   beforeEach(() => {
@@ -120,7 +124,9 @@ description: Test skill
       renderSkillDetail();
 
       await waitFor(() => {
-        const dependenciesTab = screen.getByRole('tab', { name: /dependencies/i });
+        const dependenciesTab = screen.getByRole('tab', {
+          name: /dependencies/i,
+        });
         expect(dependenciesTab).toBeInTheDocument();
         expect(dependenciesTab).toHaveTextContent('📦');
         expect(dependenciesTab).toHaveTextContent('dependencies');
@@ -145,7 +151,9 @@ description: Test skill
       renderSkillDetail(skillWithNoDeps);
 
       await waitFor(() => {
-        const dependenciesTab = screen.getByRole('tab', { name: /dependencies/i });
+        const dependenciesTab = screen.getByRole('tab', {
+          name: /dependencies/i,
+        });
         expect(dependenciesTab).toHaveTextContent('0');
       });
     });
@@ -172,10 +180,13 @@ description: Test skill
         </MemoryRouter>
       );
 
-      await waitFor(() => {
-        const versionsTab = screen.getByRole('tab', { name: /versions/i });
-        expect(versionsTab.textContent).toContain('1');
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          const versionsTab = screen.getByRole('tab', { name: /versions/i });
+          expect(versionsTab.textContent).toContain('1');
+        },
+        { timeout: 3000 }
+      );
     });
   });
 
@@ -184,11 +195,12 @@ description: Test skill
       renderSkillDetail();
 
       await waitFor(() => {
-        const installationTab = screen.queryByRole('tab', { name: /installation/i });
+        const installationTab = screen.queryByRole('tab', {
+          name: /installation/i,
+        });
         expect(installationTab).not.toBeInTheDocument();
       });
     });
-
   });
 
   describe('Tab Content', () => {
@@ -205,12 +217,17 @@ description: Test skill
       const user = userEvent.setup();
       renderSkillDetail();
 
-      const dependenciesTab = await screen.findByRole('tab', { name: /dependencies/i });
+      const dependenciesTab = await screen.findByRole('tab', {
+        name: /dependencies/i,
+      });
       await user.click(dependenciesTab);
 
-      await waitFor(() => {
-        expect(screen.getByText('Dependency Overview')).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText('Dependency Overview')).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
 
       expect(screen.getByText('dep1')).toBeInTheDocument();
       expect(screen.getByText('dep2')).toBeInTheDocument();
@@ -227,12 +244,17 @@ description: Test skill
       };
       renderSkillDetail(skillWithObjectDeps);
 
-      const dependenciesTab = await screen.findByRole('tab', { name: /dependencies/i });
+      const dependenciesTab = await screen.findByRole('tab', {
+        name: /dependencies/i,
+      });
       await user.click(dependenciesTab);
 
-      await waitFor(() => {
-        expect(screen.getByText('Dependency Overview')).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText('Dependency Overview')).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
 
       expect(screen.getByText('ao')).toBeInTheDocument();
       expect(screen.getByText('1.0.3')).toBeInTheDocument();
@@ -251,12 +273,17 @@ description: Test skill
       };
       renderSkillDetail(skillWithMixedDeps);
 
-      const dependenciesTab = await screen.findByRole('tab', { name: /dependencies/i });
+      const dependenciesTab = await screen.findByRole('tab', {
+        name: /dependencies/i,
+      });
       await user.click(dependenciesTab);
 
-      await waitFor(() => {
-        expect(screen.getByText('Dependency Overview')).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText('Dependency Overview')).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
 
       expect(screen.getByText('simple-dep')).toBeInTheDocument();
       expect(screen.getByText('versioned-dep')).toBeInTheDocument();
@@ -270,9 +297,12 @@ description: Test skill
       const versionsTab = await screen.findByRole('tab', { name: /versions/i });
       await user.click(versionsTab);
 
-      await waitFor(() => {
-        expect(screen.getByText('Version History')).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText('Version History')).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
 
       // Check that version text appears in the tabpanel (not just in the tab or header)
       const tabpanel = screen.getByRole('tabpanel');
@@ -314,7 +344,8 @@ describe('SkillDetail - Overview Tab Unified Card (Story 6.11)', () => {
     version: '1.0.0',
     author: 'Test Author',
     owner: 'test-owner',
-    description: 'A comprehensive test skill for validating the unified overview card structure.',
+    description:
+      'A comprehensive test skill for validating the unified overview card structure.',
     tags: ['test', 'example'],
     dependencies: ['dep1', 'dep2'],
     arweaveTxId: 'test-tx-id',
@@ -399,7 +430,9 @@ description: Test skill
       const { container } = renderSkillDetail();
 
       await waitFor(() => {
-        const overviewTabPanel = container.querySelector('[role="tabpanel"][data-state="active"]');
+        const overviewTabPanel = container.querySelector(
+          '[role="tabpanel"][data-state="active"]'
+        );
         expect(overviewTabPanel).toBeInTheDocument();
 
         // Single Card should be direct child of TabsContent
@@ -425,7 +458,9 @@ description: Test skill
       const { container } = renderSkillDetail();
 
       await waitFor(() => {
-        const dividers = container.querySelectorAll('.border-t.border-terminal-border');
+        const dividers = container.querySelectorAll(
+          '.border-t.border-terminal-border'
+        );
         // Expect 4 dividers: after Quick Install, after Description, after When to Use, and before Skill Composition
         expect(dividers.length).toBeGreaterThanOrEqual(3);
       });
@@ -459,7 +494,8 @@ description: Test skill
 
       await waitFor(() => {
         // CopyButton should be present in the Quick Install section
-        const quickInstallSection = screen.getByText('$ Quick Install').parentElement;
+        const quickInstallSection =
+          screen.getByText('$ Quick Install').parentElement;
         expect(quickInstallSection).toBeInTheDocument();
       });
     });
@@ -468,7 +504,9 @@ description: Test skill
       renderSkillDetail();
 
       await waitFor(() => {
-        const activationNote = screen.getByText(/This skill will activate automatically/i);
+        const activationNote = screen.getByText(
+          /This skill will activate automatically/i
+        );
         expect(activationNote).toBeInTheDocument();
         expect(activationNote.className).toContain('text-xs');
         expect(activationNote.className).toContain('text-terminal-muted');
@@ -516,9 +554,15 @@ description: Test skill
       renderSkillDetail();
 
       await waitFor(() => {
-        expect(screen.getByText('- Use for testing components')).toBeInTheDocument();
-        expect(screen.getByText('- Use for debugging applications')).toBeInTheDocument();
-        expect(screen.getByText('- Use for writing unit tests')).toBeInTheDocument();
+        expect(
+          screen.getByText('- Use for testing components')
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText('- Use for debugging applications')
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText('- Use for writing unit tests')
+        ).toBeInTheDocument();
       });
     });
 
@@ -548,7 +592,11 @@ description: Test skill
       renderSkillDetail(skillNoBullets);
 
       await waitFor(() => {
-        expect(screen.getByText(/Use this skill when working with development tasks/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(
+            /Use this skill when working with development tasks/i
+          )
+        ).toBeInTheDocument();
       });
     });
 
@@ -561,7 +609,11 @@ description: Test skill
       renderSkillDetail(skillNoFiles);
 
       await waitFor(() => {
-        expect(screen.getByText(/Use this skill when working with development tasks/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(
+            /Use this skill when working with development tasks/i
+          )
+        ).toBeInTheDocument();
       });
     });
   });
@@ -627,8 +679,12 @@ description: Test skill
 
       await waitFor(() => {
         // Check that the 6-item grid structure doesn't exist in overview tab
-        const overviewTabPanel = container.querySelector('[role="tabpanel"][data-state="active"]');
-        const gridElements = overviewTabPanel?.querySelectorAll('.grid.grid-cols-1.md\\:grid-cols-2');
+        const overviewTabPanel = container.querySelector(
+          '[role="tabpanel"][data-state="active"]'
+        );
+        const gridElements = overviewTabPanel?.querySelectorAll(
+          '.grid.grid-cols-1.md\\:grid-cols-2'
+        );
         // Grid should not exist in overview tab
         expect(gridElements?.length).toBe(0);
       });

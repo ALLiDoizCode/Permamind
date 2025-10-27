@@ -28,6 +28,14 @@ export function Footer() {
           >
             github
           </a>
+          <a
+            href="https://x.com/permamind"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-terminal-muted hover:text-syntax-blue transition-colors"
+          >
+            twitter
+          </a>
           <Link
             to="/cli-guide"
             className="text-terminal-muted hover:text-syntax-blue transition-colors"

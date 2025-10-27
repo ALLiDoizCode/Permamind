@@ -34,9 +34,7 @@ export function HeroSection() {
         <div className="max-w-4xl mx-auto text-center">
           {/* 2-line heading with shimmer */}
           <h1 className="text-5xl md:text-6xl font-bold font-mono mb-6 leading-tight">
-            <span className="mono-gradient-animated">
-              Permamind
-            </span>
+            <span className="mono-gradient-animated">Permamind</span>
             <br />
             <span className="text-terminal-text">Agent Skills for Claude</span>
           </h1>

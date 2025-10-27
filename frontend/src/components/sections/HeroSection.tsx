@@ -97,11 +97,11 @@ export function HeroSection() {
                 </span>
               </div>
               <div className="mt-3 text-terminal-muted mb-1">
-                # Search for skills
+                # Install a skill
               </div>
               <div>
                 <span className="text-syntax-green">$</span>{' '}
-                <span className="text-terminal-text">skills search </span>
+                <span className="text-terminal-text">skills install </span>
                 <span className="text-syntax-cyan">ao</span>
               </div>
             </div>

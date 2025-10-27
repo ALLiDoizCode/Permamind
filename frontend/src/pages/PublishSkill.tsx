@@ -327,16 +327,6 @@ EOF`}
                     <p className="text-xs text-terminal-muted mt-1">Popular Arweave wallet extension</p>
                   </div>
                 </div>
-
-                <div className="flex items-start gap-3">
-                  <span className="text-syntax-blue font-mono">→</span>
-                  <div>
-                    <a href="https://faucet.arweave.net" target="_blank" rel="noopener noreferrer" className="text-syntax-blue hover:underline font-semibold">
-                      Arweave Testnet Faucet
-                    </a>
-                    <p className="text-xs text-terminal-muted mt-1">Get free testnet AR tokens for testing</p>
-                  </div>
-                </div>
               </div>
             </div>
           </section>

@@ -21,7 +21,7 @@ export function Footer() {
             documentation
           </Link>
           <a
-            href="https://github.com"
+            href="https://github.com/ALLiDoizCode/Permamind"
             target="_blank"
             rel="noopener noreferrer"
             className="text-terminal-muted hover:text-syntax-blue transition-colors"

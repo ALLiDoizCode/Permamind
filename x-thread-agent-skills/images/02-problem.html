@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Problem</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #1e1e1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 900px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .terminal {
+            background: #1e1e1e;
+            border: 2px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: #2d2d2d;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #444;
+        }
+
+        .terminal-button {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .terminal-button.close { background: #ff5f56; }
+        .terminal-button.minimize { background: #ffbd2e; }
+        .terminal-button.maximize { background: #27c93f; }
+
+        .terminal-title {
+            color: #999;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+
+        .terminal-body {
+            padding: 20px;
+            color: #00ff00;
+            font-size: 13px;
+            line-height: 1.5;
+            height: 400px;
+            overflow-y: auto;
+        }
+
+        .session {
+            margin-bottom: 30px;
+            opacity: 0.4;
+        }
+
+        .session.current {
+            opacity: 1;
+        }
+
+        .prompt {
+            color: #ffbd2e;
+            font-weight: bold;
+        }
+
+        .user-input {
+            color: #00ffff;
+            margin-bottom: 10px;
+        }
+
+        .error {
+            color: #ff5f56;
+        }
+
+        .warning {
+            color: #ffbd2e;
+        }
+
+        .separator {
+            color: #444;
+            margin: 15px 0;
+        }
+
+        .header-text {
+            grid-column: 1 / -1;
+            text-align: center;
+            color: #ff5f56;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #ff5f56;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .session {
+            animation: fadeIn 0.5s ease-in;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-text">❌ THE PROBLEM: CONTEXT AMNESIA ❌</div>
+
+        <div class="terminal">
+            <div class="terminal-header">
+                <div class="terminal-button close"></div>
+                <div class="terminal-button minimize"></div>
+                <div class="terminal-button maximize"></div>
+                <div class="terminal-title">session-1.sh</div>
+            </div>
+            <div class="terminal-body">
+                <div class="session">
+                    <div><span class="prompt">$</span> <span class="user-input">claude "explain my arweave setup"</span></div>
+                    <div style="color: #888; margin-left: 20px;">Starting fresh session...</div>
+                    <div style="color: #00ffff; margin-left: 20px;">✓ Explained Arweave architecture</div>
+                </div>
+                <div class="separator">━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+                <div class="session">
+                    <div><span class="prompt">$</span> <span class="user-input">claude "show me my wallet balance"</span></div>
+                    <div class="warning" style="margin-left: 20px;">⚠ Context lost. Please re-explain your setup.</div>
+                </div>
+                <div class="separator">━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+                <div class="session current">
+                    <div><span class="prompt">$</span> <span class="user-input">claude "explain my arweave setup AGAIN"</span></div>
+                    <div style="color: #888; margin-left: 20px;">Repeating context...</div>
+                    <div class="error" style="margin-left: 20px;">❌ Frustration level: HIGH</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="terminal">
+            <div class="terminal-header">
+                <div class="terminal-button close"></div>
+                <div class="terminal-button minimize"></div>
+                <div class="terminal-button maximize"></div>
+                <div class="terminal-title">session-2.sh</div>
+            </div>
+            <div class="terminal-body">
+                <div class="session">
+                    <div><span class="prompt">$</span> <span class="user-input">claude "help with AO process"</span></div>
+                    <div style="color: #888; margin-left: 20px;">New session detected...</div>
+                    <div class="warning" style="margin-left: 20px;">⚠ No prior context available</div>
+                </div>
+                <div class="separator">━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+                <div class="session">
+                    <div><span class="prompt">$</span> <span class="user-input">claude "remember I'm using TypeScript"</span></div>
+                    <div style="color: #888; margin-left: 20px;">Noted for this session only...</div>
+                </div>
+                <div class="separator">━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+                <div class="session current">
+                    <div><span class="prompt">$</span> <span class="user-input">claude "what language am I using?"</span></div>
+                    <div class="error" style="margin-left: 20px;">❌ Context forgotten</div>
+                    <div style="color: #ff5f56; margin-left: 20px;">Repeating yourself... AGAIN</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

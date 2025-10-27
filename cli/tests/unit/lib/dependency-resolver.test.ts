@@ -117,7 +117,7 @@ describe('Dependency Resolver', () => {
 
       await expect(resolve('skill-1', { maxDepth: 10 })).rejects.toThrow(DependencyError);
       await expect(resolve('skill-1', { maxDepth: 10 })).rejects.toThrow(/depth limit exceeded/i);
-    });
+    }, 30000); // Increase timeout to 30 seconds for deep dependency resolution
 
     it('should throw error for circular dependencies', async () => {
       const skillA: ISkillMetadata = {

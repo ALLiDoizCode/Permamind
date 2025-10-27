@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progressive Disclosure Architecture</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #1e1e1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .terminal {
+            background: #1e1e1e;
+            border: 2px solid #333;
+            border-radius: 8px;
+            width: 900px;
+            box-shadow: 0 20px 60px rgba(0, 255, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: #2d2d2d;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #444;
+        }
+
+        .terminal-button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .terminal-button.close { background: #ff5f56; }
+        .terminal-button.minimize { background: #ffbd2e; }
+        .terminal-button.maximize { background: #27c93f; }
+
+        .terminal-title {
+            color: #999;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .terminal-body {
+            padding: 40px;
+            color: #00ff00;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .title {
+            color: #00ffff;
+            font-size: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .level {
+            margin-bottom: 30px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 20px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .level:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .level-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .level-title {
+            color: #ffbd2e;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .level-badge {
+            background: #2d2d2d;
+            color: #00ffff;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .level-description {
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .level-cost {
+            color: #00ff00;
+            font-size: 12px;
+        }
+
+        .arrow {
+            text-align: center;
+            color: #444;
+            font-size: 20px;
+            margin: 10px 0;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            border-left: 3px solid #00ffff;
+            font-size: 12px;
+        }
+
+        .highlight {
+            color: #00ffff;
+        }
+
+        .success {
+            color: #27c93f;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <div class="terminal-header">
+            <div class="terminal-button close"></div>
+            <div class="terminal-button minimize"></div>
+            <div class="terminal-button maximize"></div>
+            <div class="terminal-title">progressive-disclosure.md</div>
+        </div>
+        <div class="terminal-body">
+            <div class="title">📊 PROGRESSIVE DISCLOSURE ARCHITECTURE</div>
+
+            <div class="level">
+                <div class="level-header">
+                    <div class="level-title">Level 1: METADATA</div>
+                    <div class="level-badge">ALWAYS LOADED</div>
+                </div>
+                <div class="level-description">
+                    Skill name and description loaded at startup
+                </div>
+                <div class="level-cost">
+                    Context Cost: <span class="highlight">~100 tokens per skill</span>
+                </div>
+                <div class="code-block">
+<span class="highlight">---</span>
+name: arweave-deployment
+description: Deploy applications to Arweave permanet storage
+version: 1.0.0
+<span class="highlight">---</span>
+                </div>
+            </div>
+
+            <div class="arrow">↓</div>
+
+            <div class="level">
+                <div class="level-header">
+                    <div class="level-title">Level 2: INSTRUCTIONS</div>
+                    <div class="level-badge">LOAD ON TRIGGER</div>
+                </div>
+                <div class="level-description">
+                    Full SKILL.md content loads when Claude detects relevance
+                </div>
+                <div class="level-cost">
+                    Context Cost: <span class="highlight">&lt;5k tokens typically</span>
+                </div>
+                <div class="code-block">
+<span class="success">✓</span> Step-by-step workflows
+<span class="success">✓</span> Best practices and patterns
+<span class="success">✓</span> Code examples and templates
+<span class="success">✓</span> Common pitfalls and solutions
+                </div>
+            </div>
+
+            <div class="arrow">↓</div>
+
+            <div class="level">
+                <div class="level-header">
+                    <div class="level-title">Level 3: RESOURCES</div>
+                    <div class="level-badge">LOAD AS NEEDED</div>
+                </div>
+                <div class="level-description">
+                    Bundled files, scripts, and reference materials
+                </div>
+                <div class="level-cost">
+                    Context Cost: <span class="highlight">0 tokens until accessed</span>
+                </div>
+                <div class="code-block">
+<span class="success">✓</span> Scripts execute without context cost
+<span class="success">✓</span> Reference docs loaded on demand
+<span class="success">✓</span> Templates fetched when needed
+<span class="success">✓</span> Effectively unbounded resources
+                </div>
+            </div>
+
+            <div style="margin-top: 40px; padding: 20px; background: #2d2d2d; border-radius: 4px; text-align: center;">
+                <div style="color: #00ffff; font-size: 18px; margin-bottom: 10px;">
+                    <span class="highlight">🎯 Pay only for what you use</span>
+                </div>
+                <div style="color: #888; font-size: 12px;">
+                    Expertise without the context bloat
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

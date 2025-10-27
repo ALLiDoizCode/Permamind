@@ -33,7 +33,7 @@ export function Documentation() {
                 </div>
                 <div>
                   <span className="text-syntax-green">$</span>{' '}
-                  <span className="text-terminal-text">skills install aolite</span>
+                  <span className="text-terminal-text">skills install ao</span>
                 </div>
               </div>
             </div>

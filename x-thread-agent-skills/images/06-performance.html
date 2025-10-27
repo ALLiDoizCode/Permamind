@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance Metrics</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #1e1e1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .terminal {
+            background: #1e1e1e;
+            border: 2px solid #333;
+            border-radius: 8px;
+            width: 900px;
+            box-shadow: 0 20px 60px rgba(0, 255, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: #2d2d2d;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #444;
+        }
+
+        .terminal-button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .terminal-button.close { background: #ff5f56; }
+        .terminal-button.minimize { background: #ffbd2e; }
+        .terminal-button.maximize { background: #27c93f; }
+
+        .terminal-title {
+            color: #999;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .terminal-body {
+            padding: 30px;
+            color: #00ff00;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .title {
+            color: #00ffff;
+            font-size: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th {
+            background: #2d2d2d;
+            color: #00ffff;
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #444;
+            font-weight: bold;
+        }
+
+        td {
+            padding: 12px;
+            border: 1px solid #333;
+            color: #888;
+        }
+
+        tr:hover {
+            background: #252525;
+        }
+
+        .metric {
+            color: #00ff00;
+            font-weight: bold;
+        }
+
+        .improvement {
+            color: #27c93f;
+            font-weight: bold;
+        }
+
+        .stat-box {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: #2d2d2d;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            color: #00ffff;
+            font-weight: bold;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #27c93f;
+            color: #000;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .highlight {
+            color: #ffbd2e;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <div class="terminal-header">
+            <div class="terminal-button close"></div>
+            <div class="terminal-button minimize"></div>
+            <div class="terminal-button maximize"></div>
+            <div class="terminal-title">performance-metrics.log</div>
+        </div>
+        <div class="terminal-body">
+            <div class="title">⚡️ PERFORMANCE METRICS ⚡️</div>
+
+            <div class="stat-box">
+                <div class="stat-card">
+                    <div class="stat-value">47ms</div>
+                    <div class="stat-label">CLI Startup Time</div>
+                    <div class="badge">91% FASTER</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">&lt;100ms</div>
+                    <div class="stat-label">Search (Cached)</div>
+                    <div class="badge">99% FASTER</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">&lt;1s</div>
+                    <div class="stat-label">Install (Cached)</div>
+                    <div class="badge">95% FASTER</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">61.75%</div>
+                    <div class="stat-label">Compression Ratio</div>
+                    <div class="badge">OPTIMAL</div>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Operation</th>
+                        <th>Performance</th>
+                        <th>Optimization</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="highlight">Startup</span></td>
+                        <td><span class="metric">47-49ms</span></td>
+                        <td><span class="improvement">Lazy loading</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">Search</span></td>
+                        <td><span class="metric">&lt;100ms</span></td>
+                        <td><span class="improvement">5-min cache</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">Install</span></td>
+                        <td><span class="metric">&lt;1s</span></td>
+                        <td><span class="improvement">LRU cache (100 entries)</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">Bundle</span></td>
+                        <td><span class="metric">3-11ms</span></td>
+                        <td><span class="improvement">Gzip level 6</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="highlight">Dependencies</span></td>
+                        <td><span class="metric">Parallel</span></td>
+                        <td><span class="improvement">Promise.all()</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="margin-top: 30px; padding: 20px; background: #2d2d2d; border-radius: 4px; border-left: 4px solid #00ffff;">
+                <div style="color: #00ffff; font-weight: bold; margin-bottom: 15px;">Key Optimizations:</div>
+                <div style="color: #888; line-height: 2;">
+                    <div>✓ <span style="color: #00ff00">Lazy Loading:</span> Heavy dependencies load on-demand</div>
+                    <div>✓ <span style="color: #00ff00">Smart Caching:</span> Search results & dependency metadata</div>
+                    <div>✓ <span style="color: #00ff00">Parallel Operations:</span> Concurrent dependency fetching</div>
+                    <div>✓ <span style="color: #00ff00">Optimal Compression:</span> 61.75% size reduction</div>
+                    <div>✓ <span style="color: #00ff00">Zero Context Cost:</span> Resources load as needed</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; text-align: center; color: #00ffff; font-size: 16px;">
+                Performance meets permanence. 🚀
+            </div>
+        </div>
+    </div>
+</body>
+</html>

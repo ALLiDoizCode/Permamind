@@ -13,7 +13,11 @@
     "test:coverage": "vitest --coverage",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext ts,tsx",
     "lint:fix": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext ts,tsx --fix",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "deploy": "npm run build && DEPLOY_KEY=${DEPLOY_KEY:-$(cat ../wallet.json | base64)} permaweb-deploy --arns-name permamind --deploy-folder dist",
+    "deploy:dev": "npm run build && DEPLOY_KEY=${DEPLOY_KEY:-$(cat ../wallet.json | base64)} permaweb-deploy --arns-name permamind --undername dev --deploy-folder dist",
+    "deploy:staging": "npm run build && DEPLOY_KEY=${DEPLOY_KEY:-$(cat ../wallet.json | base64)} permaweb-deploy --arns-name permamind --undername staging --deploy-folder dist",
+    "deploy:prod": "npm run deploy"
   },
   "dependencies": {
     "@permaweb/aoconnect": "^0.0.90",

@@ -30,7 +30,7 @@ export function Header() {
             </Link>
 
             <a
-              href="https://github.com"
+              href="https://github.com/ALLiDoizCode/Permamind"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm text-terminal-muted hover:text-terminal-text font-mono transition-colors"

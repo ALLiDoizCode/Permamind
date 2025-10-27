@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results - Agent Skills Registry - Developer CLI Tool</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- Babel Standalone -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Google Fonts - JetBrains Mono (monospace) + Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Tailwind Custom Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // Developer CLI Tool palette - dark mode first
+                        terminal: {
+                            bg: '#10151B',
+                            surface: '#1a1f26',
+                            border: '#2d3748',
+                            text: '#e2e8f0',
+                            muted: '#94a3b8',
+                        },
+                        syntax: {
+                            blue: '#61afef',
+                            green: '#98c379',
+                            yellow: '#e5c07b',
+                            red: '#e06c75',
+                            purple: '#c678dd',
+                            cyan: '#56b6c2',
+                        },
+                        accent: {
+                            primary: '#61afef',
+                            success: '#98c379',
+                            warning: '#e5c07b',
+                            error: '#e06c75',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #10151B;
+            color: #e2e8f0;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1f26;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3748;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4a5568;
+        }
+
+        /* Terminal border effect */
+        .terminal-border {
+            border: 1px solid #2d3748;
+            position: relative;
+        }
+        .terminal-border::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: linear-gradient(135deg, #61afef, #98c379);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: inherit;
+            z-index: -1;
+        }
+        .terminal-border:hover::before {
+            opacity: 0.3;
+        }
+
+        /* Monospace gradient text */
+        .mono-gradient {
+            background: linear-gradient(135deg, #61afef, #98c379);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Line clamp utility */
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Screen reader only */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        .sr-only:focus {
+            position: static;
+            width: auto;
+            height: auto;
+            padding: inherit;
+            margin: inherit;
+            overflow: visible;
+            clip: auto;
+            white-space: normal;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Shared Components -->
+    <script type="text/babel" src="./components.js"></script>
+
+    <!-- Navigation Components -->
+    <script type="text/babel" src="./navigation.js"></script>
+
+    <!-- Search Results Page Component -->
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { SkillCard, SearchBar, Badge, Button, FilterSidebar } = window.Components;
+        const { GlobalNav, Breadcrumbs, Footer } = window.Navigation;
+
+        const SearchResultsPage = () => {
+            const [sortBy, setSortBy] = useState('relevance');
+            const [viewMode, setViewMode] = useState('grid');
+            const [filters, setFilters] = useState({ categories: [], author: '' });
+            const [showFilterPalette, setShowFilterPalette] = useState(false);
+            const [filterSearch, setFilterSearch] = useState('');
+            const [searchQuery, setSearchQuery] = useState('');
+
+            // Sample Agent Skills search results
+            const allSkills = [
+                {
+                    name: 'arweave-developer',
+                    description: 'Expert guidance for Arweave blockchain development including permanent storage, transaction handling, and ArNS name management. Provides workflows and best practices for building on the permaweb.',
+                    author: 'permaweb-community',
+                    version: 'v1.2.0',
+                    category: 'arweave',
+                    downloads: '2.3k',
+                    bundledFiles: 5
+                },
+                {
+                    name: 'ao-process-builder',
+                    description: 'Build Actor-Oriented processes with step-by-step guidance for AO protocol development. Includes patterns for message handling, state management, and process deployment.',
+                    author: 'ao-core',
+                    version: 'v2.1.3',
+                    category: 'ao-protocol',
+                    downloads: '1.8k',
+                    bundledFiles: 4
+                },
+                {
+                    name: 'permaweb-deploy',
+                    description: 'Deploy static sites to Arweave permaweb with ArNS integration and manifest generation. Automates the full deployment workflow with best practices.',
+                    author: 'deployment-team',
+                    version: 'v3.0.1',
+                    category: 'cli-tools',
+                    downloads: '3.1k',
+                    bundledFiles: 6
+                },
+                {
+                    name: 'arweave-graphql',
+                    description: 'Query Arweave blockchain data using GraphQL with optimized patterns and caching strategies. Includes transaction queries and tag-based search examples.',
+                    author: 'arweave-core',
+                    version: 'v1.5.2',
+                    category: 'arweave',
+                    downloads: '1.9k',
+                    bundledFiles: 3
+                },
+                {
+                    name: 'blockchain-security',
+                    description: 'Security best practices for blockchain development across multiple chains. Covers wallet security, transaction signing, and vulnerability prevention.',
+                    author: 'security-guild',
+                    version: 'v2.0.4',
+                    category: 'blockchain',
+                    downloads: '2.7k',
+                    bundledFiles: 7
+                },
+                {
+                    name: 'arns-manager',
+                    description: 'Complete ArNS (Arweave Name System) management including registration, transfer, and undername configuration. Includes cost calculation and renewal workflows.',
+                    author: 'ario-team',
+                    version: 'v1.3.1',
+                    category: 'arweave',
+                    downloads: '1.5k',
+                    bundledFiles: 4
+                },
+            ];
+
+            const categories = [
+                { name: 'blockchain', count: 42, icon: '⛓️' },
+                { name: 'arweave', count: 56, icon: '⛁' },
+                { name: 'ao-protocol', count: 31, icon: '🔄' },
+                { name: 'documentation', count: 38, icon: '📚' },
+                { name: 'cli-tools', count: 27, icon: '⚙️' },
+                { name: 'ai-workflows', count: 19, icon: '🤖' },
+            ];
+
+            // Filter skills based on search query and active filters
+            const filteredSkills = allSkills.filter(skill => {
+                // Search query filter
+                if (searchQuery.length >= 1) {
+                    const query = searchQuery.toLowerCase();
+                    const matchesName = skill.name.toLowerCase().includes(query);
+                    const matchesDescription = skill.description.toLowerCase().includes(query);
+                    const matchesAuthor = skill.author.toLowerCase().includes(query);
+                    const matchesCategory = skill.category.toLowerCase().includes(query);
+
+                    if (!matchesName && !matchesDescription && !matchesAuthor && !matchesCategory) {
+                        return false;
+                    }
+                }
+
+                // Category filter
+                if (filters.categories.length > 0 && !filters.categories.includes(skill.category)) {
+                    return false;
+                }
+
+                // Author filter
+                if (filters.author && !skill.author.toLowerCase().includes(filters.author.toLowerCase())) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            const handleSkillClick = (skillName) => {
+                window.location.href = 'skill-detail.html';
+            };
+
+            const handleSearch = (query) => {
+                setSearchQuery(query);
+            };
+
+            const handleSearchChange = (query) => {
+                // Update search in real-time as user types
+                setSearchQuery(query);
+            };
+
+            return (
+                <div className="min-h-screen bg-terminal-bg">
+                    {/* Global Navigation */}
+                    <GlobalNav currentPage="search" />
+
+                    {/* Breadcrumbs */}
+                    <Breadcrumbs path={['Search: arweave']} />
+
+                    {/* Main Content */}
+                    <main id="main-content" className="container mx-auto px-4 py-8">
+                        {/* Search Bar with Live Filtering */}
+                        <div className="mb-8">
+                            <SearchBar
+                                onSearch={handleSearch}
+                                onChange={handleSearchChange}
+                                placeholder="search skills --query arweave"
+                                suggestions={allSkills.map(s => s.name)}
+                            />
+                        </div>
+
+                        {/* Results Header with Inline Filters */}
+                        <div className="flex flex-col gap-4 mb-6">
+                            {/* Count and Sort */}
+                            <div className="flex items-center justify-between">
+                                <h1 className="text-xl font-mono text-terminal-text">
+                                    <span className="text-syntax-purple">//</span> {filteredSkills.length} skills found
+                                </h1>
+
+                                {/* Sort Dropdown */}
+                                <select
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                    className="bg-terminal-surface border border-terminal-border text-terminal-text rounded-md px-3 py-2 text-sm font-mono focus:border-syntax-blue focus:ring-2 focus:ring-syntax-blue/20 outline-none"
+                                >
+                                    <option value="relevance">Relevance</option>
+                                    <option value="popular">Most Popular</option>
+                                    <option value="recent">Recently Updated</option>
+                                    <option value="az">A-Z</option>
+                                </select>
+                            </div>
+
+                            {/* Inline Filter Chips */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs text-terminal-muted font-mono">filters:</span>
+                                {filters.categories.length > 0 ? (
+                                    <>
+                                        {filters.categories.map(cat => (
+                                            <Badge
+                                                key={cat}
+                                                variant="cyan"
+                                                className="text-xs cursor-pointer hover:bg-syntax-cyan/30"
+                                                onClick={() => {
+                                                    setFilters({
+                                                        ...filters,
+                                                        categories: filters.categories.filter(c => c !== cat)
+                                                    });
+                                                }}
+                                            >
+                                                {cat} ×
+                                            </Badge>
+                                        ))}
+                                    </>
+                                ) : (
+                                    <Badge variant="default" className="text-xs">none</Badge>
+                                )}
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-xs h-6"
+                                    onClick={() => setShowFilterPalette(!showFilterPalette)}
+                                >
+                                    + add filter
+                                </Button>
+                                <kbd className="px-2 py-1 text-xs font-mono bg-terminal-surface border border-terminal-border rounded text-terminal-muted">
+                                    ⌘K
+                                </kbd>
+                            </div>
+                        </div>
+
+                        {/* Command Palette Filter Menu */}
+                        {showFilterPalette && (
+                            <div className="fixed inset-0 z-50 flex items-start justify-center pt-32">
+                                <div
+                                    className="absolute inset-0 bg-terminal-bg/90 backdrop-blur-sm"
+                                    onClick={() => setShowFilterPalette(false)}
+                                />
+                                <div className="relative w-full max-w-lg mx-4 bg-terminal-surface border border-terminal-border rounded-lg shadow-2xl overflow-hidden">
+                                    {/* Search Input */}
+                                    <div className="p-4 border-b border-terminal-border">
+                                        <div className="flex items-center gap-2 bg-terminal-bg border border-syntax-blue rounded-lg p-3">
+                                            <svg className="w-4 h-4 text-syntax-blue flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                            </svg>
+                                            <input
+                                                type="text"
+                                                placeholder="Search categories, authors, tags..."
+                                                value={filterSearch}
+                                                onChange={(e) => setFilterSearch(e.target.value)}
+                                                className="flex-1 bg-transparent text-terminal-text font-mono text-sm outline-none placeholder:text-terminal-muted"
+                                                autoFocus
+                                            />
+                                            <kbd className="px-2 py-1 text-xs font-mono bg-terminal-surface border border-terminal-border rounded text-terminal-muted">
+                                                ESC
+                                            </kbd>
+                                        </div>
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="p-4 max-h-96 overflow-y-auto">
+                                        {/* Popular Categories */}
+                                        <div className="mb-4">
+                                            <div className="text-xs text-terminal-muted font-mono mb-2">Popular</div>
+                                            <div className="space-y-1">
+                                                {categories.filter(cat =>
+                                                    !filterSearch || cat.name.includes(filterSearch.toLowerCase())
+                                                ).slice(0, 3).map(cat => (
+                                                    <button
+                                                        key={cat.name}
+                                                        onClick={() => {
+                                                            setFilters({
+                                                                ...filters,
+                                                                categories: [cat.name]
+                                                            });
+                                                            setShowFilterPalette(false);
+                                                        }}
+                                                        className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-terminal-bg transition-colors"
+                                                    >
+                                                        <span className="text-lg">{cat.icon || '📁'}</span>
+                                                        <div className="flex-1 text-left">
+                                                            <div className="text-sm text-terminal-text font-mono">{cat.name}</div>
+                                                            <div className="text-xs text-terminal-muted">{cat.count} skills</div>
+                                                        </div>
+                                                        <Badge variant="cyan" className="text-xs">{cat.count}</Badge>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Divider */}
+                                        <div className="border-t border-terminal-border my-3"></div>
+
+                                        {/* More Filters */}
+                                        <div>
+                                            <div className="text-xs text-terminal-muted font-mono mb-2">More Filters</div>
+                                            <div className="space-y-1">
+                                                <button className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-terminal-bg transition-colors">
+                                                    <span className="text-lg">👤</span>
+                                                    <span className="text-sm text-terminal-text font-mono">Filter by author</span>
+                                                </button>
+                                                <button className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-terminal-bg transition-colors">
+                                                    <span className="text-lg">🏷️</span>
+                                                    <span className="text-sm text-terminal-text font-mono">Filter by tag</span>
+                                                </button>
+                                                <button className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-terminal-bg transition-colors">
+                                                    <span className="text-lg">📦</span>
+                                                    <span className="text-sm text-terminal-text font-mono">Min bundled files</span>
+                                                </button>
+                                                <button className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-terminal-bg transition-colors">
+                                                    <span className="text-lg">📅</span>
+                                                    <span className="text-sm text-terminal-text font-mono">Recently updated</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Full-Width List Results */}
+                        <div className="space-y-3">
+                            {filteredSkills.length > 0 ? (
+                                filteredSkills.map((skill, index) => (
+                                    <div
+                                        key={index}
+                                        onClick={() => handleSkillClick(skill.name)}
+                                        className="flex items-start gap-4 p-4 bg-terminal-surface rounded-lg border border-terminal-border hover:border-syntax-blue transition-all cursor-pointer terminal-border"
+                                    >
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                <h3 className="text-base font-mono font-semibold mono-gradient">
+                                                    {skill.name}
+                                                </h3>
+                                                <Badge variant="green" className="text-xs">{skill.version}</Badge>
+                                                <Badge variant="cyan" className="text-xs">{skill.category}</Badge>
+                                                <span className="text-xs text-terminal-muted font-mono">
+                                                    📦 {skill.bundledFiles} files
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-terminal-muted leading-relaxed mb-2">
+                                                {skill.description}
+                                            </p>
+                                            <div className="text-xs text-terminal-muted/60 font-mono">
+                                                by {skill.author}
+                                            </div>
+                                        </div>
+                                        <div className="flex-shrink-0 text-right">
+                                            <div className="text-lg font-bold text-syntax-green font-mono">{skill.downloads}</div>
+                                            <div className="text-xs text-terminal-muted">installs</div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center py-16">
+                                    <p className="text-terminal-muted font-mono text-lg mb-4">No skills found</p>
+                                    <p className="text-terminal-muted/60 text-sm mb-6">
+                                        Try adjusting your filters or search query
+                                    </p>
+                                    <Button variant="outline" onClick={() => setFilters({ categories: [], author: '' })}>
+                                        Clear Filters
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Pagination */}
+                        {filteredSkills.length > 0 && (
+                            <div className="mt-12 flex items-center justify-center gap-2">
+                                <Button variant="outline" size="sm" disabled>
+                                    Previous
+                                </Button>
+                                <Button variant="default" size="sm">1</Button>
+                                <Button variant="outline" size="sm">2</Button>
+                                <Button variant="outline" size="sm">3</Button>
+                                <Button variant="outline" size="sm">
+                                    Next
+                                </Button>
+                            </div>
+                        )}
+                    </main>
+
+                    {/* Footer */}
+                    <Footer />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<SearchResultsPage />);
+    </script>
+</body>
+</html>

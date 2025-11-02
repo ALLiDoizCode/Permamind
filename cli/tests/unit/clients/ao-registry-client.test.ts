@@ -28,6 +28,15 @@ jest.mock('@permaweb/aoconnect', () => {
   };
 });
 
+// Mock registry-config
+jest.mock('../../../src/lib/registry-config', () => ({
+  getRegistryProcessId: jest.fn(() => 'test-process-id'),
+  getMuUrl: jest.fn(() => 'https://mu.ao-testnet.xyz'),
+  getCuUrl: jest.fn(() => 'https://cu.ao-testnet.xyz'),
+  getGateway: jest.fn(() => 'https://arweave.net'),
+  getHyperBeamNode: jest.fn(() => 'https://hyperbeam.arweave.net'),
+}));
+
 // Mock config-loader
 jest.mock('../../../src/lib/config-loader', () => ({
   loadConfig: jest.fn(),

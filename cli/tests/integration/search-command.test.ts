@@ -14,7 +14,27 @@ import { ISkillMetadata, IAODryrunResult } from '../../src/types/ao-registry';
 import { NetworkError, ConfigurationError } from '../../src/types/errors';
 
 // Mock @permaweb/aoconnect with realistic message structures
-jest.mock('@permaweb/aoconnect');
+jest.mock('@permaweb/aoconnect', () => ({
+  __esModule: true,
+  connect: jest.fn(() => ({
+    message: jest.fn(),
+    dryrun: jest.fn(),
+    result: jest.fn(),
+  })),
+  message: jest.fn(),
+  dryrun: jest.fn(),
+  result: jest.fn(),
+  createDataItemSigner: jest.fn((wallet) => ({ wallet })),
+}));
+
+// Mock registry-config
+jest.mock('../../src/lib/registry-config', () => ({
+  getRegistryProcessId: jest.fn(() => 'test-process-id'),
+  getMuUrl: jest.fn(() => 'https://mu.ao-testnet.xyz'),
+  getCuUrl: jest.fn(() => 'https://cu.ao-testnet.xyz'),
+  getGateway: jest.fn(() => 'https://arweave.net'),
+  getHyperBeamNode: jest.fn(() => 'https://hyperbeam.arweave.net'),
+}));
 
 // Mock config-loader
 jest.mock('../../src/lib/config-loader', () => ({

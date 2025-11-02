@@ -15,23 +15,27 @@ import { ISkillMetadata, IAODryrunResult } from '../../src/types/ao-registry';
 import { NetworkError, ConfigurationError } from '../../src/types/errors';
 
 // Mock @permaweb/aoconnect with realistic message structures
-jest.mock('@permaweb/aoconnect', () => {
-  const mockMessage = jest.fn();
-  const mockDryrun = jest.fn();
-  const mockResult = jest.fn();
-  return {
-    __esModule: true,
-    connect: jest.fn(() => ({
-      message: mockMessage,
-      dryrun: mockDryrun,
-      result: mockResult,
-    })),
-    message: mockMessage,
-    dryrun: mockDryrun,
-    result: mockResult,
-    createDataItemSigner: jest.fn((wallet) => ({ wallet })),
-  };
-});
+jest.mock('@permaweb/aoconnect', () => ({
+  __esModule: true,
+  connect: jest.fn(() => ({
+    message: jest.fn(),
+    dryrun: jest.fn(),
+    result: jest.fn(),
+  })),
+  message: jest.fn(),
+  dryrun: jest.fn(),
+  result: jest.fn(),
+  createDataItemSigner: jest.fn((wallet) => ({ wallet })),
+}));
+
+// Mock registry-config
+jest.mock('../../src/lib/registry-config', () => ({
+  getRegistryProcessId: jest.fn(() => 'test-process-id'),
+  getMuUrl: jest.fn(() => 'https://mu.ao-testnet.xyz'),
+  getCuUrl: jest.fn(() => 'https://cu.ao-testnet.xyz'),
+  getGateway: jest.fn(() => 'https://arweave.net'),
+  getHyperBeamNode: jest.fn(() => 'https://hyperbeam.arweave.net'),
+}));
 
 // Mock config-loader
 jest.mock('../../src/lib/config-loader', () => ({
@@ -56,11 +60,6 @@ jest.mock('../../src/utils/logger', () => {
 
 import { dryrun, message, createDataItemSigner } from '@permaweb/aoconnect';
 import { loadConfig } from '../../src/lib/config-loader';
-
-// Setup mocks
-(dryrun as jest.Mock) = jest.fn();
-(message as jest.Mock) = jest.fn();
-(createDataItemSigner as jest.Mock) = jest.fn((wallet) => ({ wallet }));
 
 describe('AO Registry Client Integration Tests', () => {
   const mockProcessId = 'abc123def456ghi789jkl012mno345pqr678stu901';

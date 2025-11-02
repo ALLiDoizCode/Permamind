@@ -89,7 +89,6 @@ describe('Command-Specific Help Text', () => {
 
     it('should display all install command flags', () => {
       expect(output).toContain('--global');
-      expect(output).toContain('--local');
       expect(output).toContain('--force');
       expect(output).toContain('--verbose');
       expect(output).toContain('--no-lock');
@@ -98,7 +97,6 @@ describe('Command-Specific Help Text', () => {
     it('should display examples for install workflows', () => {
       expect(output).toContain('Examples:');
       expect(output).toMatch(/skills install.*ao-basics/);
-      expect(output).toContain('--local');
       expect(output).toContain('--force');
       expect(output).toContain('--verbose');
     });

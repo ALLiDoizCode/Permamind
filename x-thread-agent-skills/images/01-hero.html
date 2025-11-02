@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Skills Hero</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #1e1e1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .terminal {
+            background: #1e1e1e;
+            border: 2px solid #333;
+            border-radius: 8px;
+            width: 800px;
+            box-shadow: 0 20px 60px rgba(0, 255, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: #2d2d2d;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #444;
+        }
+
+        .terminal-button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .terminal-button.close { background: #ff5f56; }
+        .terminal-button.minimize { background: #ffbd2e; }
+        .terminal-button.maximize { background: #27c93f; }
+
+        .terminal-title {
+            color: #999;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .terminal-body {
+            padding: 30px;
+            color: #00ff00;
+            font-size: 16px;
+            line-height: 1.6;
+            position: relative;
+        }
+
+        .ascii-art {
+            font-size: 14px;
+            color: #00ffff;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .command {
+            color: #00ff00;
+            margin: 10px 0;
+        }
+
+        .prompt {
+            color: #ffbd2e;
+            font-weight: bold;
+        }
+
+        .output {
+            color: #888;
+            margin-left: 20px;
+        }
+
+        .highlight {
+            color: #00ffff;
+            font-weight: bold;
+            text-shadow: 0 0 5px #00ffff;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 20px;
+            background: #00ff00;
+            animation: blink 1s infinite;
+            margin-left: 5px;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .scanlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                transparent 50%,
+                rgba(0, 255, 0, 0.02) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <div class="terminal-header">
+            <div class="terminal-button close"></div>
+            <div class="terminal-button minimize"></div>
+            <div class="terminal-button maximize"></div>
+            <div class="terminal-title">agent-skills — bash — 80×24</div>
+        </div>
+        <div class="terminal-body">
+            <div class="scanlines"></div>
+            <pre class="ascii-art">
+   ___   ___  ____  _  _  ____    ____  _  _  ____  __    __    ____
+  / __) / __)( ___)( \( )(_  _)  / ___)( )/ )(_  _)(  )  (  )  / ___)
+ ( (__  \__ \ )__)  )  (   )(    \___ \ )  (  _)(_  )(__  )(__ ( (___
+  \___) (___/(____)(__)  (__)   (____/(_)\_)(____)(____)(____) \____)
+            </pre>
+            <div class="command">
+                <span class="prompt">$</span> claude --version
+            </div>
+            <div class="output">Claude 4.5 (Sonnet) with Agent Skills support</div>
+
+            <div class="command">
+                <span class="prompt">$</span> skills status
+            </div>
+            <div class="output">
+✓ <span class="highlight">Modular expertise</span> - Load only what you need<br>
+✓ <span class="highlight">Progressive disclosure</span> - Pay for context you use<br>
+✓ <span class="highlight">Permanent storage</span> - Decentralized on Arweave<br>
+✓ <span class="highlight">Global registry</span> - AO-powered discovery
+            </div>
+
+            <div class="command">
+                <span class="prompt">$</span> npm install -g @permamind/skills<span class="cursor"></span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

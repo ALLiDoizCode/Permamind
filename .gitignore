@@ -24,6 +24,7 @@ coverage/
 wallet.json
 *.jwk
 .arweave/
+arns_wallet
 
 # Log files
 *.log

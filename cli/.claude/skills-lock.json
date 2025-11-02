@@ -1,0 +1,35 @@
+{
+  "lockfileVersion": 1,
+  "generatedAt": 1761227648594,
+  "skills": [
+    {
+      "name": "ao",
+      "version": "1.0.1",
+      "arweaveTxId": "_XWFWO3ecrrPU6vG5tfAlEXqpRfyd5wO-xRvzR8Zi2o",
+      "installedAt": 1761227648388,
+      "installedPath": "/Users/jonathangreen/Documents/Permamind/cli/.claude/skills/ao",
+      "dependencies": [
+        {
+          "name": "aolite",
+          "version": "1.0.1",
+          "arweaveTxId": "",
+          "installedAt": 0,
+          "installedPath": "",
+          "dependencies": [],
+          "isDirectDependency": false
+        }
+      ],
+      "isDirectDependency": false
+    },
+    {
+      "name": "aolite",
+      "version": "1.0.1",
+      "arweaveTxId": "RiK_TBxNB6iNN5-Rbpb4AosnTCbq1OTve9ite_RVjoM",
+      "installedAt": 1761227648594,
+      "installedPath": "/Users/jonathangreen/Documents/Permamind/cli/.claude/skills/aolite",
+      "dependencies": [],
+      "isDirectDependency": true
+    }
+  ],
+  "installLocation": "/Users/jonathangreen/Documents/Permamind/cli/.claude"
+}

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Publishing Skills</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #1e1e1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .terminal {
+            background: #1e1e1e;
+            border: 2px solid #333;
+            border-radius: 8px;
+            width: 900px;
+            box-shadow: 0 20px 60px rgba(0, 255, 255, 0.2);
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: #2d2d2d;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #444;
+        }
+
+        .terminal-button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .terminal-button.close { background: #ff5f56; }
+        .terminal-button.minimize { background: #ffbd2e; }
+        .terminal-button.maximize { background: #27c93f; }
+
+        .terminal-title {
+            color: #999;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .terminal-body {
+            padding: 30px;
+            color: #00ff00;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .command-line {
+            margin-bottom: 20px;
+        }
+
+        .prompt {
+            color: #ffbd2e;
+            font-weight: bold;
+        }
+
+        .command {
+            color: #00ffff;
+        }
+
+        .output {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        .success {
+            color: #27c93f;
+        }
+
+        .info {
+            color: #888;
+        }
+
+        .highlight {
+            color: #00ffff;
+        }
+
+        .box {
+            border: 2px solid #00ffff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #252525;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .box-title {
+            color: #00ffff;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: #888;
+        }
+
+        .detail-value {
+            color: #00ffff;
+            font-weight: bold;
+        }
+
+        .spinner {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .progress-step {
+            margin: 10px 0;
+            padding: 10px;
+            background: #2d2d2d;
+            border-radius: 4px;
+            border-left: 3px solid #27c93f;
+        }
+
+        .tx-id {
+            font-family: 'JetBrains Mono', monospace;
+            color: #ffbd2e;
+            font-size: 12px;
+            word-break: break-all;
+        }
+
+        .celebration {
+            text-align: center;
+            font-size: 24px;
+            margin: 20px 0;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <div class="terminal-header">
+            <div class="terminal-button close"></div>
+            <div class="terminal-button minimize"></div>
+            <div class="terminal-button maximize"></div>
+            <div class="terminal-title">publish-skill.sh — 80×24</div>
+        </div>
+        <div class="terminal-body">
+            <div class="command-line">
+                <span class="prompt">$</span> <span class="command">skills publish ./my-awesome-skill</span>
+            </div>
+
+            <div class="progress-step">
+                <span class="success">✓</span> <span class="info">Validating SKILL.md manifest</span>
+            </div>
+
+            <div class="progress-step">
+                <span class="success">✓</span> <span class="info">Creating bundle: <span class="highlight">1.2 MB</span> (15 files)</span>
+            </div>
+
+            <div class="progress-step">
+                <span class="success">✓</span> <span class="info">Compressing with gzip (61.75% reduction)</span>
+            </div>
+
+            <div class="progress-step">
+                <span class="success">✓</span> <span class="info">Wallet balance: <span class="highlight">0.5 AR</span> (sufficient)</span>
+            </div>
+
+            <div class="progress-step">
+                <span class="success">✓</span> <span class="info">Uploading to Arweave...</span>
+                <div style="margin-top: 5px; color: #888; font-size: 12px;">
+                    TX ID: <span class="tx-id">abc123def456ghi789jkl012mno345pqr678stu901</span>
+                </div>
+            </div>
+
+            <div class="progress-step">
+                <span class="success">✓</span> <span class="info">Transaction confirmed on-chain</span>
+            </div>
+
+            <div class="progress-step">
+                <span class="success">✓</span> <span class="info">Registering in AO registry...</span>
+                <div style="margin-top: 5px; color: #888; font-size: 12px;">
+                    MSG ID: <span class="tx-id">msg456xyz789abc123def456ghi789jkl012mno345pq</span>
+                </div>
+            </div>
+
+            <div class="celebration">
+                🎉 SKILL PUBLISHED SUCCESSFULLY! 🎉
+            </div>
+
+            <div class="box">
+                <div class="box-title">📦 Publication Details</div>
+                <div class="detail-row">
+                    <div class="detail-label">Skill Name:</div>
+                    <div class="detail-value">my-awesome-skill</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Version:</div>
+                    <div class="detail-value">1.0.0</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Bundle Size:</div>
+                    <div class="detail-value">1.2 MB (compressed)</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Upload Cost:</div>
+                    <div class="detail-value">0.001 AR (~$0.05)</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Storage:</div>
+                    <div class="detail-value">Permanent (200+ years)</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">Status:</div>
+                    <div class="detail-value">🟢 Live & Searchable</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; padding: 15px; background: #2d2d2d; border-radius: 4px;">
+                <div style="color: #00ffff; margin-bottom: 10px;">Next Steps:</div>
+                <div class="info">
+                    <div>→ View on Arweave: <span class="highlight">https://arweave.net/abc123...901</span></div>
+                    <div>→ Search: <span class="highlight">skills search my-awesome-skill</span></div>
+                    <div>→ Install: <span class="highlight">skills install my-awesome-skill</span></div>
+                    <div>→ Share with the world! 🌍</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

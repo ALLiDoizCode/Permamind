@@ -1,0 +1,81 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark terminal background -->
+  <rect width="1200" height="630" fill="#10151B"/>
+
+  <!-- Gradient definitions -->
+  <defs>
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#61afef;stop-opacity:1">
+        <animate attributeName="stop-color" values="#61afef;#56b6c2;#98c379;#56b6c2;#61afef" dur="5s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="50%" style="stop-color:#56b6c2;stop-opacity:1">
+        <animate attributeName="stop-color" values="#56b6c2;#98c379;#56b6c2;#61afef;#56b6c2" dur="5s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="100%" style="stop-color:#98c379;stop-opacity:1">
+        <animate attributeName="stop-color" values="#98c379;#56b6c2;#61afef;#56b6c2;#98c379" dur="5s" repeatCount="indefinite"/>
+      </stop>
+    </linearGradient>
+
+    <!-- Grid pattern -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a1f26" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <!-- Subtle grid background -->
+  <rect width="1200" height="630" fill="url(#grid)" opacity="0.5"/>
+
+  <!-- Top border accent -->
+  <rect x="0" y="0" width="1200" height="3" fill="url(#accentGradient)"/>
+
+  <!-- Main content area -->
+  <g transform="translate(600, 170)">
+    <!-- 2-line heading with gradient -->
+    <text x="0" y="0" font-family="JetBrains Mono, monospace" font-size="72" font-weight="bold" fill="url(#accentGradient)" text-anchor="middle">Permamind</text>
+    <text x="0" y="85" font-family="JetBrains Mono, monospace" font-size="40" fill="#e2e8f0" text-anchor="middle">Agent Skills for Claude</text>
+
+    <!-- Subheading with purple // comment -->
+    <text x="0" y="135" font-family="JetBrains Mono, monospace" font-size="20" fill="#94a3b8" text-anchor="middle">
+      <tspan fill="#c678dd">// </tspan>Permanent, decentralized skills on Arweave &amp; AO
+    </text>
+
+    <!-- Terminal Window Block -->
+    <g transform="translate(-280, 180)">
+      <!-- Terminal background -->
+      <rect width="560" height="180" fill="#1a1f26" rx="8"/>
+      <rect width="560" height="180" fill="none" stroke="#2d3748" stroke-width="1" rx="8"/>
+
+      <!-- Window controls -->
+      <circle cx="15" cy="15" r="5" fill="#e06c75" opacity="0.8"/>
+      <circle cx="35" cy="15" r="5" fill="#e5c07b" opacity="0.8"/>
+      <circle cx="55" cy="15" r="5" fill="#98c379" opacity="0.8"/>
+      <text x="75" y="20" font-family="JetBrains Mono, monospace" font-size="12" fill="#94a3b8">quick-start.sh</text>
+
+      <!-- Divider -->
+      <line x1="10" y1="35" x2="550" y2="35" stroke="#2d3748" stroke-width="1"/>
+
+      <!-- CLI Examples -->
+      <g transform="translate(20, 60)">
+        <text x="0" y="0" font-family="JetBrains Mono, monospace" font-size="14" fill="#5c6370"># Install the CLI</text>
+        <text x="0" y="25" font-family="JetBrains Mono, monospace" font-size="14">
+          <tspan fill="#98c379">$</tspan>
+          <tspan fill="#e2e8f0"> npm install -g </tspan>
+          <tspan fill="#56b6c2">@permamind/skills</tspan>
+        </text>
+
+        <text x="0" y="60" font-family="JetBrains Mono, monospace" font-size="14" fill="#5c6370"># Install skills</text>
+        <text x="0" y="85" font-family="JetBrains Mono, monospace" font-size="14">
+          <tspan fill="#98c379">$</tspan>
+          <tspan fill="#e2e8f0"> skills install </tspan>
+          <tspan fill="#56b6c2">ao</tspan>
+        </text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Footer tech stack -->
+  <text x="100" y="600" font-family="JetBrains Mono, monospace" font-size="16" fill="#61afef" opacity="0.6">npx permamind</text>
+  <text x="350" y="600" font-family="JetBrains Mono, monospace" font-size="16" fill="#56b6c2" opacity="0.6">⬡ Arweave</text>
+  <text x="550" y="600" font-family="JetBrains Mono, monospace" font-size="16" fill="#98c379" opacity="0.6">⚡ AO</text>
+  <text x="720" y="600" font-family="JetBrains Mono, monospace" font-size="16" fill="#c678dd" opacity="0.6">∞ Permaweb</text>
+</svg>

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results Layout Variants - Agent Skills Registry</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        terminal: {
+                            bg: '#10151B',
+                            surface: '#1a1f26',
+                            border: '#2d3748',
+                            text: '#e2e8f0',
+                            muted: '#94a3b8',
+                        },
+                        syntax: {
+                            blue: '#61afef',
+                            green: '#98c379',
+                            yellow: '#e5c07b',
+                            red: '#e06c75',
+                            purple: '#c678dd',
+                            cyan: '#56b6c2',
+                        },
+                    },
+                    fontFamily: {
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #10151B;
+            color: #e2e8f0;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1f26;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3748;
+            border-radius: 4px;
+        }
+
+        .terminal-border {
+            border: 1px solid #2d3748;
+            position: relative;
+        }
+        .terminal-border::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: linear-gradient(135deg, #61afef, #98c379);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: inherit;
+            z-index: -1;
+        }
+        .terminal-border:hover::before {
+            opacity: 0.3;
+        }
+
+        .mono-gradient {
+            background: linear-gradient(135deg, #61afef, #98c379);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" src="./components.js"></script>
+    <script type="text/babel" src="./navigation.js"></script>
+
+    <script type="text/babel">
+        const { useState } = React;
+        const { Card, CardHeader, CardTitle, CardContent, Badge, Button } = window.Components;
+        const { GlobalNav, Breadcrumbs, Footer } = window.Navigation;
+
+        const SearchLayoutsShowcase = () => {
+            const [currentLayout, setCurrentLayout] = useState('current');
+
+            const skills = [
+                {
+                    name: 'arweave-developer',
+                    description: 'Expert guidance for Arweave blockchain development including permanent storage, transactions, and ArNS management',
+                    author: 'permaweb-community',
+                    version: 'v1.2.0',
+                    category: 'arweave',
+                    downloads: '2.3k',
+                    bundledFiles: 5
+                },
+                {
+                    name: 'ao-process-builder',
+                    description: 'Build Actor-Oriented processes with step-by-step guidance for AO protocol development',
+                    author: 'ao-core',
+                    version: 'v2.1.3',
+                    category: 'ao-protocol',
+                    downloads: '1.8k',
+                    bundledFiles: 4
+                },
+                {
+                    name: 'permaweb-deploy',
+                    description: 'Deploy static sites to Arweave permaweb with ArNS integration and manifest generation',
+                    author: 'deployment-team',
+                    version: 'v3.0.1',
+                    category: 'cli-tools',
+                    downloads: '3.1k',
+                    bundledFiles: 6
+                },
+            ];
+
+            return (
+                <div className="min-h-screen bg-terminal-bg">
+                    <div className="container mx-auto px-4 py-8">
+                        <div className="mb-12 text-center">
+                            <h1 className="text-4xl font-bold font-mono mono-gradient mb-4">
+                                Search Results Layout Variants
+                            </h1>
+                            <p className="text-terminal-muted font-mono text-sm">
+                                4 different layout approaches for browsing Agent Skills
+                            </p>
+                        </div>
+
+                        <div className="space-y-16">
+                            {/* Layout 1: Current (Sidebar + Grid) */}
+                            <div>
+                                <div className="mb-6">
+                                    <h2 className="text-2xl font-bold text-terminal-text font-mono mb-2">
+                                        Layout 1: Sidebar + Grid (Current)
+                                    </h2>
+                                    <p className="text-sm text-terminal-muted mb-3">
+                                        Traditional layout with left sidebar filters and 2-column card grid
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <Badge variant="blue">✓ Familiar pattern</Badge>
+                                        <Badge variant="yellow">⚠ Sidebar takes space</Badge>
+                                    </div>
+                                </div>
+                                <Card>
+                                    <CardContent className="p-6">
+                                        <div className="flex gap-6">
+                                            {/* Sidebar */}
+                                            <div className="w-48 flex-shrink-0 space-y-4">
+                                                <div className="text-xs font-semibold text-terminal-text">Filters</div>
+                                                <div className="space-y-2 text-xs text-terminal-muted">
+                                                    <div>☑ arweave (56)</div>
+                                                    <div>☐ blockchain (42)</div>
+                                                    <div>☐ ao-protocol (31)</div>
+                                                </div>
+                                            </div>
+                                            {/* Grid */}
+                                            <div className="flex-1 grid grid-cols-2 gap-4">
+                                                {skills.slice(0, 2).map((skill, i) => (
+                                                    <div key={i} className="p-3 bg-terminal-surface rounded border border-terminal-border terminal-border">
+                                                        <div className="text-sm font-mono text-syntax-cyan mb-1">{skill.name}</div>
+                                                        <div className="flex gap-1 mb-2">
+                                                            <Badge variant="green" className="text-xs">{skill.version}</Badge>
+                                                            <Badge variant="cyan" className="text-xs">{skill.category}</Badge>
+                                                        </div>
+                                                        <p className="text-xs text-terminal-muted line-clamp-2">{skill.description}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Layout 2: Full-Width List */}
+                            <div>
+                                <div className="mb-6">
+                                    <h2 className="text-2xl font-bold text-terminal-text font-mono mb-2">
+                                        Layout 2: Full-Width List ⭐ RECOMMENDED
+                                    </h2>
+                                    <p className="text-sm text-terminal-muted mb-3">
+                                        Terminal-style list view with inline filters and more description space
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <Badge variant="green">✓ More readable descriptions</Badge>
+                                        <Badge variant="green">✓ CLI-like list aesthetic</Badge>
+                                        <Badge variant="green">✓ Better for scanning</Badge>
+                                    </div>
+                                </div>
+                                <Card>
+                                    <CardContent className="p-6">
+                                        {/* Inline filter chips */}
+                                        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-terminal-border">
+                                            <span className="text-xs text-terminal-muted font-mono">filters:</span>
+                                            <Badge variant="cyan" className="text-xs cursor-pointer">arweave</Badge>
+                                            <Badge variant="default" className="text-xs cursor-pointer">+ add filter</Badge>
+                                        </div>
+                                        {/* List items */}
+                                        <div className="space-y-3">
+                                            {skills.map((skill, i) => (
+                                                <div key={i} className="flex items-start gap-4 p-4 bg-terminal-surface rounded border border-terminal-border hover:border-syntax-blue transition-colors cursor-pointer">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <div className="text-sm font-mono font-semibold mono-gradient">{skill.name}</div>
+                                                            <Badge variant="green" className="text-xs">{skill.version}</Badge>
+                                                            <Badge variant="cyan" className="text-xs">{skill.category}</Badge>
+                                                            <span className="text-xs text-terminal-muted">• {skill.bundledFiles} files</span>
+                                                        </div>
+                                                        <p className="text-xs text-terminal-muted line-clamp-2">{skill.description}</p>
+                                                        <div className="mt-2 text-xs text-terminal-muted/60 font-mono">
+                                                            by {skill.author}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex-shrink-0 text-right">
+                                                        <div className="text-sm font-bold text-syntax-green font-mono">{skill.downloads}</div>
+                                                        <div className="text-xs text-terminal-muted">installs</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Layout 3: Compact Table */}
+                            <div>
+                                <div className="mb-6">
+                                    <h2 className="text-2xl font-bold text-terminal-text font-mono mb-2">
+                                        Layout 3: Terminal Table View
+                                    </h2>
+                                    <p className="text-sm text-terminal-muted mb-3">
+                                        Dense table layout inspired by CLI tools like npm search
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <Badge variant="green">✓ Very scannable</Badge>
+                                        <Badge variant="green">✓ High information density</Badge>
+                                        <Badge variant="yellow">⚠ Less visual appeal</Badge>
+                                    </div>
+                                </div>
+                                <Card>
+                                    <CardContent className="p-6">
+                                        <div className="font-mono text-xs">
+                                            {/* Table header */}
+                                            <div className="flex items-center gap-4 pb-2 mb-3 border-b border-terminal-border text-terminal-muted font-semibold">
+                                                <div className="w-48">NAME</div>
+                                                <div className="flex-1">DESCRIPTION</div>
+                                                <div className="w-20 text-right">VERSION</div>
+                                                <div className="w-20 text-right">INSTALLS</div>
+                                            </div>
+                                            {/* Table rows */}
+                                            {skills.map((skill, i) => (
+                                                <div key={i} className="flex items-center gap-4 py-2 hover:bg-terminal-surface rounded transition-colors cursor-pointer">
+                                                    <div className="w-48 text-syntax-cyan truncate">{skill.name}</div>
+                                                    <div className="flex-1 text-terminal-muted truncate">{skill.description}</div>
+                                                    <div className="w-20 text-right text-syntax-green">{skill.version}</div>
+                                                    <div className="w-20 text-right text-terminal-text">{skill.downloads}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Layout 4: Cards with Preview */}
+                            <div>
+                                <div className="mb-6">
+                                    <h2 className="text-2xl font-bold text-terminal-text font-mono mb-2">
+                                        Layout 4: Expanded Cards with SKILL.md Preview
+                                    </h2>
+                                    <p className="text-sm text-terminal-muted mb-3">
+                                        Single column with expandable skill previews showing actual SKILL.md content
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <Badge variant="green">✓ Shows skill instructions</Badge>
+                                        <Badge variant="green">✓ Better understanding before install</Badge>
+                                        <Badge variant="yellow">⚠ More vertical scrolling</Badge>
+                                    </div>
+                                </div>
+                                <Card>
+                                    <CardContent className="p-6">
+                                        <div className="space-y-4">
+                                            {skills.slice(0, 2).map((skill, i) => (
+                                                <div key={i} className="border border-terminal-border rounded-lg overflow-hidden terminal-border">
+                                                    {/* Card header */}
+                                                    <div className="p-4 bg-terminal-surface">
+                                                        <div className="flex items-start justify-between gap-4">
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <div className="text-base font-mono font-semibold mono-gradient">{skill.name}</div>
+                                                                    <Badge variant="green" className="text-xs">{skill.version}</Badge>
+                                                                </div>
+                                                                <p className="text-sm text-terminal-muted mb-3">{skill.description}</p>
+                                                                <div className="flex items-center gap-3 text-xs">
+                                                                    <Badge variant="cyan">{skill.category}</Badge>
+                                                                    <span className="text-terminal-muted">📦 {skill.bundledFiles} files</span>
+                                                                    <span className="text-terminal-muted">by {skill.author}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex flex-col items-end gap-2">
+                                                                <div className="text-right">
+                                                                    <div className="text-lg font-bold text-syntax-green font-mono">{skill.downloads}</div>
+                                                                    <div className="text-xs text-terminal-muted">installs</div>
+                                                                </div>
+                                                                <Button variant="command" size="sm">
+                                                                    $ install
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {/* Expandable preview */}
+                                                    <details className="group">
+                                                        <summary className="px-4 py-2 bg-terminal-bg border-t border-terminal-border cursor-pointer text-xs text-syntax-blue hover:text-syntax-cyan font-mono flex items-center gap-2">
+                                                            <span className="group-open:rotate-90 transition-transform">▶</span>
+                                                            Preview SKILL.md
+                                                        </summary>
+                                                        <div className="p-4 bg-terminal-bg border-t border-terminal-border text-xs">
+                                                            <div className="text-terminal-muted space-y-2">
+                                                                <p className="text-syntax-purple"># {skill.name}</p>
+                                                                <p>Expert guidance for {skill.category} development...</p>
+                                                                <p className="text-syntax-purple">## When to Use</p>
+                                                                <p>• Use this skill when working with {skill.category}</p>
+                                                            </div>
+                                                        </div>
+                                                    </details>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Layout 5: Masonry Grid */}
+                            <div>
+                                <div className="mb-6">
+                                    <h2 className="text-2xl font-bold text-terminal-text font-mono mb-2">
+                                        Layout 5: Three-Column Masonry
+                                    </h2>
+                                    <p className="text-sm text-terminal-muted mb-3">
+                                        Pinterest-style masonry grid with variable height cards
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <Badge variant="green">✓ Visual variety</Badge>
+                                        <Badge variant="green">✓ Space efficient</Badge>
+                                        <Badge variant="yellow">⚠ May feel cluttered</Badge>
+                                    </div>
+                                </div>
+                                <Card>
+                                    <CardContent className="p-6">
+                                        <div className="grid grid-cols-3 gap-4 auto-rows-auto">
+                                            {skills.map((skill, i) => (
+                                                <div key={i} className="p-3 bg-terminal-surface rounded border border-terminal-border terminal-border" style={{height: i % 2 === 0 ? 'auto' : 'auto'}}>
+                                                    <div className="text-sm font-mono font-semibold text-syntax-cyan mb-2">{skill.name}</div>
+                                                    <div className="flex gap-1 mb-2">
+                                                        <Badge variant="green" className="text-xs">{skill.version}</Badge>
+                                                    </div>
+                                                    <p className="text-xs text-terminal-muted line-clamp-3 mb-3">{skill.description}</p>
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className="text-terminal-muted">{skill.author}</span>
+                                                        <span className="text-syntax-green font-mono">{skill.downloads}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Recommendation */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-syntax-green">
+                                        Recommended: Layout 2 (Full-Width List) ⭐
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-3 text-sm text-terminal-muted">
+                                        <p><strong className="text-terminal-text">Why this works best:</strong></p>
+                                        <ul className="space-y-2 ml-4">
+                                            <li>• <strong className="text-syntax-green">CLI Aesthetic:</strong> List view feels like terminal output (ls, npm search)</li>
+                                            <li>• <strong className="text-syntax-blue">More Context:</strong> Wider layout allows full descriptions to be visible</li>
+                                            <li>• <strong className="text-syntax-cyan">Better Scanning:</strong> Vertical list is faster to scan than grid</li>
+                                            <li>• <strong className="text-syntax-purple">Inline Filters:</strong> Filter chips at top instead of sidebar saves horizontal space</li>
+                                            <li>• <strong className="text-syntax-yellow">Bundled Files Visible:</strong> Shows "5 files" count inline</li>
+                                        </ul>
+                                        <div className="p-4 bg-syntax-green/10 border border-syntax-green/30 rounded-lg mt-4">
+                                            <strong className="text-syntax-green">Alternative:</strong> Layout 4 (Expanded Cards) is great if users want to preview SKILL.md before installing
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+
+                    <Footer />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<SearchLayoutsShowcase />);
+    </script>
+</body>
+</html>

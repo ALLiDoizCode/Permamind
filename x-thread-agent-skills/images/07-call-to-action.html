@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Started</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #1e1e1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .terminal {
+            background: #1e1e1e;
+            border: 2px solid #333;
+            border-radius: 8px;
+            width: 900px;
+            box-shadow: 0 20px 60px rgba(0, 255, 255, 0.3);
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: #2d2d2d;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #444;
+        }
+
+        .terminal-button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .terminal-button.close { background: #ff5f56; }
+        .terminal-button.minimize { background: #ffbd2e; }
+        .terminal-button.maximize { background: #27c93f; }
+
+        .terminal-title {
+            color: #999;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .terminal-body {
+            padding: 40px;
+            color: #00ff00;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .banner {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .banner-text {
+            font-size: 28px;
+            color: #00ffff;
+            font-weight: bold;
+            text-shadow: 0 0 20px #00ffff;
+            margin-bottom: 10px;
+        }
+
+        .banner-subtitle {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .steps {
+            background: #2d2d2d;
+            border-radius: 8px;
+            padding: 30px;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+        }
+
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            background: #1e1e1e;
+            border-radius: 4px;
+            border-left: 4px solid #27c93f;
+            transition: all 0.3s ease;
+        }
+
+        .step:hover {
+            transform: translateX(5px);
+            box-shadow: 0 0 15px rgba(39, 201, 63, 0.3);
+        }
+
+        .step-number {
+            color: #00ffff;
+            font-size: 24px;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .step-title {
+            color: #00ffff;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .step-command {
+            background: #252525;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            color: #00ff00;
+            margin-top: 10px;
+            border: 1px solid #333;
+        }
+
+        .links-section {
+            margin-top: 30px;
+            padding: 25px;
+            background: #2d2d2d;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+
+        .links-title {
+            color: #00ffff;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .link-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            background: #1e1e1e;
+            border-radius: 4px;
+            border: 1px solid #333;
+            transition: all 0.3s ease;
+        }
+
+        .link-item:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+
+        .link-icon {
+            font-size: 20px;
+            margin-right: 15px;
+        }
+
+        .link-label {
+            color: #888;
+            margin-right: 10px;
+        }
+
+        .link-url {
+            color: #00ffff;
+            font-weight: bold;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: #888;
+            font-size: 12px;
+            border-top: 1px solid #333;
+        }
+
+        .footer-highlight {
+            color: #00ffff;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+            }
+            50% {
+                text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+            }
+        }
+
+        .banner-text {
+            animation: glow 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <div class="terminal-header">
+            <div class="terminal-button close"></div>
+            <div class="terminal-button minimize"></div>
+            <div class="terminal-button maximize"></div>
+            <div class="terminal-title">get-started.sh — 80×24</div>
+        </div>
+        <div class="terminal-body">
+            <div class="banner">
+                <div class="banner-text">🚀 GET STARTED NOW 🚀</div>
+                <div class="banner-subtitle">Join the decentralized Agent Skills revolution</div>
+            </div>
+
+            <div class="steps">
+                <div class="step">
+                    <span class="step-number">1.</span>
+                    <div style="display: inline-block; vertical-align: top; width: calc(100% - 50px);">
+                        <div class="step-title">Install the CLI</div>
+                        <div class="step-command">$ npm install -g @permamind/skills</div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2.</span>
+                    <div style="display: inline-block; vertical-align: top; width: calc(100% - 50px);">
+                        <div class="step-title">Search for Skills</div>
+                        <div class="step-command">$ skills search arweave</div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3.</span>
+                    <div style="display: inline-block; vertical-align: top; width: calc(100% - 50px);">
+                        <div class="step-title">Install Skills</div>
+                        <div class="step-command">$ skills install ao-basics</div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4.</span>
+                    <div style="display: inline-block; vertical-align: top; width: calc(100% - 50px);">
+                        <div class="step-title">Publish Your Expertise</div>
+                        <div class="step-command">$ skills publish ./my-skill</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="links-section">
+                <div class="links-title">📚 Resources & Community</div>
+
+                <div class="link-item">
+                    <div class="link-icon">🔗</div>
+                    <div class="link-label">GitHub:</div>
+                    <div class="link-url">github.com/permamind/skills</div>
+                </div>
+
+                <div class="link-item">
+                    <div class="link-icon">📖</div>
+                    <div class="link-label">Docs:</div>
+                    <div class="link-url">docs.permamind.ai</div>
+                </div>
+
+                <div class="link-item">
+                    <div class="link-icon">💬</div>
+                    <div class="link-label">Discord:</div>
+                    <div class="link-url">discord.gg/permamind</div>
+                </div>
+
+                <div class="link-item">
+                    <div class="link-icon">🐦</div>
+                    <div class="link-label">Twitter:</div>
+                    <div class="link-url">@permamind_ai</div>
+                </div>
+            </div>
+
+            <div class="footer">
+                <div class="footer-highlight">The permanent web needs your knowledge. 🌍</div>
+                <div>Built on Arweave & AO • Open Source • Production Ready</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

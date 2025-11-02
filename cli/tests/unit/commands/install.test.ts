@@ -12,11 +12,11 @@ import * as os from 'os';
 
 describe('Install Command - Unit Tests', () => {
   describe('resolveInstallLocation()', () => {
-    it('should return global path by default', () => {
+    it('should return local path by default', () => {
       const options: IInstallOptions = {};
       const result = resolveInstallLocation(options);
 
-      expect(result).toBe(path.join(os.homedir(), '.claude', 'skills'));
+      expect(result).toBe(path.join(process.cwd(), '.claude', 'skills'));
     });
 
     it('should return global path when --global is set', () => {
@@ -33,11 +33,11 @@ describe('Install Command - Unit Tests', () => {
       expect(result).toBe(path.join(process.cwd(), '.claude', 'skills'));
     });
 
-    it('should prefer local over global when both set', () => {
+    it('should prefer global when both flags set', () => {
       const options: IInstallOptions = { global: true, local: true };
       const result = resolveInstallLocation(options);
 
-      expect(result).toBe(path.join(process.cwd(), '.claude', 'skills'));
+      expect(result).toBe(path.join(os.homedir(), '.claude', 'skills'));
     });
   });
 

@@ -1,5 +1,0 @@
-{
-  "wallet": "~/.arweave/wallet.json",
-  "registry": "REGISTRY_PROCESS_ID",
-  "gateway": "https://arweave.net"
-}

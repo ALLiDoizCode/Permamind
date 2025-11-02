@@ -3,6 +3,7 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/cli/tests'],
   testMatch: ['**/*.test.ts'],
+  setupFilesAfterEnv: ['<rootDir>/cli/tests/setup.ts'],
   transform: {
     '^.+\\.ts$': ['ts-jest', {
       useESM: false,
@@ -17,9 +18,9 @@ module.exports = {
       }
     }]
   },
-  // Prevent babel-jest from being used as default transformer
+  // Transform ESM modules like @permaweb/aoconnect
   transformIgnorePatterns: [
-    '/node_modules/'
+    '/node_modules/(?!(@permaweb)/)'
   ],
   collectCoverageFrom: [
     'cli/src/**/*.ts',

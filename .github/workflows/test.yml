@@ -1,5 +1,6 @@
 name: Test
 
+# CI/CD for PR validation
 on:
   push:
     branches:

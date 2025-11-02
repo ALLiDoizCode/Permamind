@@ -27,35 +27,26 @@ The @permamind/skills package currently provides a CLI tool for managing agent s
 
 ## Stories
 
-### Story 8.1: Refactor CLI to Shared Library & Add Seed Phrase Wallet Generation
+Epic 8 is divided into **11 stories** across 3 phases:
 
-Extract reusable business logic from CLI commands and add deterministic wallet generation from seed phrase.
+### Phase 1: Wallet & Library Foundation (Stories 8.1-8.5)
+- **8.1**: Implement Seed Phrase Wallet Generation (library only)
+- **8.2**: Refactor Wallet Manager to Use WalletFactory
+- **8.3**: Extract Publish Logic to Shared Library
+- **8.4**: Extract Search Logic to Shared Library
+- **8.5**: Extract Install Logic to Shared Library
 
-**Key Tasks:**
-- Extract publish/search/install logic into shared library modules
-- Port BIP39 mnemonic → Arweave JWK conversion from Permamind MCP server
-- Add `SEED_PHRASE` environment variable support to CLI
-- Maintain backward compatibility with file-based wallet
+### Phase 2: MCP Server Implementation (Stories 8.6-8.9)
+- **8.6**: MCP Server Package Setup
+- **8.7**: Implement publish_skill MCP Tool
+- **8.8**: Implement search_skills MCP Tool
+- **8.9**: Implement install_skill MCP Tool
 
-### Story 8.2: MCP Server Implementation
+### Phase 3: Testing & Documentation (Stories 8.10-8.11)
+- **8.10**: Cross-Compatibility Integration Tests
+- **8.11**: MCP Server Documentation & Examples
 
-Create new MCP server package that exposes skill management as MCP tools.
-
-**Key Tasks:**
-- Create `mcp-server/` package in monorepo
-- Implement MCP protocol handlers for three tools
-- Configure seed phrase wallet generation via `SEED_PHRASE` env var
-- Add error handling for MCP error responses
-
-### Story 8.3: Integration Testing & Documentation
-
-Validate cross-compatibility and document MCP server usage.
-
-**Key Tasks:**
-- Integration tests for CLI ↔ MCP compatibility
-- Test both wallet types (file-based and seed phrase)
-- Document MCP server installation and configuration
-- Create example workflows for Claude AI
+See `docs/stories/epic-8.md` for detailed story descriptions.
 
 ## Success Criteria
 
@@ -75,4 +66,11 @@ Validate cross-compatibility and document MCP server usage.
 
 ## Timeline
 
-Estimated 3 stories, ~5-7 days of development work.
+**11 stories across 3 phases**:
+- **Phase 1** (Stories 8.1-8.5): Wallet & Library Foundation - ~5-7 days
+- **Phase 2** (Stories 8.6-8.9): MCP Server Implementation - ~4-5 days
+- **Phase 3** (Stories 8.10-8.11): Testing & Documentation - ~2-3 days
+
+**Total estimated time**: ~11-15 days of development work
+
+Stories are sized to be independently deliverable and testable, enabling incremental progress validation.

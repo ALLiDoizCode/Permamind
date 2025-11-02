@@ -47,33 +47,120 @@ The @permamind/skills package currently exists as:
 
 ## Stories
 
-1. **Story 8.1: Refactor CLI to Shared Library & Add Seed Phrase Wallet Generation**
-   - Extract reusable business logic from CLI commands into shared library modules
-   - Create clear interfaces for publish/search/install operations independent of Commander.js
-   - **Add deterministic wallet generation from seed phrase** (port from Permamind MCP server)
-     - Implement BIP39 mnemonic → Arweave JWK conversion using custom-key-generation approach
-     - Support both file-based wallet (existing) and seed phrase wallet (new)
-     - Add `SEED_PHRASE` environment variable support to CLI
-   - Ensure existing CLI commands still work by importing refactored library
-   - Update tests to cover both CLI command usage and direct library usage
+### Phase 1: Wallet & Library Foundation (Stories 8.1-8.3)
 
-2. **Story 8.2: MCP Server Implementation**
-   - Create new `mcp-server/` directory in monorepo with MCP server package
-   - Implement MCP protocol handlers for publish_skill, search_skills, install_skill tools
-   - Import and use refactored library modules for actual skill operations
-   - **Configure MCP server to use seed phrase wallet generation**:
-     - Accept `SEED_PHRASE` environment variable (12-word BIP39 mnemonic)
-     - Use refactored wallet generation module to create Arweave JWK from seed phrase
-     - No file-based wallet required (simplifies MCP deployment)
-   - Add additional MCP server configuration for registry process ID, install location
-   - Implement proper error handling that translates library errors to MCP error responses
+1. **Story 8.1: Implement Seed Phrase Wallet Generation**
+   - Port custom-key-generation approach from Permamind MCP server
+   - Implement BIP39 mnemonic → Arweave JWK conversion
+     - Use deterministic PRNG with SHA-256 hashing
+     - Generate RSA key material from seed buffer
+     - Convert to Arweave JWK format
+   - Create WalletFactory class supporting both wallet types:
+     - `fromFile(path)` - existing file-based wallet (backward compatible)
+     - `fromSeedPhrase(mnemonic)` - new seed phrase wallet
+   - Add comprehensive tests for deterministic key generation
+   - No CLI integration yet (library only)
 
-3. **Story 8.3: Integration Testing & Documentation**
-   - Create integration tests that validate MCP tools against aolite + mocked Arweave
-   - Test cross-compatibility: skills published via CLI can be found via MCP search
-   - Test cross-compatibility: skills installed via MCP appear in CLI environment
-   - Document MCP server installation, configuration, and usage in README
-   - Create example workflows showing Claude AI using MCP tools
+2. **Story 8.2: Refactor Wallet Manager to Use WalletFactory**
+   - Update existing wallet-manager.ts to use new WalletFactory
+   - Add `SEED_PHRASE` environment variable support
+   - Implement wallet selection logic:
+     - If `SEED_PHRASE` env var exists, use seed phrase wallet
+     - Else if `--wallet` flag exists, use file-based wallet
+     - Else use default wallet path
+   - Ensure all existing CLI commands continue working
+   - Update wallet manager tests to cover both wallet types
+
+3. **Story 8.3: Extract Publish Logic to Shared Library**
+   - Extract publish business logic from `commands/publish.ts` to `lib/publish-service.ts`
+   - Create `PublishService` class with clear interface:
+     - `publish(directory: string, options: PublishOptions): Promise<PublishResult>`
+   - Update `commands/publish.ts` to use PublishService
+   - Ensure all existing publish tests still pass
+   - No functional changes (pure refactoring)
+
+4. **Story 8.4: Extract Search Logic to Shared Library**
+   - Extract search business logic from `commands/search.ts` to `lib/search-service.ts`
+   - Create `SearchService` class with interface:
+     - `search(query: string, options: SearchOptions): Promise<SearchResult[]>`
+   - Update `commands/search.ts` to use SearchService
+   - Ensure all existing search tests still pass
+   - No functional changes (pure refactoring)
+
+5. **Story 8.5: Extract Install Logic to Shared Library**
+   - Extract install business logic from `commands/install.ts` to `lib/install-service.ts`
+   - Create `InstallService` class with interface:
+     - `install(skillName: string, options: InstallOptions): Promise<InstallResult>`
+   - Update `commands/install.ts` to use InstallService
+   - Ensure all existing install tests still pass
+   - Verify dependency resolution still works correctly
+
+### Phase 2: MCP Server Implementation (Stories 8.6-8.9)
+
+6. **Story 8.6: MCP Server Package Setup**
+   - Create new `mcp-server/` directory in monorepo
+   - Initialize package.json with MCP SDK dependencies
+   - Set up TypeScript configuration for MCP server
+   - Create basic MCP server scaffold with server initialization
+   - Add environment variable configuration:
+     - `SEED_PHRASE` (required) - 12-word BIP39 mnemonic
+     - `REGISTRY_PROCESS_ID` (optional) - AO registry process ID
+     - `INSTALL_LOCATION` (optional) - skill installation directory
+   - Verify server can start and register with MCP protocol
+
+7. **Story 8.7: Implement publish_skill MCP Tool**
+   - Create `publish_skill` MCP tool handler
+   - Import and use PublishService from shared library
+   - Configure to use seed phrase wallet from `SEED_PHRASE` env var
+   - Map MCP tool parameters to PublishService options:
+     - `directory` (required) - path to skill directory
+     - `verbose` (optional) - enable verbose output
+   - Implement error handling that translates library errors to MCP error responses
+   - Add tests using mocked Arweave + aolite
+
+8. **Story 8.8: Implement search_skills MCP Tool**
+   - Create `search_skills` MCP tool handler
+   - Import and use SearchService from shared library
+   - Map MCP tool parameters to SearchService options:
+     - `query` (required) - search query string
+     - `tags` (optional) - filter by tags
+   - Format results for MCP response (JSON array)
+   - Add tests validating search results format
+
+9. **Story 8.9: Implement install_skill MCP Tool**
+   - Create `install_skill` MCP tool handler
+   - Import and use InstallService from shared library
+   - Map MCP tool parameters to InstallService options:
+     - `skillName` (required) - name of skill to install
+     - `force` (optional) - overwrite existing installation
+     - `installLocation` (optional) - custom install path
+   - Implement progress reporting through MCP status updates
+   - Add tests for dependency resolution and installation
+
+### Phase 3: Testing & Documentation (Stories 8.10-8.11)
+
+10. **Story 8.10: Cross-Compatibility Integration Tests**
+    - Test CLI publish → MCP search (verify skills are discoverable)
+    - Test MCP publish → CLI search (verify cross-tool compatibility)
+    - Test CLI install → verify MCP can use installed skills
+    - Test MCP install → verify CLI can use installed skills
+    - Validate lock file format compatibility
+    - Test both wallet types produce compatible results
+    - Verify deterministic wallet generates same keys from same seed
+
+11. **Story 8.11: MCP Server Documentation & Examples**
+    - Create MCP server README with:
+      - Installation instructions
+      - Configuration guide (environment variables)
+      - Claude Desktop setup example
+      - Troubleshooting section
+    - Document all three MCP tools with parameter descriptions
+    - Create example workflows:
+      - Claude AI publishing a skill
+      - Claude AI searching and installing skills
+      - Setting up seed phrase wallet
+    - Add MCP server to main repository README
+    - Create video/GIF demo of MCP tools in action (optional)
 
 ## Compatibility Requirements
 

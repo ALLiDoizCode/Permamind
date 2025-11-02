@@ -14,19 +14,39 @@ import * as aoRegistryClient from '../../src/clients/ao-registry-client';
 import { ISkillMetadata, IAODryrunResult } from '../../src/types/ao-registry';
 import { NetworkError, ConfigurationError } from '../../src/types/errors';
 
-// Mock @permaweb/aoconnect with realistic message structures
-jest.mock('@permaweb/aoconnect', () => ({
-  __esModule: true,
-  connect: jest.fn(() => ({
-    message: jest.fn(),
-    dryrun: jest.fn(),
-    result: jest.fn(),
-  })),
-  message: jest.fn(),
-  dryrun: jest.fn(),
-  result: jest.fn(),
-  createDataItemSigner: jest.fn((wallet) => ({ wallet })),
-}));
+// Declare global to store mocks (available before hoisting)
+declare global {
+  var __aoMocks: any;
+}
+
+jest.mock('@permaweb/aoconnect', () => {
+  // Define mocks inside factory
+  const _mockMessage = jest.fn();
+  const _mockDryrun = jest.fn();
+  const _mockResult = jest.fn();
+  const _mockCreateDataItemSigner = jest.fn((wallet: any) => ({ wallet }));
+
+  // Store in global so tests can access them
+  global.__aoMocks = {
+    message: _mockMessage,
+    dryrun: _mockDryrun,
+    result: _mockResult,
+    createDataItemSigner: _mockCreateDataItemSigner,
+  };
+
+  return {
+    __esModule: true,
+    connect: jest.fn(() => ({
+      message: _mockMessage,
+      dryrun: _mockDryrun,
+      result: _mockResult,
+    })),
+    message: _mockMessage,
+    dryrun: _mockDryrun,
+    result: _mockResult,
+    createDataItemSigner: _mockCreateDataItemSigner,
+  };
+});
 
 // Mock registry-config
 jest.mock('../../src/lib/registry-config', () => ({
@@ -58,7 +78,6 @@ jest.mock('../../src/utils/logger', () => {
   };
 });
 
-import { dryrun, message, createDataItemSigner } from '@permaweb/aoconnect';
 import { loadConfig } from '../../src/lib/config-loader';
 
 describe('AO Registry Client Integration Tests', () => {
@@ -73,7 +92,7 @@ describe('AO Registry Client Integration Tests', () => {
     jest.clearAllMocks();
     process.env.AO_REGISTRY_PROCESS_ID = mockProcessId;
     (loadConfig as jest.Mock).mockResolvedValue({});
-    (createDataItemSigner as jest.Mock).mockImplementation((wallet) => ({ wallet }));
+    // createDataItemSigner is already mocked in the factory
   });
 
   afterEach(() => {
@@ -121,7 +140,7 @@ describe('AO Registry Client Integration Tests', () => {
         ],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__aoMocks.dryrun.mockResolvedValue(aoResponse);
 
       const results = await aoRegistryClient.searchSkills('arweave');
 
@@ -144,7 +163,7 @@ describe('AO Registry Client Integration Tests', () => {
         ],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__aoMocks.dryrun.mockResolvedValue(aoResponse);
 
       const results = await aoRegistryClient.searchSkills('nonexistent-query');
 
@@ -156,7 +175,7 @@ describe('AO Registry Client Integration Tests', () => {
         Messages: [],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__aoMocks.dryrun.mockResolvedValue(aoResponse);
 
       const results = await aoRegistryClient.searchSkills('empty-process');
 
@@ -192,7 +211,7 @@ describe('AO Registry Client Integration Tests', () => {
         ],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__aoMocks.dryrun.mockResolvedValue(aoResponse);
 
       const result = await aoRegistryClient.getSkill('permamind-integration');
 
@@ -206,7 +225,7 @@ describe('AO Registry Client Integration Tests', () => {
         Messages: [],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__aoMocks.dryrun.mockResolvedValue(aoResponse);
 
       const result = await aoRegistryClient.getSkill('nonexistent-skill');
 
@@ -254,7 +273,7 @@ describe('AO Registry Client Integration Tests', () => {
         ],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__aoMocks.dryrun.mockResolvedValue(aoResponse);
 
       const result = await aoRegistryClient.getRegistryInfo();
 
@@ -267,7 +286,7 @@ describe('AO Registry Client Integration Tests', () => {
 
   describe('Error handling with realistic AO failure scenarios', () => {
     it('should handle AO network timeout gracefully', async () => {
-      (dryrun as jest.Mock).mockImplementation(
+      global.__aoMocks.dryrun.mockImplementation(
         () => new Promise(() => {}) // Never resolves (timeout scenario)
       );
 
@@ -284,7 +303,7 @@ describe('AO Registry Client Integration Tests', () => {
         ],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__aoMocks.dryrun.mockResolvedValue(aoResponse);
 
       await expect(aoRegistryClient.searchSkills('malformed-test')).rejects.toThrow();
     });
@@ -300,7 +319,7 @@ describe('AO Registry Client Integration Tests', () => {
   describe('registerSkill() with realistic message sending', () => {
     it('should send properly formatted message to AO process', async () => {
       const messageId = 'msg_id_43_chars_ggggggggggggggggggggggg';
-      (message as jest.Mock).mockResolvedValue(messageId);
+      global.__aoMocks.message.mockResolvedValue(messageId);
 
       const metadata: ISkillMetadata = {
         name: 'test-skill',

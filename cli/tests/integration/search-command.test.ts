@@ -13,19 +13,38 @@ import * as searchCommand from '../../src/commands/search';
 import { ISkillMetadata, IAODryrunResult } from '../../src/types/ao-registry';
 import { NetworkError, ConfigurationError } from '../../src/types/errors';
 
+// Declare global to store mocks
+declare global {
+  var __searchMocks: any;
+}
+
 // Mock @permaweb/aoconnect with realistic message structures
-jest.mock('@permaweb/aoconnect', () => ({
-  __esModule: true,
-  connect: jest.fn(() => ({
-    message: jest.fn(),
-    dryrun: jest.fn(),
-    result: jest.fn(),
-  })),
-  message: jest.fn(),
-  dryrun: jest.fn(),
-  result: jest.fn(),
-  createDataItemSigner: jest.fn((wallet) => ({ wallet })),
-}));
+jest.mock('@permaweb/aoconnect', () => {
+  const _mockMessage = jest.fn();
+  const _mockDryrun = jest.fn();
+  const _mockResult = jest.fn();
+  const _mockCreateDataItemSigner = jest.fn((wallet: any) => ({ wallet }));
+
+  global.__searchMocks = {
+    message: _mockMessage,
+    dryrun: _mockDryrun,
+    result: _mockResult,
+    createDataItemSigner: _mockCreateDataItemSigner,
+  };
+
+  return {
+    __esModule: true,
+    connect: jest.fn(() => ({
+      message: _mockDryrun,
+      dryrun: _mockDryrun,
+      result: _mockResult,
+    })),
+    message: _mockMessage,
+    dryrun: _mockDryrun,
+    result: _mockResult,
+    createDataItemSigner: _mockCreateDataItemSigner,
+  };
+});
 
 // Mock registry-config
 jest.mock('../../src/lib/registry-config', () => ({
@@ -82,12 +101,8 @@ jest.mock('chalk', () => ({
   dim: jest.fn((s) => s),
 }));
 
-import { dryrun } from '@permaweb/aoconnect';
 import { loadConfig } from '../../src/lib/config-loader';
 import logger from '../../src/utils/logger';
-
-// Setup mocks
-(dryrun as jest.Mock) = jest.fn();
 
 describe('Search Command Integration Tests', () => {
   const mockProcessId = 'abc123def456ghi789jkl012mno345pqr678stu901';
@@ -143,7 +158,7 @@ describe('Search Command Integration Tests', () => {
         ],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__searchMocks.dryrun.mockResolvedValue(aoResponse);
 
       // Execute search command
       const results = await searchCommand.execute('arweave', {});
@@ -187,7 +202,7 @@ describe('Search Command Integration Tests', () => {
         ],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__searchMocks.dryrun.mockResolvedValue(aoResponse);
 
       await searchCommand.execute('test', {});
 
@@ -219,7 +234,7 @@ describe('Search Command Integration Tests', () => {
         ],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__searchMocks.dryrun.mockResolvedValue(aoResponse);
 
       // Test table format (default)
       jest.clearAllMocks();
@@ -268,7 +283,7 @@ describe('Search Command Integration Tests', () => {
         ],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__searchMocks.dryrun.mockResolvedValue(aoResponse);
 
       // Execute with empty query
       const results = await searchCommand.execute('', {});
@@ -310,7 +325,7 @@ describe('Search Command Integration Tests', () => {
         ],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__searchMocks.dryrun.mockResolvedValue(aoResponse);
 
       await searchCommand.execute('verbose', { verbose: true });
 
@@ -399,7 +414,7 @@ describe('Search Command Integration Tests', () => {
         ],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__searchMocks.dryrun.mockResolvedValue(aoResponse);
 
       const startTime = Date.now();
       await searchCommand.execute('skill', {});
@@ -512,7 +527,7 @@ describe('Search Command Integration Tests', () => {
         ],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__searchMocks.dryrun.mockResolvedValue(aoResponse);
 
       const results = await searchCommand.execute('arweave', {});
 
@@ -576,7 +591,7 @@ describe('Search Command Integration Tests', () => {
         Messages: [{ Data: JSON.stringify(mockSkills) }],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__searchMocks.dryrun.mockResolvedValue(aoResponse);
 
       const results = await searchCommand.execute('tag-filter-test-1', { tag: ['ao'] });
 
@@ -629,7 +644,7 @@ describe('Search Command Integration Tests', () => {
         Messages: [{ Data: JSON.stringify(mockSkills) }],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__searchMocks.dryrun.mockResolvedValue(aoResponse);
 
       const results = await searchCommand.execute('tag-filter-test-2', { tag: ['ao', 'blockchain'] });
 
@@ -659,7 +674,7 @@ describe('Search Command Integration Tests', () => {
         Messages: [{ Data: JSON.stringify(mockSkills) }],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__searchMocks.dryrun.mockResolvedValue(aoResponse);
 
       const results = await searchCommand.execute('tag-filter-test-3', { tag: ['ao', 'blockchain'] });
 
@@ -688,7 +703,7 @@ describe('Search Command Integration Tests', () => {
         Messages: [{ Data: JSON.stringify(mockSkills) }],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__searchMocks.dryrun.mockResolvedValue(aoResponse);
 
       const results = await searchCommand.execute('tag-filter-test-4', { tag: ['nonexistent'] });
 
@@ -721,7 +736,7 @@ describe('Search Command Integration Tests', () => {
         Messages: [{ Data: JSON.stringify(mockSkills) }],
       };
 
-      (dryrun as jest.Mock).mockResolvedValue(aoResponse);
+      global.__searchMocks.dryrun.mockResolvedValue(aoResponse);
 
       await searchCommand.execute('tag-filter-test-5', { tag: ['ao'] });
 

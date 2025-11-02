@@ -10,7 +10,23 @@ import { ISkillMetadata } from '../../../src/types/ao-registry';
 import { NetworkError, ConfigurationError } from '../../../src/types/errors';
 
 // Mock @permaweb/aoconnect
-jest.mock('@permaweb/aoconnect');
+jest.mock('@permaweb/aoconnect', () => {
+  const mockMessage = jest.fn();
+  const mockDryrun = jest.fn();
+  const mockResult = jest.fn();
+  return {
+    __esModule: true,
+    connect: jest.fn(() => ({
+      message: mockMessage,
+      dryrun: mockDryrun,
+      result: mockResult,
+    })),
+    message: mockMessage,
+    dryrun: mockDryrun,
+    result: mockResult,
+    createDataItemSigner: jest.fn((wallet) => ({ wallet })),
+  };
+});
 
 // Mock config-loader
 jest.mock('../../../src/lib/config-loader', () => ({

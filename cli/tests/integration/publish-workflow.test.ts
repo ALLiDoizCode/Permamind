@@ -46,6 +46,11 @@ const mockCreateDataItemSigner = jest.fn();
 
 jest.mock('@permaweb/aoconnect', () => ({
   __esModule: true,
+  connect: jest.fn(() => ({
+    message: (...args: any[]) => mockMessage(...args),
+    dryrun: (...args: any[]) => mockDryrun(...args),
+    result: (...args: any[]) => mockResult(...args),
+  })),
   message: (...args: any[]) => mockMessage(...args),
   dryrun: (...args: any[]) => mockDryrun(...args),
   result: (...args: any[]) => mockResult(...args),

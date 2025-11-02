@@ -4,6 +4,20 @@
  */
 
 /**
+ * Bundled file metadata
+ */
+export interface IBundledFile {
+  name: string;
+  icon: string;
+  type: 'markdown' | 'python' | 'javascript' | 'script' | 'text';
+  size: string; // Formatted size like "4.2 KB"
+  description: string;
+  level: 'Level 2' | 'Level 3';
+  preview: string;
+  path?: string;
+}
+
+/**
  * Complete skill metadata stored in AO registry
  * Extends ISkillManifest with registry-specific fields
  */
@@ -37,6 +51,9 @@ export interface ISkillMetadata {
 
   /** Optional changelog for this version */
   changelog?: string;
+
+  /** Optional bundled files metadata */
+  bundledFiles?: IBundledFile[];
 
   /** Download count for this version */
   downloadCount?: number;

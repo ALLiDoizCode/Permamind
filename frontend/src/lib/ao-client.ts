@@ -1,22 +1,18 @@
 import { connect } from '@permaweb/aoconnect';
+import { getRegistryProcessId, getMuUrl, getCuUrl } from './registry-config';
 
-// Randao CU/MU endpoints for reliable AO gateway access
-const MU_URL = import.meta.env.VITE_MU_URL || 'https://ur-mu.randao.net';
-const CU_URL = import.meta.env.VITE_CU_URL || 'https://ur-cu.randao.net';
-
-// Configure AO connection (legacy mode for custom CU/MU)
+// Configure AO connection with centralized configuration
 const ao = connect({
   MODE: 'legacy' as const,
-  MU_URL,
-  CU_URL,
+  MU_URL: getMuUrl(),
+  CU_URL: getCuUrl(),
 });
 
 export const { dryrun } = ao;
 
-// Registry process ID on AO mainnet
-export const REGISTRY_PROCESS_ID =
-  import.meta.env.VITE_REGISTRY_PROCESS_ID ||
-  'aMF8MaSntSA_O1JMSsi3wLOcvZd1bCYLqcEQBGsxHVk';
+// Registry process ID from centralized config
+// Users don't need to configure this manually
+export const REGISTRY_PROCESS_ID = getRegistryProcessId();
 
 // Example: Fetch registry info
 export async function fetchRegistryInfo() {

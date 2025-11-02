@@ -1,4 +1,14 @@
 import { dryrun, REGISTRY_PROCESS_ID } from '@/lib/ao-client';
+import {
+  buildHyperbeamUrl,
+  hyperbeamFetch,
+  SEARCH_SKILLS_SCRIPT_ID,
+  GET_SKILL_SCRIPT_ID,
+  GET_SKILL_VERSIONS_SCRIPT_ID,
+  GET_DOWNLOAD_STATS_SCRIPT_ID,
+  INFO_SCRIPT_ID,
+  LIST_SKILLS_SCRIPT_ID,
+} from '@/lib/hyperbeam-client';
 import type {
   SkillMetadata,
   PaginatedSkills,
@@ -79,40 +89,49 @@ export async function searchSkills(
   if (cached) return cached;
 
   try {
-    const result = await dryrun({
-      process: REGISTRY_PROCESS_ID,
-      tags: [
-        { name: 'Action', value: 'Search-Skills' },
-        { name: 'Query', value: sanitizedQuery },
-      ],
+    // HyperBEAM Dynamic Reads with dryrun fallback
+    const url = buildHyperbeamUrl(SEARCH_SKILLS_SCRIPT_ID, 'searchSkills', {
+      query: sanitizedQuery,
     });
 
-    // Validate response structure
-    if (!result || !result.Messages || !Array.isArray(result.Messages)) {
-      throw new RegistryError(
-        'Invalid response structure from registry',
-        'INVALID_RESPONSE'
-      );
-    }
+    const response = await hyperbeamFetch<{
+      results: SkillMetadata[];
+      total: number;
+      query: string;
+    }>(url, async () => {
+      // Fallback to dryrun if HyperBEAM fails
+      const result = await dryrun({
+        process: REGISTRY_PROCESS_ID,
+        tags: [
+          { name: 'Action', value: 'Search-Skills' },
+          { name: 'Query', value: sanitizedQuery },
+        ],
+      });
 
-    if (result.Messages.length === 0) {
-      throw new RegistryError(
-        'No response from registry process',
-        'EMPTY_RESPONSE'
-      );
-    }
+      // Validate response structure
+      if (!result || !result.Messages || !Array.isArray(result.Messages)) {
+        throw new RegistryError(
+          'Invalid response structure from registry',
+          'INVALID_RESPONSE'
+        );
+      }
 
-    // Check for error message
-    if (result.Error) {
-      throw new RegistryError(
-        `Registry error: ${result.Error}`,
-        'REGISTRY_ERROR'
-      );
-    }
+      if (result.Messages.length === 0) {
+        throw new RegistryError(
+          'No response from registry process',
+          'EMPTY_RESPONSE'
+        );
+      }
 
-    // Parse JSON safely
-    let data: SkillMetadata[];
-    try {
+      // Check for error message
+      if (result.Error) {
+        throw new RegistryError(
+          `Registry error: ${result.Error}`,
+          'REGISTRY_ERROR'
+        );
+      }
+
+      // Parse JSON safely
       const rawData = JSON.parse(result.Messages[0].Data);
 
       // Validate expected structure - registry sends direct array
@@ -123,18 +142,14 @@ export async function searchSkills(
         );
       }
 
-      // Map downloadCount to downloads for frontend compatibility
-      data = rawData.map((skill: any) => ({
-        ...skill,
-        downloads: skill.downloadCount ?? skill.downloads ?? 0,
-      }));
-    } catch (parseError) {
-      throw new RegistryError(
-        'Failed to parse registry response as JSON',
-        'PARSE_ERROR',
-        parseError
-      );
-    }
+      return { results: rawData, total: rawData.length, query: sanitizedQuery };
+    });
+
+    // Map downloadCount to downloads for frontend compatibility
+    const data = response.results.map((skill: any) => ({
+      ...skill,
+      downloads: skill.downloadCount ?? skill.downloads ?? 0,
+    }));
 
     // Cache successful result
     setCache(cacheKey, data);
@@ -186,65 +201,80 @@ export async function listSkills(
   if (cached) return cached;
 
   try {
-    const tags = [
-      { name: 'Action', value: 'List-Skills' },
-      { name: 'Limit', value: String(limit) },
-      { name: 'Offset', value: String(offset) },
-    ];
-
-    if (filterTags.length > 0) {
-      tags.push({ name: 'FilterTags', value: filterTags.join(',') });
-    }
-
-    if (filterName) {
-      tags.push({ name: 'FilterName', value: filterName });
-    }
-
-    if (featured) {
-      tags.push({ name: 'Featured', value: 'true' });
-    }
-
-    const result = await dryrun({
-      process: REGISTRY_PROCESS_ID,
-      tags,
+    // HyperBEAM Dynamic Reads with dryrun fallback
+    const url = buildHyperbeamUrl(LIST_SKILLS_SCRIPT_ID, 'listSkills', {
+      limit,
+      offset,
+      filterTags:
+        filterTags.length > 0 ? JSON.stringify(filterTags) : undefined,
+      filterName: filterName || undefined,
+      author: undefined, // Not used in current implementation
     });
 
-    // Validate response structure
-    if (!result?.Messages?.[0]?.Data) {
-      throw new RegistryError(
-        'No response from registry process',
-        'EMPTY_RESPONSE'
-      );
-    }
+    const response = await hyperbeamFetch<{
+      skills: SkillMetadata[];
+      pagination: {
+        total: number;
+        limit: number;
+        offset: number;
+        returned: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+      };
+    }>(url, async () => {
+      // Fallback to dryrun if HyperBEAM fails
+      const tags = [
+        { name: 'Action', value: 'List-Skills' },
+        { name: 'Limit', value: String(limit) },
+        { name: 'Offset', value: String(offset) },
+      ];
 
-    // Parse JSON safely
-    let data: PaginatedSkills;
-    try {
-      const rawData = JSON.parse(result.Messages[0].Data);
+      if (filterTags.length > 0) {
+        tags.push({ name: 'FilterTags', value: filterTags.join(',') });
+      }
 
-      // Validate structure
-      if (!rawData.skills || !Array.isArray(rawData.skills)) {
+      if (filterName) {
+        tags.push({ name: 'FilterName', value: filterName });
+      }
+
+      if (featured) {
+        tags.push({ name: 'Featured', value: 'true' });
+      }
+
+      const result = await dryrun({
+        process: REGISTRY_PROCESS_ID,
+        tags,
+      });
+
+      // Validate response structure
+      if (!result?.Messages?.[0]?.Data) {
         throw new RegistryError(
-          'Invalid response structure',
-          'INVALID_STRUCTURE'
+          'No response from registry process',
+          'EMPTY_RESPONSE'
         );
       }
 
-      // Map downloadCount to downloads for frontend compatibility
-      data = {
-        ...rawData,
-        skills: rawData.skills.map((skill: any) => ({
-          ...skill,
-          downloads: skill.downloadCount ?? skill.downloads ?? 0,
-        })),
-      };
-    } catch (parseError) {
+      return JSON.parse(result.Messages[0].Data);
+    });
+
+    // Validate structure
+    if (!response.skills || !Array.isArray(response.skills)) {
       throw new RegistryError(
-        'Failed to parse registry response',
-        'PARSE_ERROR',
-        parseError
+        'Invalid response structure',
+        'INVALID_STRUCTURE'
       );
     }
+
+    // Map downloadCount to downloads for frontend compatibility
+    const data: PaginatedSkills = {
+      skills: response.skills.map((skill: any) => ({
+        ...skill,
+        downloads: skill.downloadCount ?? skill.downloads ?? 0,
+      })),
+      total: response.pagination.total,
+      limit: response.pagination.limit,
+      offset: response.pagination.offset,
+    };
 
     // Cache successful result
     setCache(cacheKey, data);
@@ -290,48 +320,52 @@ export async function getSkill(
   if (cached) return cached;
 
   try {
-    const tags = [
-      { name: 'Action', value: 'Get-Skill' },
-      { name: 'Name', value: sanitizedName },
-    ];
-
-    if (version) {
-      tags.push({ name: 'Version', value: version });
-    }
-
-    const result = await dryrun({
-      process: REGISTRY_PROCESS_ID,
-      tags,
+    // HyperBEAM Dynamic Reads with dryrun fallback
+    const url = buildHyperbeamUrl(GET_SKILL_SCRIPT_ID, 'getSkill', {
+      name: sanitizedName,
     });
 
-    if (!result?.Messages?.[0]?.Data) {
-      throw new RegistryError(
-        'No response from registry process',
-        'EMPTY_RESPONSE'
-      );
-    }
+    const response = await hyperbeamFetch<{ skill: SkillMetadata }>(
+      url,
+      async () => {
+        // Fallback to dryrun if HyperBEAM fails
+        const tags = [
+          { name: 'Action', value: 'Get-Skill' },
+          { name: 'Name', value: sanitizedName },
+        ];
 
-    let skill: SkillMetadata;
-    try {
-      const rawData = JSON.parse(result.Messages[0].Data);
+        if (version) {
+          tags.push({ name: 'Version', value: version });
+        }
 
-      // Map downloadCount to downloads for frontend compatibility
-      skill = {
-        ...rawData,
-        downloads: rawData.downloadCount ?? rawData.downloads ?? 0,
-      };
-    } catch (parseError) {
-      throw new RegistryError(
-        'Failed to parse registry response',
-        'PARSE_ERROR',
-        parseError
-      );
-    }
+        const result = await dryrun({
+          process: REGISTRY_PROCESS_ID,
+          tags,
+        });
 
-    // Validate skill object - registry sends direct object
-    if (!skill || typeof skill !== 'object') {
+        if (!result?.Messages?.[0]?.Data) {
+          throw new RegistryError(
+            'No response from registry process',
+            'EMPTY_RESPONSE'
+          );
+        }
+
+        const rawData = JSON.parse(result.Messages[0].Data);
+        return { skill: rawData };
+      }
+    );
+
+    // Validate skill object
+    if (!response.skill || typeof response.skill !== 'object') {
       throw new RegistryError('Skill not found', 'NOT_FOUND');
     }
+
+    // Map downloadCount to downloads for frontend compatibility
+    const skill: SkillMetadata = {
+      ...response.skill,
+      downloads:
+        (response.skill as any).downloadCount ?? response.skill.downloads ?? 0,
+    };
 
     // Cache successful result
     setCache(cacheKey, skill);
@@ -374,33 +408,40 @@ export async function getSkillVersions(
   if (cached) return cached;
 
   try {
-    const result = await dryrun({
-      process: REGISTRY_PROCESS_ID,
-      tags: [
-        { name: 'Action', value: 'Get-Skill-Versions' },
-        { name: 'Name', value: sanitizedName },
-      ],
+    // HyperBEAM Dynamic Reads with dryrun fallback
+    const url = buildHyperbeamUrl(
+      GET_SKILL_VERSIONS_SCRIPT_ID,
+      'getSkillVersions',
+      {
+        name: sanitizedName,
+      }
+    );
+
+    const response = await hyperbeamFetch<{
+      versions: VersionInfo[];
+      latest: string;
+      total: number;
+    }>(url, async () => {
+      // Fallback to dryrun if HyperBEAM fails
+      const result = await dryrun({
+        process: REGISTRY_PROCESS_ID,
+        tags: [
+          { name: 'Action', value: 'Get-Skill-Versions' },
+          { name: 'Name', value: sanitizedName },
+        ],
+      });
+
+      if (!result?.Messages?.[0]?.Data) {
+        throw new RegistryError(
+          'No response from registry process',
+          'EMPTY_RESPONSE'
+        );
+      }
+
+      return JSON.parse(result.Messages[0].Data);
     });
 
-    if (!result?.Messages?.[0]?.Data) {
-      throw new RegistryError(
-        'No response from registry process',
-        'EMPTY_RESPONSE'
-      );
-    }
-
-    let data: { versions?: VersionInfo[] };
-    try {
-      data = JSON.parse(result.Messages[0].Data);
-    } catch (parseError) {
-      throw new RegistryError(
-        'Failed to parse registry response',
-        'PARSE_ERROR',
-        parseError
-      );
-    }
-
-    if (!data.versions || !Array.isArray(data.versions)) {
+    if (!response.versions || !Array.isArray(response.versions)) {
       throw new RegistryError(
         'Invalid response structure',
         'INVALID_STRUCTURE'
@@ -408,9 +449,9 @@ export async function getSkillVersions(
     }
 
     // Cache successful result
-    setCache(cacheKey, data.versions);
+    setCache(cacheKey, response.versions);
 
-    return data.versions;
+    return response.versions;
   } catch (error) {
     if (retries > 0) {
       const backoffDelay = 2000 * (4 - retries);
@@ -444,34 +485,35 @@ export async function getRegistryInfo(retries = 3): Promise<RegistryInfo> {
   if (cached) return cached;
 
   try {
-    const result = await dryrun({
-      process: REGISTRY_PROCESS_ID,
-      tags: [{ name: 'Action', value: 'Info' }],
+    // HyperBEAM Dynamic Reads with dryrun fallback
+    const url = buildHyperbeamUrl(INFO_SCRIPT_ID, 'info');
+
+    const response = await hyperbeamFetch<{
+      process: { name: string; version: string; adpVersion: string };
+      handlers: string[];
+      documentation: { adpCompliance: string; selfDocumenting: boolean };
+    }>(url, async () => {
+      // Fallback to dryrun if HyperBEAM fails
+      const result = await dryrun({
+        process: REGISTRY_PROCESS_ID,
+        tags: [{ name: 'Action', value: 'Info' }],
+      });
+
+      if (!result?.Messages?.[0]?.Data) {
+        throw new RegistryError(
+          'No response from registry process',
+          'EMPTY_RESPONSE'
+        );
+      }
+
+      return JSON.parse(result.Messages[0].Data);
     });
-
-    if (!result?.Messages?.[0]?.Data) {
-      throw new RegistryError(
-        'No response from registry process',
-        'EMPTY_RESPONSE'
-      );
-    }
-
-    let data: { process?: { adpVersion?: string }; handlers?: string[] };
-    try {
-      data = JSON.parse(result.Messages[0].Data);
-    } catch (parseError) {
-      throw new RegistryError(
-        'Failed to parse registry response',
-        'PARSE_ERROR',
-        parseError
-      );
-    }
 
     // Transform to RegistryInfo structure
     const info: RegistryInfo = {
       processId: REGISTRY_PROCESS_ID,
-      adpVersion: data.process?.adpVersion || '1.0',
-      handlers: data.handlers || [],
+      adpVersion: response.process?.adpVersion || '1.0',
+      handlers: response.handlers || [],
       totalSkills: 0, // Will be populated by registry
     };
 
@@ -515,66 +557,61 @@ export async function getDownloadStats(
   if (cached) return cached;
 
   try {
-    const tags = [{ name: 'Action', value: 'Get-Download-Stats' }];
+    // HyperBEAM Dynamic Reads with dryrun fallback
+    const url = buildHyperbeamUrl(
+      GET_DOWNLOAD_STATS_SCRIPT_ID,
+      'getDownloadStats',
+      'skillName' in options ? { name: options.skillName } : {}
+    );
 
-    if ('scope' in options) {
-      tags.push({ name: 'Scope', value: options.scope });
-    } else {
-      tags.push({ name: 'Name', value: options.skillName });
-    }
+    const response = await hyperbeamFetch<{
+      skillName?: string;
+      totalDownloads: number;
+      versions: Record<string, { version: string; downloads: number }>;
+      latestVersion?: string;
+    }>(url, async () => {
+      // Fallback to dryrun if HyperBEAM fails
+      const tags = [{ name: 'Action', value: 'Get-Download-Stats' }];
 
-    const result = await dryrun({
-      process: REGISTRY_PROCESS_ID,
-      tags,
+      if ('scope' in options) {
+        tags.push({ name: 'Scope', value: options.scope });
+      } else {
+        tags.push({ name: 'Name', value: options.skillName });
+      }
+
+      const result = await dryrun({
+        process: REGISTRY_PROCESS_ID,
+        tags,
+      });
+
+      // Validate response structure
+      if (!result || !result.Messages || !Array.isArray(result.Messages)) {
+        if (import.meta.env.DEV) {
+          console.error('Invalid response structure from Get-Download-Stats');
+        }
+        return null;
+      }
+
+      if (result.Messages.length === 0) {
+        if (import.meta.env.DEV) {
+          console.error('No messages in Get-Download-Stats response');
+        }
+        return null;
+      }
+
+      return JSON.parse(result.Messages[0].Data);
     });
 
-    // Validate response structure
-    if (!result || !result.Messages || !Array.isArray(result.Messages)) {
-      if (import.meta.env.DEV) {
-        console.error('Invalid response structure from Get-Download-Stats');
-      }
+    if (!response) {
       return null;
     }
 
-    if (result.Messages.length === 0) {
-      if (import.meta.env.DEV) {
-        console.error('No messages in Get-Download-Stats response');
-      }
-      return null;
-    }
-
-    // Parse JSON safely - handle HTML error responses
-    let data: DownloadStats;
-    try {
-      data = JSON.parse(result.Messages[0].Data);
-    } catch (parseError) {
-      // HTML error responses will fail JSON.parse
-      if (import.meta.env.DEV) {
-        console.error(
-          'Failed to parse Get-Download-Stats response:',
-          parseError
-        );
-        if (
-          typeof result.Messages[0].Data === 'string' &&
-          result.Messages[0].Data.trim().startsWith('<')
-        ) {
-          console.error('Received HTML error response from CU');
-        }
-      }
-      return null;
-    }
-
-    // Validate data structure
-    if (
-      typeof data.downloads7Days !== 'number' ||
-      typeof data.downloads30Days !== 'number' ||
-      typeof data.downloadsTotal !== 'number'
-    ) {
-      if (import.meta.env.DEV) {
-        console.error('Invalid download stats structure:', data);
-      }
-      return null;
-    }
+    // Transform HyperBEAM response to DownloadStats format
+    const data: DownloadStats = {
+      downloads7Days: 0, // Not provided by HyperBEAM endpoint
+      downloads30Days: 0, // Not provided by HyperBEAM endpoint
+      downloadsTotal: response.totalDownloads,
+    };
 
     // Cache successful result
     setCache(cacheKey, data);

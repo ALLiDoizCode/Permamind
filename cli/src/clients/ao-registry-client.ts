@@ -9,15 +9,7 @@
  */
 
 import { connect, createDataItemSigner } from '@permaweb/aoconnect';
-
-// Configure aoconnect with custom CU and MU
-const ao = connect({
-  MU_URL: 'https://ur-mu.randao.net',
-  CU_URL: 'https://ur-cu.randao.net',
-});
-
-const { message, dryrun, result } = ao;
-import { loadConfig } from '../lib/config-loader.js';
+import { getRegistryProcessId, getMuUrl, getCuUrl } from '../lib/registry-config.js';
 import logger from '../utils/logger.js';
 import {
   ISkillMetadata,
@@ -25,7 +17,15 @@ import {
   IAODryrunResult,
 } from '../types/ao-registry.js';
 import { JWK } from '../types/arweave.js';
-import { NetworkError, ConfigurationError } from '../types/errors.js';
+import { NetworkError } from '../types/errors.js';
+
+// Configure aoconnect with centralized configuration
+const ao = connect({
+  MU_URL: getMuUrl(),
+  CU_URL: getCuUrl(),
+});
+
+const { message, dryrun, result } = ao;
 
 /**
  * Constants for AO operations
@@ -53,34 +53,20 @@ const searchCache = new Map<string, CacheEntry<ISkillMetadata[]>>();
 const skillCache = new Map<string, CacheEntry<ISkillMetadata | null>>();
 
 /**
- * Get AO Registry Process ID from environment or config
+ * Get AO Registry Process ID from centralized config
+ *
+ * The registry process ID is now baked into the package.
+ * Users don't need to configure it manually.
  *
  * Priority order:
- * 1. AO_REGISTRY_PROCESS_ID environment variable
- * 2. registry field in .skillsrc config
- * 3. Error (no default value for security)
+ * 1. AO_REGISTRY_PROCESS_ID environment variable (for testing/dev)
+ * 2. Default production registry (recommended)
  *
  * @returns Registry process ID (43-character Arweave address)
- * @throws {ConfigurationError} If registry process ID not configured
  * @private
  */
-async function getRegistryProcessId(): Promise<string> {
-  // Priority 1: Environment variable
-  if (process.env.AO_REGISTRY_PROCESS_ID) {
-    return process.env.AO_REGISTRY_PROCESS_ID;
-  }
-
-  // Priority 2: Config file
-  const config = await loadConfig();
-  if (config.registry) {
-    return config.registry;
-  }
-
-  // No registry configured
-  throw new ConfigurationError(
-    '[ConfigurationError] AO Registry Process ID not configured. -> Solution: Set AO_REGISTRY_PROCESS_ID environment variable or add "registry" field to .skillsrc',
-    'registry'
-  );
+function getProcessId(): string {
+  return getRegistryProcessId();
 }
 
 /**
@@ -115,7 +101,7 @@ export async function registerSkill(
   metadata: ISkillMetadata,
   wallet: JWK
 ): Promise<string> {
-  const processId = await getRegistryProcessId();
+  const processId = getProcessId();
 
   try {
     logger.debug('Sending Register-Skill message to AO registry', {
@@ -139,6 +125,7 @@ export async function registerSkill(
         { name: 'Tags', value: JSON.stringify(metadata.tags) },
         { name: 'ArweaveTxId', value: metadata.arweaveTxId },
         { name: 'Dependencies', value: JSON.stringify(metadata.dependencies) },
+        { name: 'BundledFiles', value: JSON.stringify(metadata.bundledFiles || []) },
         { name: 'Changelog', value: metadata.changelog || '' },
       ],
       signer,
@@ -174,7 +161,7 @@ export async function updateSkill(
   metadata: ISkillMetadata,
   wallet: JWK
 ): Promise<string> {
-  const processId = await getRegistryProcessId();
+  const processId = getProcessId();
 
   try {
     logger.debug('Sending Update-Skill message to AO registry', {
@@ -198,6 +185,7 @@ export async function updateSkill(
         { name: 'Tags', value: JSON.stringify(metadata.tags) },
         { name: 'ArweaveTxId', value: metadata.arweaveTxId },
         { name: 'Dependencies', value: JSON.stringify(metadata.dependencies) },
+        { name: 'BundledFiles', value: JSON.stringify(metadata.bundledFiles || []) },
         { name: 'Changelog', value: metadata.changelog || '' },
       ],
       signer,
@@ -237,7 +225,7 @@ async function queryViaMessage(
   tags: Array<{ name: string; value: string }>,
   wallet: JWK
 ): Promise<any> {
-  const processId = await getRegistryProcessId();
+  const processId = getProcessId();
 
   try {
     // Create signer from wallet
@@ -337,7 +325,7 @@ export async function listSkills(options?: {
     hasPrevPage: boolean;
   };
 }> {
-  const processId = await getRegistryProcessId();
+  const processId = getProcessId();
 
   const executeQuery = async () => {
     logger.debug('Sending List-Skills dryrun query', { processId, options });
@@ -414,7 +402,7 @@ export async function recordDownload(
   version: string | undefined,
   wallet: JWK
 ): Promise<string> {
-  const processId = await getRegistryProcessId();
+  const processId = getProcessId();
 
   try {
     const signer = createDataItemSigner(wallet);
@@ -473,7 +461,7 @@ export async function searchSkills(
     return cached.data;
   }
 
-  const processId = await getRegistryProcessId();
+  const processId = getProcessId();
 
   const executeQuery = async (): Promise<ISkillMetadata[]> => {
     logger.debug('Sending Search-Skills dryrun query', { processId, query });
@@ -541,7 +529,7 @@ export async function getSkill(name: string, version?: string): Promise<ISkillMe
     return cached.data;
   }
 
-  const processId = await getRegistryProcessId();
+  const processId = getProcessId();
 
   const executeQuery = async (): Promise<ISkillMetadata | null> => {
     logger.debug('Sending Get-Skill dryrun query', { processId, name, version: version || 'latest' });
@@ -567,10 +555,26 @@ export async function getSkill(name: string, version?: string): Promise<ISkillMe
       return null;
     }
 
+    // Check response action tag to determine if skill was found
+    const responseAction = result.Messages[0].Tags?.find((t) => t.name === 'Action')?.value;
+
+    // If Error action, skill doesn't exist - return null
+    if (responseAction === 'Error') {
+      const errorMsg = result.Messages[0].Tags?.find((t) => t.name === 'Error')?.value;
+      logger.debug('Skill not found in registry (Error response)', { name, errorMsg });
+      return null;
+    }
+
     // Check if response is HTML (gateway error)
     const responseData = result.Messages[0].Data;
     if (typeof responseData === 'string' && responseData.trim().startsWith('<')) {
       throw new Error(`CU gateway returned HTML error page instead of JSON. This may be due to rate limiting or gateway issues.`);
+    }
+
+    // Handle "undefined" string response (should not happen with Error check above, but defensive)
+    if (responseData === 'undefined' || responseData === undefined || responseData === null) {
+      logger.debug('Skill not found in registry (undefined response)', { name });
+      return null;
     }
 
     const data = JSON.parse(responseData) as ISkillMetadata | null;
@@ -607,7 +611,7 @@ export async function getSkill(name: string, version?: string): Promise<ISkillMe
  * ```
  */
 export async function getRegistryInfo(): Promise<IRegistryInfo> {
-  const processId = await getRegistryProcessId();
+  const processId = getProcessId();
 
   const executeQuery = async (): Promise<IRegistryInfo> => {
     logger.debug('Sending Info dryrun query for ADP compliance', { processId });

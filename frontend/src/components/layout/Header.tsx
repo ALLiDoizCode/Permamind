@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { FaGithub, FaTwitter, FaDiscord } from 'react-icons/fa';
 
 export function Header() {
   return (
@@ -24,19 +25,41 @@ export function Header() {
           <nav className="flex items-center gap-6">
             <Link
               to="/docs"
-              className="text-sm text-terminal-muted hover:text-terminal-text font-mono transition-colors"
+              className="text-sm text-terminal-muted hover:text-syntax-blue font-mono transition-colors"
             >
               docs
             </Link>
 
-            <a
-              href="https://github.com/ALLiDoizCode/Permamind"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-terminal-muted hover:text-terminal-text font-mono transition-colors"
-            >
-              github
-            </a>
+            {/* Social Icons */}
+            <div className="flex items-center gap-4">
+              <a
+                href="https://github.com/ALLiDoizCode/Permamind"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-terminal-muted hover:text-syntax-blue transition-colors"
+                aria-label="GitHub"
+              >
+                <FaGithub className="w-4 h-4" />
+              </a>
+              <a
+                href="https://x.com/permamind"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-terminal-muted hover:text-syntax-blue transition-colors"
+                aria-label="Twitter/X"
+              >
+                <FaTwitter className="w-4 h-4" />
+              </a>
+              <a
+                href="https://discord.gg/yDJFBtfS4K"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-terminal-muted hover:text-syntax-blue transition-colors"
+                aria-label="Discord"
+              >
+                <FaDiscord className="w-4 h-4" />
+              </a>
+            </div>
 
             <Button variant="command" size="sm" asChild>
               <Link to="/cli-guide">

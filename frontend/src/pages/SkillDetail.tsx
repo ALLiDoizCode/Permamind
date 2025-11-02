@@ -237,12 +237,16 @@ export function SkillDetail() {
                   <span className="text-terminal-muted/40">•</span>
                   <span>
                     {(() => {
-                      const totalSize = skill.bundledFiles?.reduce(
-                        (sum, f) => sum + parseFloat(f.size),
-                        0
-                      );
-                      // If no bundledFiles, estimate based on typical skill size
-                      return (totalSize || 10).toFixed(1);
+                      if (!skill.bundledFiles || skill.bundledFiles.length === 0) {
+                        return '10.0'; // Default estimate if no files
+                      }
+                      const totalSize = skill.bundledFiles.reduce((sum, f) => {
+                        // Parse size string like "4.2 KB" to get numeric value
+                        const sizeMatch = f.size.match(/^([\d.]+)\s*KB$/i);
+                        const sizeInKB = sizeMatch ? parseFloat(sizeMatch[1]) : 0;
+                        return sum + sizeInKB;
+                      }, 0);
+                      return totalSize.toFixed(1);
                     })()}{' '}
                     KB total
                   </span>

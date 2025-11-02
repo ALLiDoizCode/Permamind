@@ -202,7 +202,7 @@ export function PublishSkill() {
                 <pre className="font-mono text-xs text-terminal-text">
                   {`{
   "wallet": "wallet.json",
-  "registry": "aMF8MaSntSA_O1JMSsi3wLOcvZd1bCYLqcEQBGsxHVk",
+  "registry": "0JwigA4ZGMredBmVq0M092gT5Liic_Yxv8c6T0tiFDw",
   "gateway": "https://arweave.net"
 }`}
                 </pre>
@@ -364,7 +364,7 @@ EOF`}
                     <pre className="font-mono text-xs text-terminal-text">
                       {`{
   "wallet": "wallet.json",
-  "registry": "aMF8MaSntSA_O1JMSsi3wLOcvZd1bCYLqcEQBGsxHVk",
+  "registry": "0JwigA4ZGMredBmVq0M092gT5Liic_Yxv8c6T0tiFDw",
   "gateway": "https://arweave.net"
 }`}
                     </pre>

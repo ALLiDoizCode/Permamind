@@ -4,11 +4,13 @@
  * Handles loading and parsing of .skillsrc configuration file for CLI settings.
  * Supports both local (./.skillsrc) and global (~/.skillsrc) configuration files.
  *
+ * NOTE: The registry process ID is now baked into the package and no longer
+ * needs to be configured in .skillsrc. The "registry" field is deprecated.
+ *
  * Configuration Format (.skillsrc):
  * ```json
  * {
  *   "wallet": "~/.arweave/wallet.json",
- *   "registry": "REGISTRY_PROCESS_ID",
  *   "gateway": "https://arweave.net"
  * }
  * ```
@@ -25,7 +27,7 @@ import { ConfigurationError, ValidationError } from '../types/errors.js';
 export interface Config {
   /** Path to Arweave wallet JWK file */
   wallet?: string;
-  /** AO registry process ID */
+  /** @deprecated Registry process ID is now baked into the package */
   registry?: string;
   /** Arweave gateway URL */
   gateway?: string;

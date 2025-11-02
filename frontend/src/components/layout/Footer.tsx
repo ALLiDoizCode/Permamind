@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import { FaGithub, FaTwitter, FaDiscord } from 'react-icons/fa';
 
 export function Footer() {
   return (
@@ -12,42 +13,60 @@ export function Footer() {
           </Badge>
         </div>
 
-        {/* Footer Navigation Links */}
-        <div className="flex justify-center gap-8 text-sm font-mono">
-          <Link
-            to="/docs"
-            className="text-terminal-muted hover:text-syntax-blue transition-colors"
-          >
-            documentation
-          </Link>
-          <a
-            href="https://github.com/ALLiDoizCode/Permamind"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-terminal-muted hover:text-syntax-blue transition-colors"
-          >
-            github
-          </a>
-          <a
-            href="https://x.com/permamind"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-terminal-muted hover:text-syntax-blue transition-colors"
-          >
-            twitter
-          </a>
-          <Link
-            to="/cli-guide"
-            className="text-terminal-muted hover:text-syntax-blue transition-colors"
-          >
-            cli-guide
-          </Link>
-          <Link
-            to="/publish"
-            className="text-terminal-muted hover:text-syntax-blue transition-colors"
-          >
-            publish-skill
-          </Link>
+        {/* Footer Navigation - Two Rows */}
+        <div className="flex flex-col items-center gap-6">
+          {/* Text Links Row */}
+          <div className="flex justify-center gap-8 text-sm font-mono">
+            <Link
+              to="/docs"
+              className="text-terminal-muted hover:text-syntax-blue transition-colors"
+            >
+              documentation
+            </Link>
+            <Link
+              to="/cli-guide"
+              className="text-terminal-muted hover:text-syntax-blue transition-colors"
+            >
+              cli-guide
+            </Link>
+            <Link
+              to="/publish"
+              className="text-terminal-muted hover:text-syntax-blue transition-colors"
+            >
+              publish-skill
+            </Link>
+          </div>
+
+          {/* Social Icons Row */}
+          <div className="flex justify-center gap-6">
+            <a
+              href="https://github.com/ALLiDoizCode/Permamind"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-terminal-muted hover:text-syntax-blue transition-colors"
+              aria-label="GitHub"
+            >
+              <FaGithub className="w-5 h-5" />
+            </a>
+            <a
+              href="https://x.com/permamind"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-terminal-muted hover:text-syntax-blue transition-colors"
+              aria-label="Twitter/X"
+            >
+              <FaTwitter className="w-5 h-5" />
+            </a>
+            <a
+              href="https://discord.gg/yDJFBtfS4K"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-terminal-muted hover:text-syntax-blue transition-colors"
+              aria-label="Discord"
+            >
+              <FaDiscord className="w-5 h-5" />
+            </a>
+          </div>
         </div>
 
         {/* Community Attribution */}

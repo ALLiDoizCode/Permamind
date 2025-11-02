@@ -25,6 +25,7 @@ import * as bundler from '../lib/bundler.js';
 import * as walletManager from '../lib/wallet-manager.js';
 import * as arweaveClient from '../clients/arweave-client.js';
 import * as aoRegistryClient from '../clients/ao-registry-client.js';
+import * as skillAnalyzer from '../lib/skill-analyzer.js';
 import { loadConfig, resolveWalletPath } from '../lib/config-loader.js';
 import logger from '../utils/logger.js';
 import {
@@ -149,11 +150,15 @@ export async function execute(
     options
   );
 
-  // Task 14: Register or update in AO registry
+  // Task 14: Analyze skill directory for bundled files
+  const bundledFiles = await analyzeSkillFiles(directory);
+
+  // Task 15: Register or update in AO registry
   const registryMessageId = await registerInAORegistry(
     manifest,
     uploadResult.txId,
-    wallet
+    wallet,
+    bundledFiles
   );
 
   // Task 15: Display success message
@@ -435,18 +440,54 @@ async function uploadBundleWithProgress(
 }
 
 /**
- * Task 14: Register skill in AO registry
+ * Task 14: Analyze skill directory for bundled files metadata
+ *
+ * @param directory - Skill directory path
+ * @returns Array of bundled file metadata
+ * @throws {FileSystemError} If analysis fails
+ */
+async function analyzeSkillFiles(directory: string): Promise<skillAnalyzer.BundledFile[]> {
+  const spinner = ora('Analyzing skill files...').start();
+
+  try {
+    const bundledFiles = await skillAnalyzer.analyzeSkillDirectory(directory);
+    const totalSize = bundledFiles.reduce((sum, file) => {
+      const sizeMatch = file.size.match(/^([\d.]+)\s*KB$/i);
+      return sum + (sizeMatch ? parseFloat(sizeMatch[1]) : 0);
+    }, 0);
+
+    spinner.succeed(
+      `Analyzed ${bundledFiles.length} files (${totalSize.toFixed(1)} KB total)`
+    );
+
+    logger.debug('Skill files analyzed', {
+      fileCount: bundledFiles.length,
+      totalSize,
+      files: bundledFiles.map(f => f.name),
+    });
+
+    return bundledFiles;
+  } catch (error: unknown) {
+    spinner.fail('Skill analysis failed');
+    throw error;
+  }
+}
+
+/**
+ * Task 15: Register skill in AO registry
  *
  * @param manifest - Skill manifest
  * @param arweaveTxId - Arweave transaction ID
  * @param wallet - Wallet JWK
+ * @param bundledFiles - Analyzed bundled files metadata
  * @returns AO message ID for registry registration
  * @throws {NetworkError} If registration fails
  */
 async function registerInAORegistry(
   manifest: ISkillManifest,
   arweaveTxId: string,
-  wallet: JWK
+  wallet: JWK,
+  bundledFiles: skillAnalyzer.BundledFile[]
 ): Promise<string> {
   let spinner = ora('Checking if skill exists...').start();
 
@@ -487,6 +528,7 @@ async function registerInAORegistry(
       dependencies: manifest.dependencies || [],
       arweaveTxId,
       license: manifest.license,
+      bundledFiles,
       publishedAt: Date.now(),
       updatedAt: Date.now(),
     };

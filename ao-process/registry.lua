@@ -18,7 +18,8 @@ end
 
 -- Skills registry with version history support
 -- Schema: Skills[skill-name] = { versions = {...}, latest = "1.0.0" }
-Skills = {}
+
+Skills = Skills or {}
 -- Skills[skill-name] = {
 --   latest = "1.0.0",                 -- string, latest version number
 --   versions = {
@@ -39,6 +40,16 @@ Skills = {}
 --     }
 --   }
 -- }
+
+-- Initial sync - runs once when process loads
+InitialSync = InitialSync or 'INCOMPLETE'
+if InitialSync == 'INCOMPLETE' then
+  ao.send({
+    device = 'patch@1.0',
+    skills = json.encode(Skills),
+  })
+  InitialSync = 'COMPLETE'
+end
 
 -- ============================================================================
 -- UTILITY FUNCTIONS
@@ -107,49 +118,50 @@ Handlers.add("info",
         name = "Agent Skills Registry",
         version = "2.1.0",
         adpVersion = "1.0",
-        capabilities = {"register", "update", "search", "retrieve", "version-history", "pagination", "filtering", "download-stats"},
+        capabilities = { "register", "update", "search", "retrieve", "version-history", "pagination", "filtering", "download-stats" },
         messageSchemas = {
           ["Register-Skill"] = {
-            required = {"Action", "Name", "Version", "Description", "Author", "ArweaveTxId"},
-            optional = {"Tags", "Dependencies", "BundledFiles", "Changelog"}
+            required = { "Action", "Name", "Version", "Description", "Author", "ArweaveTxId" },
+            optional = { "Tags", "Dependencies", "BundledFiles", "Changelog" }
           },
           ["Update-Skill"] = {
-            required = {"Action", "Name", "Version", "Description", "Author", "ArweaveTxId"},
-            optional = {"Tags", "Dependencies", "BundledFiles", "Changelog"}
+            required = { "Action", "Name", "Version", "Description", "Author", "ArweaveTxId" },
+            optional = { "Tags", "Dependencies", "BundledFiles", "Changelog" }
           },
           ["Search-Skills"] = {
-            required = {"Action"},
-            optional = {"Query"}
+            required = { "Action" },
+            optional = { "Query" }
           },
           ["List-Skills"] = {
-            required = {"Action"},
-            optional = {"Limit", "Offset", "Author", "FilterTags", "FilterName"}
+            required = { "Action" },
+            optional = { "Limit", "Offset", "Author", "FilterTags", "FilterName" }
           },
           ["Get-Skill"] = {
-            required = {"Action", "Name"},
-            optional = {"Version"}
+            required = { "Action", "Name" },
+            optional = { "Version" }
           },
           ["Get-Skill-Versions"] = {
-            required = {"Action", "Name"}
+            required = { "Action", "Name" }
           },
           ["Record-Download"] = {
-            required = {"Action", "Name"},
-            optional = {"Version"}
+            required = { "Action", "Name" },
+            optional = { "Version" }
           },
           ["Get-Download-Stats"] = {
-            required = {"Action"},
-            optional = {"TimeRange", "Scope", "Name", "Version"}
+            required = { "Action" },
+            optional = { "TimeRange", "Scope", "Name", "Version" }
           },
           ["Info"] = {
-            required = {"Action"}
+            required = { "Action" }
           }
         }
       },
-      handlers = {"Register-Skill", "Update-Skill", "Search-Skills", "List-Skills", "Get-Skill", "Get-Skill-Versions", "Record-Download", "Get-Download-Stats", "Info"},
+      handlers = { "Register-Skill", "Update-Skill", "Search-Skills", "List-Skills", "Get-Skill", "Get-Skill-Versions", "Record-Download", "Get-Download-Stats", "Info" },
       documentation = {
         adpCompliance = "v1.0",
         selfDocumenting = true,
-        description = "Decentralized registry for Claude Agent Skills with skill registration, search, retrieval, and download statistics capabilities"
+        description =
+        "Decentralized registry for Claude Agent Skills with skill registration, search, retrieval, and download statistics capabilities"
       }
     }
 
@@ -311,6 +323,10 @@ Handlers.add("register-skill",
 
     -- Send success response
     ao.send({
+      device = 'patch@1.0',
+      skills = json.encode(Skills),
+    })
+    ao.send({
       Target = msg.From,
       Action = "Skill-Registered",
       Name = name,
@@ -358,7 +374,8 @@ Handlers.add("update-skill",
       ao.send({
         Target = msg.From,
         Action = "Error",
-        Error = "Skill '" .. name .. "' version '" .. version .. "' does not exist. Use Register-Skill to create a new version"
+        Error = "Skill '" ..
+            name .. "' version '" .. version .. "' does not exist. Use Register-Skill to create a new version"
       })
       return
     end
@@ -472,6 +489,11 @@ Handlers.add("update-skill",
 
     -- Update latest version pointer if this is newer
     Skills[name].latest = version
+
+    ao.send({
+      device = 'patch@1.0',
+      skills = json.encode(Skills),
+    })
 
     -- Send success response
     ao.send({
@@ -827,17 +849,17 @@ Handlers.add("record-download",
 Handlers.add("get-download-stats",
   Handlers.utils.hasMatchingTag("Action", "Get-Download-Stats"),
   function(msg)
-    local timeRange = msg.TimeRange or "all"  -- "7", "30", or "all"
-    local scope = msg.Scope  -- "all" for aggregate, nil for per-skill
-    local skillName = msg.Name  -- Skill name for per-skill stats
-    local skillVersion = msg.Version  -- Optional: specific version
+    local timeRange = msg.TimeRange or "all" -- "7", "30", or "all"
+    local scope = msg.Scope                  -- "all" for aggregate, nil for per-skill
+    local skillName = msg.Name               -- Skill name for per-skill stats
+    local skillVersion = msg.Version         -- Optional: specific version
 
     -- Get current timestamp from message (AO runtime timestamp)
     local currentTime = tonumber(msg.Timestamp) or 0
 
     -- Calculate time boundaries for filtering (timestamps in seconds)
-    local sevenDaysAgo = currentTime - (7 * 24 * 60 * 60)  -- 7 days in seconds
-    local thirtyDaysAgo = currentTime - (30 * 24 * 60 * 60)  -- 30 days in seconds
+    local sevenDaysAgo = currentTime - (7 * 24 * 60 * 60)   -- 7 days in seconds
+    local thirtyDaysAgo = currentTime - (30 * 24 * 60 * 60) -- 30 days in seconds
 
     -- Helper function to count downloads within time range
     local function countDownloadsInRange(timestamps, sinceTime)

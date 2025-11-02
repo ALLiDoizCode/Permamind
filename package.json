@@ -19,7 +19,7 @@
     "test:coverage": "jest --coverage --coverageThreshold='{\"global\":{\"lines\":100}}'",
     "test:ao": "cd ao-process && cd tests && lua run-all.lua",
     "tdd": "jest --watch --verbose",
-    "lint": "eslint . --ext .ts",
+    "lint": "eslint cli --ext .ts",
     "format": "prettier --write \"**/*.{ts,js,json,md}\""
   },
   "devDependencies": {

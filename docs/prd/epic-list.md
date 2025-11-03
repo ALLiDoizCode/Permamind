@@ -23,3 +23,9 @@ Optimize HyperBEAM integration for production-scale performance and reliability.
 
 **Epic 8: MCP Server for Agent Skills Registry**
 Create a Model Context Protocol (MCP) server that provides the same functionality as the existing @permamind/skills npm package, enabling Claude AI to publish, search, and install agent skills through the MCP protocol without requiring command-line access. Includes deterministic wallet generation from 12-word seed phrase using the same approach as Permamind MCP server.
+
+**Epic 9: Turbo SDK Migration**
+Migrate from direct Arweave SDK transaction creation to Turbo SDK for bundle uploads, enabling free uploads for bundles under 100KB (most skill bundles) and reducing network costs. Maintains full backward compatibility with existing registry infrastructure while delivering significant cost savings through Turbo's subsidized upload tier.
+
+**Epic 10: Jest Test Infrastructure Overhaul**
+Fix Jest automocking infrastructure or migrate to Vitest to restore automated unit testing capabilities project-wide. Addresses critical infrastructure issue where jest.mock() silently fails and returns real implementations instead of mocks, blocking 75+ tests. Delivers modern, reliable test infrastructure with fast feedback loops and proper test isolation.

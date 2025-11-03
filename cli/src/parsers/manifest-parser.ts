@@ -14,10 +14,10 @@
 import { readFile } from 'fs/promises';
 import * as path from 'path';
 import matter from 'gray-matter';
-import Ajv, { type ErrorObject } from 'ajv';
-import { ISkillManifest, ValidationResult } from '../types/skill.js';
-import { FileSystemError, ParseError } from '../types/errors.js';
-import * as skillManifestSchema from '../schemas/skill-manifest.schema.json';
+import Ajv, { ErrorObject } from 'ajv';
+import { ISkillManifest, ValidationResult } from '../types/skill';
+import { FileSystemError, ParseError } from '../types/errors';
+import skillManifestSchema from '../schemas/skill-manifest.schema.json';
 
 // Initialize AJV validator with skill manifest schema
 const ajv = new Ajv({ allErrors: true, verbose: true });

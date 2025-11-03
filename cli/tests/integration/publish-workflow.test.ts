@@ -71,6 +71,7 @@ jest.mock('../../src/lib/config-loader.js', () => ({
 jest.mock('ora', () => {
   const mockOra = jest.fn(() => ({
     start: jest.fn().mockReturnThis(),
+    stop: jest.fn().mockReturnThis(),
     succeed: jest.fn().mockReturnThis(),
     fail: jest.fn().mockReturnThis(),
     text: '',
@@ -95,17 +96,21 @@ jest.mock('chalk', () => ({
   bold: jest.fn((s) => s),
 }));
 
-// Mock logger
-jest.mock('../../src/utils/logger.js', () => ({
-  __esModule: true,
-  default: {
+// Mock logger (both default and named exports)
+jest.mock('../../src/utils/logger.js', () => {
+  const mockLogger = {
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
     debug: jest.fn(),
     setLevel: jest.fn(),
-  },
-}));
+  };
+  return {
+    __esModule: true,
+    ...mockLogger, // Named exports
+    default: mockLogger, // Default export
+  };
+});
 
 // Mock fetch for transaction status
 global.fetch = jest.fn();

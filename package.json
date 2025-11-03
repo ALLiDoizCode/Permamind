@@ -4,7 +4,8 @@
   "description": "Decentralized registry for Claude Agent Skills with CLI tooling for publish, search, and install operations",
   "private": true,
   "workspaces": [
-    "cli"
+    "cli",
+    "mcp-server"
   ],
   "engines": {
     "node": ">=20.11.0",

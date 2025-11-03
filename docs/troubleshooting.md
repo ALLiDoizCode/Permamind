@@ -720,6 +720,169 @@ rm -rf ~/.cache/skills
 skills install my-skill --local
 ```
 
+## Turbo SDK Upload Errors
+
+The CLI uses Turbo SDK for free uploads of bundles < 100KB (Epic 9). Here are common Turbo SDK-related errors and solutions.
+
+### Timeout Error
+
+**Error Message:**
+```
+[NetworkError] Upload timeout after 60 seconds. -> Solution: Retry upload or check network connection.
+```
+
+**What Happened:**
+The Turbo SDK upload timed out due to network latency or gateway unavailability.
+
+**Common Causes:**
+- Network latency or slow connection
+- Turbo gateway temporary slowdown
+- Large bundle taking longer than expected
+
+**How to Fix:**
+1. **Retry the upload** - Temporary network issues often resolve quickly
+   ```bash
+   skills publish ./my-skill
+   ```
+
+2. **Check your network connection**
+   ```bash
+   curl -I https://upload.ardrive.io
+   ```
+
+3. **Verify TURBO_GATEWAY setting** (if using custom gateway)
+   ```bash
+   # Check .env file
+   cat .env | grep TURBO_GATEWAY
+   ```
+
+4. **Wait a few minutes** - Gateway may be experiencing high load
+
+### Gateway Unavailable (502/503)
+
+**Error Message:**
+```
+[NetworkError] Gateway returned 502 Bad Gateway. -> Solution: Retry in a few minutes or check Turbo status.
+```
+
+**What Happened:**
+The Turbo gateway is temporarily unavailable or experiencing an outage.
+
+**Common Causes:**
+- Turbo gateway temporary outage
+- Maintenance window
+- High traffic causing temporary unavailability
+
+**How to Fix:**
+1. **Retry in a few minutes** - Most gateway issues resolve quickly
+   ```bash
+   # Wait 2-5 minutes, then retry
+   skills publish ./my-skill
+   ```
+
+2. **Check Turbo status page** (if available)
+   - Visit https://ardrive.io for service status updates
+
+3. **Use default gateway** - Ensure you're using the default Turbo gateway
+   ```bash
+   # Remove custom gateway from .env if set
+   # TURBO_GATEWAY=https://upload.ardrive.io  # Default (comment out or remove)
+   ```
+
+### Insufficient Credits
+
+**Error Message:**
+```
+[AuthorizationError] Insufficient Turbo credits for upload. -> Solution: Check Turbo credit balance or verify bundle size.
+```
+
+**What Happened:**
+Your bundle requires Turbo credits (≥ 100KB or custom configuration), but your wallet doesn't have enough credits.
+
+**Common Causes:**
+- Bundle size ≥ 100KB (requires credits or uses Arweave SDK fallback)
+- `TURBO_USE_CREDITS=true` forcing credit-based uploads
+- Wallet has insufficient Turbo credit balance
+
+**How to Fix:**
+1. **Verify bundle size** - Bundles < 100KB should be free
+   ```bash
+   # Check bundle size in publish output
+   skills publish ./my-skill --verbose
+   ```
+
+2. **Check if fallback to Arweave SDK is working**
+   - Bundles ≥ 100KB should automatically fallback to Arweave SDK
+   - Ensure wallet has sufficient AR balance for Arweave uploads
+
+3. **Verify TURBO_USE_CREDITS setting**
+   ```bash
+   # Check .env file
+   cat .env | grep TURBO_USE_CREDITS
+   # Should be false or not set for free tier
+   ```
+
+4. **Check Turbo credit balance** (if using credits intentionally)
+   - Visit Turbo dashboard or use Turbo SDK to check balance
+
+### Invalid Transaction ID
+
+**Error Message:**
+```
+[ValidationError] Invalid transaction ID format from Turbo SDK. -> Solution: File issue on GitHub with error details.
+```
+
+**What Happened:**
+Turbo SDK returned an invalid transaction ID format (should be 43-character base64url string).
+
+**Common Causes:**
+- Turbo SDK API change
+- Network corruption
+- Internal Turbo SDK error
+
+**How to Fix:**
+1. **Retry the upload** - May be transient error
+   ```bash
+   skills publish ./my-skill
+   ```
+
+2. **File issue on GitHub** with error details
+   - Include full error output (`--verbose` flag)
+   - Include transaction ID received (if any)
+   - Include timestamp of upload
+
+3. **Check for CLI updates**
+   ```bash
+   # Update to latest version
+   npm install -g @permamind/skills@latest
+   ```
+
+### Custom Gateway Configuration
+
+**When to Use TURBO_GATEWAY:**
+
+You can override the default Turbo gateway URL for:
+- Testing with alternate Turbo endpoints
+- Using custom Turbo gateway infrastructure
+- Development/testing environments
+
+**Configuration Example:**
+```bash
+# .env file
+TURBO_GATEWAY=https://custom-turbo.example.com
+```
+
+**Verification:**
+```bash
+# Test custom gateway connectivity
+curl -I https://custom-turbo.example.com
+
+# Publish with verbose logging to see gateway URL
+skills publish ./my-skill --verbose
+```
+
+**Note:** Custom gateways must be compatible with Turbo SDK API.
+
 ## Getting Help
 
 ### Still Having Issues?

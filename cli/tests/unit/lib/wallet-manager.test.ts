@@ -11,18 +11,17 @@ import {
   ValidationError,
 } from '../../../src/types/errors.js';
 
-// Create shared mock instance (must be before imports that use it)
-const mockWallets = {
-  jwkToAddress: jest.fn().mockResolvedValue('mock_arweave_address_43_characters_long_abc'),
-  getBalance: jest.fn().mockResolvedValue('5200000000000'), // 5.2 AR in winston
-};
-
-const mockArweaveInstance = {
-  wallets: mockWallets,
-};
-
 // Mock Arweave SDK
 jest.mock('arweave', () => {
+  const mockWallets = {
+    jwkToAddress: jest.fn().mockResolvedValue('mock_arweave_address_43_characters_long_abc'),
+    getBalance: jest.fn().mockResolvedValue('5200000000000'), // 5.2 AR in winston
+  };
+
+  const mockArweaveInstance = {
+    wallets: mockWallets,
+  };
+
   return {
     __esModule: true,
     default: {
@@ -33,6 +32,7 @@ jest.mock('arweave', () => {
 
 import {
   load,
+  loadFromFile,
   saveToKeychain,
   loadFromKeychain,
   checkBalance,
@@ -46,6 +46,11 @@ jest.mock('keytar', () => ({
 
 describe('Wallet Manager', () => {
   const fixturesPath = path.join(__dirname, '../../fixtures/wallets');
+
+  beforeEach(() => {
+    // Ensure SEED_PHRASE is not set for backward compatibility tests
+    delete process.env.SEED_PHRASE;
+  });
 
   describe('load()', () => {
     describe('valid JWK loading', () => {

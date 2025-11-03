@@ -9,6 +9,7 @@
  */
 
 import Arweave from 'arweave';
+import { Readable } from 'stream';
 import { loadConfig } from '../lib/config-loader.js';
 import logger from '../utils/logger.js';
 import {
@@ -25,6 +26,8 @@ import {
   AuthorizationError,
   ValidationError,
 } from '../types/errors.js';
+import { validateGatewayUrl } from '../lib/url-validator.js';
+import { initializeTurboClient } from '../lib/turbo-init.js';
 
 /**
  * Constants for Arweave operations
@@ -37,6 +40,7 @@ const CONFIRMATION_TIMEOUT_MS = 300000; // 5 minutes
 const MAX_RETRY_ATTEMPTS = 3;
 const BASE_RETRY_DELAY_MS = 1000; // 1 second
 const WINSTON_PER_AR = 1_000_000_000_000;
+const FREE_TIER_THRESHOLD_BYTES = 100 * 1024; // 100KB free tier for Turbo SDK
 
 /**
  * Retry a function with exponential backoff
@@ -83,8 +87,14 @@ async function retryWithBackoff<T>(
 /**
  * Determine if error is a retryable network error
  *
- * Retryable errors: ETIMEDOUT, ECONNRESET, ENOTFOUND, 502, 503
- * Non-retryable errors: AuthorizationError, ValidationError
+ * Retryable errors: ETIMEDOUT, ECONNRESET, ENOTFOUND, 502, 503, Turbo SDK timeouts/gateway errors
+ * Non-retryable errors: AuthorizationError, ValidationError, Turbo SDK credit/validation errors
+ *
+ * Epic 9: Updated to handle Turbo SDK error patterns
+ * - Turbo timeout errors (RETRYABLE)
+ * - Turbo gateway unavailable (502/503) (RETRYABLE)
+ * - Turbo insufficient credits (NON-RETRYABLE → AuthorizationError)
+ * - Turbo invalid upload (NON-RETRYABLE → ValidationError)
  *
  * @param error - Error to check
  * @returns True if error should be retried
@@ -100,36 +110,31 @@ function isRetryableError(error: Error): boolean {
   const errorMessage = error.message.toLowerCase();
   const errorCode = (error as NodeJS.ErrnoException).code;
 
-  // Retryable network errors
+  // Turbo SDK timeout errors (RETRYABLE)
+  if (errorMessage.includes('timeout') ||
+      errorCode === 'ETIMEDOUT' ||
+      error.name === 'AbortError') {
+    return true;
+  }
+
+  // Turbo SDK gateway errors (RETRYABLE)
+  if (errorMessage.includes('502') ||
+      errorMessage.includes('503') ||
+      (error as any).statusCode === 502 ||
+      (error as any).statusCode === 503) {
+    return true;
+  }
+
+  // Retryable network errors (Arweave SDK fallback path)
   const retryableErrorCodes = ['ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND'];
   if (errorCode && retryableErrorCodes.includes(errorCode)) {
     return true;
   }
 
-  // Retryable HTTP status codes (gateway errors)
-  if (errorMessage.includes('502') || errorMessage.includes('503')) {
-    return true;
-  }
+  // Turbo SDK insufficient credits errors (NON-RETRYABLE - already caught by AuthorizationError check above)
+  // Turbo SDK validation errors (NON-RETRYABLE - already caught by ValidationError check above)
 
   return false;
-}
-
-/**
- * Validate gateway URL format
- *
- * @param url - Gateway URL to validate
- * @throws {ValidationError} If URL is not HTTPS
- * @private
- */
-function validateGatewayUrl(url: string): void {
-  if (!url.startsWith('https://')) {
-    throw new ValidationError(
-      `[ValidationError] Gateway URL must use HTTPS for security. -> Solution: Use an HTTPS gateway URL (e.g., https://arweave.net)`,
-      'gateway',
-      url,
-      'HTTPS URL (e.g., https://arweave.net)'
-    );
-  }
 }
 
 /**
@@ -140,7 +145,7 @@ function validateGatewayUrl(url: string): void {
  * @private
  */
 function initializeArweaveClient(gatewayUrl: string): Arweave {
-  validateGatewayUrl(gatewayUrl);
+  validateGatewayUrl(gatewayUrl, 'gateway', 'https://arweave.net');
 
   // Parse gateway URL
   const url = new URL(gatewayUrl);
@@ -179,10 +184,17 @@ function formatWinstonToAR(winston: number): string {
 /**
  * Upload bundle to Arweave network
  *
+ * Epic 9: Turbo SDK migration for free uploads (< 100KB bundles)
+ * - Bundles < 100KB: Turbo SDK free tier (cost = 0, subsidized by Turbo)
+ * - Bundles ≥ 100KB: Arweave SDK direct upload (cost = transaction fee in winston)
+ *
  * Creates an Arweave data transaction with the bundle, adds metadata tags,
  * signs with wallet, uploads to gateway, and optionally tracks progress.
  *
  * Includes retry logic for network failures (3 attempts with exponential backoff).
+ *
+ * @see docs/prd/epic-9.md for full migration details
+ * @see docs/stories/9.2.story.md for Turbo SDK implementation
  *
  * @param bundle - Compressed tar.gz bundle buffer
  * @param metadata - Skill name and version for transaction tags
@@ -190,18 +202,29 @@ function formatWinstonToAR(winston: number): string {
  * @param options - Optional progress callback and custom gateway URL
  * @returns Upload result with transaction ID, size, and cost
  * @throws {NetworkError} On network timeout or gateway failure
- * @throws {AuthorizationError} On insufficient funds
+ * @throws {AuthorizationError} On insufficient funds (Arweave) or credits (Turbo)
  * @throws {ValidationError} On invalid transaction or gateway URL
  *
  * @example
  * ```typescript
+ * // Small bundle (< 100KB) - uses Turbo SDK free tier
  * const result = await uploadBundle(
- *   bundleBuffer,
+ *   smallBundleBuffer,
  *   { skillName: 'my-skill', skillVersion: '1.0.0' },
  *   walletJwk,
  *   { progressCallback: (pct) => console.log(`${pct}% uploaded`) }
  * );
  * console.log('Transaction ID:', result.txId);
+ * console.log('Cost:', result.cost); // 0 for free tier
+ *
+ * // Large bundle (≥ 100KB) - uses Arweave SDK direct upload
+ * const result = await uploadBundle(
+ *   largeBundleBuffer,
+ *   { skillName: 'big-skill', skillVersion: '1.0.0' },
+ *   walletJwk
+ * );
+ * console.log('Transaction ID:', result.txId);
+ * console.log('Cost:', result.cost); // > 0 in winston
  * ```
  */
 export async function uploadBundle(
@@ -214,6 +237,42 @@ export async function uploadBundle(
   const config = await loadConfig();
   const gatewayUrl = options?.gatewayUrl || config.gateway || DEFAULT_GATEWAY;
 
+  // Determine bundle size and upload method
+  const bundleSizeBytes = bundle.length;
+  const useTurboFreeTier = bundleSizeBytes < FREE_TIER_THRESHOLD_BYTES;
+
+  // Epic 9: Branch between Turbo SDK (< 100KB) and Arweave SDK (≥ 100KB)
+  if (useTurboFreeTier) {
+    return await uploadBundleWithTurboSDK(bundle, metadata, wallet, config, options);
+  } else {
+    return await uploadBundleWithArweaveSDK(bundle, metadata, wallet, gatewayUrl, options);
+  }
+}
+
+/**
+ * Upload bundle using Arweave SDK (original implementation)
+ *
+ * Used for bundles ≥ 100KB that exceed Turbo SDK free tier.
+ * Performs balance check, creates transaction, adds tags, signs, and uploads.
+ *
+ * @param bundle - Compressed tar.gz bundle buffer
+ * @param metadata - Skill name and version for transaction tags
+ * @param wallet - JWK for signing transaction
+ * @param gatewayUrl - Gateway URL for upload
+ * @param options - Optional progress callback
+ * @returns Upload result with transaction ID, size, and cost
+ * @throws {NetworkError} On network timeout or gateway failure
+ * @throws {AuthorizationError} On insufficient funds
+ * @throws {ValidationError} On invalid transaction
+ * @private
+ */
+async function uploadBundleWithArweaveSDK(
+  bundle: Buffer,
+  metadata: IBundleMetadata,
+  wallet: JWK,
+  gatewayUrl: string,
+  options?: IUploadOptions
+): Promise<IUploadResult> {
   // Initialize Arweave client
   const arweave = initializeArweaveClient(gatewayUrl);
 
@@ -371,12 +430,175 @@ export async function uploadBundle(
     );
   }
 
-  logger.info(`Successfully uploaded bundle to Arweave: ${txId}`);
+  logger.info(`Successfully uploaded bundle to Arweave (Arweave SDK): ${txId}`);
 
   return {
     txId,
     uploadSize,
     cost,
+  };
+}
+
+/**
+ * Upload bundle using Turbo SDK (Epic 9 free tier)
+ *
+ * Used for bundles < 100KB to leverage Turbo's subsidized uploads (free tier).
+ * Converts Buffer to stream, uploads via Turbo SDK, and returns transaction ID.
+ *
+ * @param bundle - Compressed tar.gz bundle buffer
+ * @param metadata - Skill name and version for transaction tags
+ * @param wallet - JWK for signing transaction
+ * @param config - Configuration with Turbo settings
+ * @param options - Optional progress callback
+ * @returns Upload result with transaction ID, size, and cost (0 for free tier)
+ * @throws {NetworkError} On network timeout or gateway failure
+ * @throws {AuthorizationError} On insufficient Turbo credits (rare for free tier)
+ * @throws {ValidationError} On invalid transaction or bundle format
+ * @private
+ */
+async function uploadBundleWithTurboSDK(
+  bundle: Buffer,
+  metadata: IBundleMetadata,
+  wallet: JWK,
+  config: Awaited<ReturnType<typeof loadConfig>>,
+  options?: IUploadOptions
+): Promise<IUploadResult> {
+  // Report initial progress
+  if (options?.progressCallback) {
+    options.progressCallback(0);
+  }
+
+  let txId: string;
+  let uploadSize: number;
+  let cost: number;
+
+  try {
+    // Initialize Turbo client using Story 9.1 helper
+    const turboClient = initializeTurboClient(wallet, {
+      turboGateway: config.turboGateway,
+      turboUseCredits: config.turboUseCredits,
+    });
+
+    // Helper: Convert Buffer to Node.js ReadableStream
+    const bufferToStreamFactory = (buffer: Buffer) => {
+      return () => Readable.from(buffer);
+    };
+
+    // Set up timeout controller (60 second timeout)
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), UPLOAD_TIMEOUT_MS);
+
+    try {
+      // Upload file with Turbo SDK (with retry logic - Task 5)
+      const turboResponse = await retryWithBackoff(
+        async () => {
+          return await turboClient.uploadFile({
+            fileStreamFactory: bufferToStreamFactory(bundle),
+            fileSizeFactory: () => bundle.length,
+            signal: abortController.signal,
+            dataItemOpts: {
+              tags: [
+                { name: 'App-Name', value: 'Agent-Skills-Registry' },
+                { name: 'Content-Type', value: 'application/x-tar+gzip' },
+                { name: 'Skill-Name', value: metadata.skillName },
+                { name: 'Skill-Version', value: metadata.skillVersion },
+              ],
+            },
+          });
+        },
+        isRetryableError,
+        MAX_RETRY_ATTEMPTS,
+        BASE_RETRY_DELAY_MS
+      );
+
+      // Extract transaction ID and cost
+      txId = turboResponse.id;
+      uploadSize = bundle.length;
+      cost = 0; // Free tier for < 100KB bundles
+
+      // Validate transaction ID format (Task 7)
+      if (!txId || txId.length !== 43) {
+        throw new ValidationError(
+          `[ValidationError] Invalid transaction ID format from Turbo SDK (expected 43 characters, got ${txId?.length || 0}). -> Solution: Verify Turbo SDK integration is correct`,
+          'txId',
+          txId || 'undefined',
+          '43-character Arweave transaction ID'
+        );
+      }
+
+      // Report completion progress (Task 4)
+      if (options?.progressCallback) {
+        options.progressCallback(100);
+      }
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+
+    // Re-throw ValidationError and AuthorizationError directly
+    if (err instanceof ValidationError || err instanceof AuthorizationError) {
+      throw err;
+    }
+
+    // Check for timeout/abort errors (Task 3)
+    if (err.name === 'AbortError' || (err as NodeJS.ErrnoException).code === 'ABORT_ERR') {
+      throw new NetworkError(
+        `[NetworkError] Turbo upload timeout after ${UPLOAD_TIMEOUT_MS / 1000} seconds. -> Solution: Check your internet connection and try again`,
+        err,
+        config.turboGateway || 'Turbo default gateway',
+        'timeout'
+      );
+    }
+
+    // Turbo SDK insufficient credits errors (Task 3)
+    if (err.message.toLowerCase().includes('insufficient') ||
+        err.message.toLowerCase().includes('credit') ||
+        err.message.toLowerCase().includes('balance')) {
+      throw new AuthorizationError(
+        `[AuthorizationError] Insufficient Turbo credits. Bundles < 100KB are free, but this upload failed. -> Solution: Verify bundle size or check Turbo credit balance`,
+        '', // Address not available for Turbo SDK errors
+        0
+      );
+    }
+
+    // Turbo SDK invalid upload/validation errors (Task 3)
+    if (err.message.toLowerCase().includes('invalid') ||
+        err.message.toLowerCase().includes('malformed') ||
+        err.message.toLowerCase().includes('validation')) {
+      throw new ValidationError(
+        `[ValidationError] Invalid bundle format for Turbo SDK upload. -> Solution: Verify bundle is valid tar.gz format`,
+        'bundle',
+        err.message,
+        'valid tar.gz file'
+      );
+    }
+
+    // Gateway errors (502/503) (Task 3)
+    if (err.message.includes('502') || err.message.includes('503')) {
+      throw new NetworkError(
+        `[NetworkError] Turbo gateway unavailable (returned ${err.message.match(/\d{3}/)?.[0]}). -> Solution: Try again later or verify Turbo service status`,
+        err,
+        config.turboGateway || 'Turbo default gateway',
+        'gateway_error'
+      );
+    }
+
+    // Generic network error (Task 3)
+    throw new NetworkError(
+      `[NetworkError] Turbo upload failed: ${err.message}. -> Solution: Verify network connection and try again`,
+      err,
+      config.turboGateway || 'Turbo default gateway',
+      'connection_failure'
+    );
+  }
+
+  logger.info(`Successfully uploaded bundle to Arweave (Turbo SDK free tier): ${txId}`);
+
+  return {
+    txId,
+    uploadSize,
+    cost, // 0 for free tier
   };
 }
 
@@ -407,7 +629,7 @@ export async function checkTransactionStatus(
     gatewayUrl = config.gateway || DEFAULT_GATEWAY;
   }
 
-  validateGatewayUrl(gatewayUrl);
+  validateGatewayUrl(gatewayUrl, 'gateway', 'https://arweave.net');
 
   try {
     const statusUrl = `${gatewayUrl}/tx/${txId}/status`;
@@ -597,7 +819,7 @@ export async function downloadBundle(
   // Load configuration for gateway URL
   const config = await loadConfig();
   const gatewayUrl = options?.gatewayUrl || config.gateway || DEFAULT_GATEWAY;
-  validateGatewayUrl(gatewayUrl);
+  validateGatewayUrl(gatewayUrl, 'gateway', 'https://arweave.net');
 
   // Retry logic with exponential backoff
   return await retryWithBackoff(

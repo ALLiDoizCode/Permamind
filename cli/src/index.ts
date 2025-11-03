@@ -8,8 +8,12 @@
  * to minimize startup time for --help and --version commands.
  */
 
+import { config } from 'dotenv';
 import { Command } from 'commander';
 import packageJson from '../package.json';
+
+// Load .env file for environment variable configuration
+config();
 
 // Initialize Commander program
 const program = new Command();

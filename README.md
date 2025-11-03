@@ -105,10 +105,38 @@ skills publish ./my-skill --verbose
 This is a monorepo managed with npm workspaces containing:
 
 - **cli/**: TypeScript CLI tool for publish, search, and install operations
+- **mcp-server/**: MCP server for Claude AI integration (exposes registry tools via Model Context Protocol)
 - **ao-process/**: Lua-based AO registry process
 - **skills/**: Bootstrap Skills for AO, Arweave, and Permamind integration
 - **scripts/**: Deployment and validation scripts
 - **docs/**: Project documentation
+
+## MCP Server
+
+The Agent Skills Registry includes an MCP server that exposes registry functionality to Claude AI through the Model Context Protocol. It provides three main tools:
+
+- **publish_skill**: Publish skills to the Arweave/AO registry
+- **search_skills**: Search the registry for available skills
+- **install_skill**: Install skills with automatic dependency resolution
+
+The MCP server uses **seed phrase wallet** for deterministic Arweave key generation, enabling reproducible deployments without key file management.
+
+**📖 Complete Setup Guide**: See [mcp-server/README.md](mcp-server/README.md) for detailed installation, configuration, and usage instructions.
+
+**🖥️ Claude Desktop Integration**: Configure in Claude Desktop's `claude_desktop_config.json` to enable Claude AI access to the registry.
+
+### Quick MCP Server Commands
+
+```bash
+# Build MCP server
+npm run build --workspace=mcp-server
+
+# Run MCP server tests
+npm test --workspace=mcp-server
+
+# Start MCP server (requires SEED_PHRASE in mcp-server/.env)
+npm run start --workspace=mcp-server
+```
 
 ### Available Scripts
 
@@ -254,6 +282,39 @@ npm test -- cli/tests/performance/benchmark-publish.test.ts
 ```
 
 **Documentation**: See `docs/performance-benchmarks.md` for detailed metrics and `docs/performance-analysis.md` for optimization techniques.
+
+## Epic 9: Turbo SDK Migration - Free Uploads for Small Bundles
+
+**Overview:**
+As of version 2.0.0, the Agent Skills Registry CLI uses **Turbo SDK** for bundle uploads, enabling **free uploads for bundles under 100KB**. Most skill bundles are < 100KB (skill metadata + SKILL.md files), making this a significant cost savings for the community.
+
+**Cost Savings:**
+- **Before (Arweave SDK):** ~$0.02 per upload (50KB bundle)
+- **After (Turbo SDK):** **FREE** for bundles < 100KB
+- **Larger bundles (≥ 100KB):** Continue using Arweave SDK (existing behavior)
+
+**Example:**
+Typical skill bundle (SKILL.md + metadata):
+- Size: 45KB
+- Cost: **$0.00** (subsidized by Turbo)
+- Upload time: ~3-5 seconds
+
+**Upgrade Impact:**
+- ✅ **No breaking changes:** CLI commands work identically
+- ✅ **Automatic benefit:** Small bundles upload for free immediately
+- ✅ **Backward compatible:** Existing skills continue working
+- ✅ **Same transaction IDs:** AO registry compatibility maintained
+
+**Configuration:**
+See `.env.example` for optional Turbo SDK settings:
+- `TURBO_GATEWAY`: Custom Turbo gateway URL (optional)
+- `TURBO_USE_CREDITS`: Force credit-based uploads (default: false)
+
+**Troubleshooting:**
+See [docs/troubleshooting.md](docs/troubleshooting.md#turbo-sdk-errors) for common Turbo SDK errors and solutions.
+
+**Full Details:**
+See [docs/prd/epic-9.md](docs/prd/epic-9.md) for complete Epic 9 specification.
 
 ## Coding Standards
 

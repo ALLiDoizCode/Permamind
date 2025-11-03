@@ -29,11 +29,13 @@ skills --version
 
 - **Node.js**: 20.11.0 LTS or higher
 - **npm**: 10.x or higher (bundled with Node.js)
-- **Arweave Wallet**: Required for publishing Skills (JSON keyfile)
+- **Arweave Wallet**: Required for publishing Skills (two options)
 
 ## Quick Start
 
 ### 1. Configure Your Wallet
+
+**Option A: File-Based Wallet (Traditional)**
 
 Create a `.skillsrc` file in your home directory:
 
@@ -44,6 +46,33 @@ Create a `.skillsrc` file in your home directory:
   "gateway": "https://arweave.net"
 }
 ```
+
+**Option B: Seed Phrase Wallet (Deterministic)**
+
+Set the `SEED_PHRASE` environment variable with a 12-word BIP39 mnemonic:
+
+```bash
+# Via environment variable
+export SEED_PHRASE="abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+
+# Or via .env file (recommended for development)
+echo 'SEED_PHRASE=your twelve word mnemonic phrase here' > .env
+```
+
+**Wallet Selection Priority:**
+1. `SEED_PHRASE` environment variable (highest priority)
+2. `--wallet` flag (command-line override)
+3. Default wallet path `~/.arweave/wallet.json` (fallback)
+
+**Security Warning:**
+- ⚠️ Never commit `.env` files with real seed phrases to version control
+- ⚠️ Keep seed phrases secure - anyone with your seed phrase has full wallet access
+- ⚠️ Use `.env.example` as a template (placeholder only, safe to commit)
+- ✅ Add `.env` to your `.gitignore` file
+
+**Keychain Limitation:**
+- Keychain operations only support file-based wallets
+- Seed phrase wallets are generated deterministically on each CLI invocation
 
 ### 2. Search for Skills
 
@@ -136,6 +165,44 @@ Display help for all commands or a specific command.
 skills --help
 skills publish --help
 skills search --help
+```
+
+## MCP Server Integration
+
+This CLI has a complementary MCP server that exposes the same functionality to Claude AI through the Model Context Protocol.
+
+**📖 MCP Server Documentation**: See [../mcp-server/README.md](../mcp-server/README.md) for MCP server setup and usage.
+
+**🔄 Cross-Compatibility Guarantee**: Skills published, searched, or installed via either the CLI or MCP server are fully compatible. Both tools share the same lock file format (`skills-lock.json`) and registry.
+
+**✅ Verified Compatibility**: Cross-compatibility is verified by [integration tests](tests/integration/cross-compatibility.integration.test.ts) with 11/11 tests passing (100% compatibility).
+
+### Key Differences
+
+| Feature | CLI | MCP Server |
+|---------|-----|-----------|
+| **Interface** | Command-line | Natural language (Claude AI) |
+| **Wallet Type** | File-based (JWK) or seed phrase | Seed phrase only |
+| **Best For** | Automation, CI/CD, scripting | Interactive use, Claude Desktop integration |
+| **Installation** | Global npm package | Claude Desktop configuration |
+
+### Example Cross-Tool Workflow
+
+```bash
+# Publish with MCP (via Claude)
+# User: "Publish the skill in ./my-skill"
+# Claude: Successfully published my-skill v1.0.0!
+
+# Search with CLI
+skills search my-skill
+# Found: my-skill v1.0.0 by Your Name
+
+# Install with CLI
+skills install my-skill
+# ✓ Installed to ~/.claude/skills/my-skill
+
+# Both tools share the same lock file
+cat ~/.claude/skills/skills-lock.json
 ```
 
 ## Architecture

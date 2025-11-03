@@ -39,6 +39,22 @@ jest.mock('arweave', () => {
   };
 });
 
+// Mock Turbo SDK (@ardrive/turbo-sdk) - Epic 9
+const mockTurboUploadFile = jest.fn();
+const mockTurboGetWincForFiat = jest.fn();
+const mockTurboInstance = {
+  uploadFile: mockTurboUploadFile,
+  getWincForFiat: mockTurboGetWincForFiat,
+};
+
+jest.mock('@ardrive/turbo-sdk', () => ({
+  __esModule: true,
+  TurboFactory: {
+    authenticated: jest.fn(() => Promise.resolve(mockTurboInstance)),
+    unauthenticated: jest.fn(() => Promise.resolve(mockTurboInstance)),
+  },
+}));
+
 // Mock AO SDK (@permaweb/aoconnect)
 const mockMessage = jest.fn();
 const mockDryrun = jest.fn();
@@ -201,6 +217,22 @@ describe('Publish Workflow Integration Tests', () => {
       wallets: mockWallets,
       transactions: mockTransactions,
       createTransaction: mockCreateTransaction,
+    });
+
+    // Setup Turbo SDK mocks (Epic 9)
+    mockTurboUploadFile.mockClear();
+    mockTurboGetWincForFiat.mockClear();
+    mockTurboUploadFile.mockResolvedValue({
+      id: 'publish_workflow_tx_id_43_chars_long_123', // Same as Arweave tx
+      owner: 'mock_arweave_address_43_characters_long_abc',
+      dataCaches: ['https://arweave.net'],
+      fastFinalityIndexes: [],
+      deadlineHeight: 1234567,
+      winc: '1000000', // Cost in winc
+    });
+    mockTurboGetWincForFiat.mockResolvedValue({
+      winc: '1000000',
+      adjustments: [],
     });
 
     // Setup AO SDK mocks

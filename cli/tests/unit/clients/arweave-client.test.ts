@@ -84,7 +84,9 @@ describe('Arweave Client', () => {
   const testWalletPath = path.join(__dirname, '../../fixtures/wallets/test-wallet.json');
   const mockWallet = JSON.parse(fs.readFileSync(testWalletPath, 'utf-8'));
 
-  const mockBundle = Buffer.from('mock tar.gz bundle data');
+  // Epic 9: Create bundle ≥ 100KB to force Arweave SDK path (not Turbo SDK free tier)
+  // This ensures tests run against the Arweave SDK upload path with transaction creation
+  const mockBundle = Buffer.alloc(102400, 'x'); // 100KB bundle
   const mockMetadata = {
     skillName: 'test-skill',
     skillVersion: '1.0.0',

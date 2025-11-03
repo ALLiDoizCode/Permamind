@@ -198,8 +198,10 @@ describe('PublishService', () => {
       // Verify wallet-manager.load NOT called
       expect((walletManager.load as jest.Mock)).not.toHaveBeenCalled();
 
-      // Verify balance check still performed
-      expect((walletManager.checkBalance as jest.Mock)).toHaveBeenCalledWith(mockAddress);
+      // Epic 9: Balance check removed from PublishService
+      // Balance check now happens in ArweaveClient for bundles ≥ 100KB only
+      // Verify checkBalance NOT called here (deferred to upload stage)
+      expect((walletManager.checkBalance as jest.Mock)).not.toHaveBeenCalled();
     });
 
     it('should load wallet from path when walletPath provided (CLI usage)', async () => {
@@ -211,8 +213,10 @@ describe('PublishService', () => {
       // Verify wallet loaded from file
       expect((walletManager.load as jest.Mock)).toHaveBeenCalledWith('/test/wallet.json');
 
-      // Verify balance check performed
-      expect((walletManager.checkBalance as jest.Mock)).toHaveBeenCalledWith(mockAddress);
+      // Epic 9: Balance check removed from PublishService
+      // Balance check now happens in ArweaveClient for bundles ≥ 100KB only
+      // Verify checkBalance NOT called here (deferred to upload stage)
+      expect((walletManager.checkBalance as jest.Mock)).not.toHaveBeenCalled();
     });
 
     it('should prioritize wallet over walletPath when both provided', async () => {
@@ -333,7 +337,12 @@ describe('PublishService', () => {
       ).rejects.toThrow(ConfigurationError);
     });
 
-    it('should throw AuthorizationError if wallet balance is zero', async () => {
+    // Epic 9: Balance validation moved to ArweaveClient
+    // Test removed from PublishService as balance check is deferred to upload stage
+    // Balance errors will be thrown from ArweaveClient.uploadBundle() for bundles ≥ 100KB
+    it.skip('should throw AuthorizationError if wallet balance is zero', async () => {
+      // This test is skipped because balance validation moved to ArweaveClient
+      // See arweave-client.test.ts for balance validation tests
       // Mock zero balance
       (walletManager.checkBalance as jest.Mock).mockResolvedValue({
         address: mockAddress,

@@ -174,7 +174,8 @@ describe('PublishService Integration Tests', () => {
       expect(manifestParser.parse).toHaveBeenCalled();
       expect(manifestParser.validate).toHaveBeenCalled();
       expect(walletManager.load).toHaveBeenCalledWith(testWalletPath);
-      expect(walletManager.checkBalance).toHaveBeenCalledWith(mockAddress);
+      // Epic 9: Balance check removed from PublishService (deferred to ArweaveClient)
+      // expect(walletManager.checkBalance).toHaveBeenCalledWith(mockAddress);
       expect(bundler.bundle).toHaveBeenCalledWith(testSkillDir, expect.any(Object));
       expect(arweaveClient.uploadBundle).toHaveBeenCalled();
       expect(skillAnalyzer.analyzeSkillDirectory).toHaveBeenCalledWith(testSkillDir);
@@ -213,8 +214,8 @@ describe('PublishService Integration Tests', () => {
       // Verify wallet-manager.load NOT called (wallet already loaded)
       expect(walletManager.load).not.toHaveBeenCalled();
 
-      // Verify balance check still performed
-      expect(walletManager.checkBalance).toHaveBeenCalledWith(mockAddress);
+      // Epic 9: Balance check removed from PublishService (deferred to ArweaveClient)
+      // expect(walletManager.checkBalance).toHaveBeenCalledWith(mockAddress);
 
       // Verify publish succeeded
       expect(result.skillName).toBe(mockManifest.name);
@@ -230,8 +231,8 @@ describe('PublishService Integration Tests', () => {
       // Verify wallet loaded from file
       expect(walletManager.load).toHaveBeenCalledWith(testWalletPath);
 
-      // Verify balance check performed
-      expect(walletManager.checkBalance).toHaveBeenCalledWith(mockAddress);
+      // Epic 9: Balance check removed from PublishService (deferred to ArweaveClient)
+      // expect(walletManager.checkBalance).toHaveBeenCalledWith(mockAddress);
 
       // Verify publish succeeded
       expect(result.skillName).toBe(mockManifest.name);

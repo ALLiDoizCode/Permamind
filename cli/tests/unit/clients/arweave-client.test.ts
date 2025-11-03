@@ -77,14 +77,12 @@ import {
   pollConfirmation,
   downloadBundle,
 } from '../../../src/clients/arweave-client.js';
+import * as fs from 'fs';
 
 describe('Arweave Client', () => {
-  const mockWallet = {
-    kty: 'RSA',
-    e: 'AQAB',
-    n: 'mock_n_value',
-    d: 'mock_d_value',
-  };
+  // Load valid test wallet with proper RSA key parameters
+  const testWalletPath = path.join(__dirname, '../../fixtures/wallets/test-wallet.json');
+  const mockWallet = JSON.parse(fs.readFileSync(testWalletPath, 'utf-8'));
 
   const mockBundle = Buffer.from('mock tar.gz bundle data');
   const mockMetadata = {

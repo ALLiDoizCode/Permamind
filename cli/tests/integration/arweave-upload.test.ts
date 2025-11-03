@@ -5,6 +5,8 @@
  * Uses mocked Arweave SDK for all tests (no real network calls).
  */
 
+import * as path from 'path';
+import * as fs from 'fs';
 import { JWK } from '../../src/types/arweave.js';
 import { NetworkError } from '../../src/types/errors.js';
 
@@ -67,12 +69,9 @@ import {
 } from '../../src/clients/arweave-client.js';
 
 describe('Arweave Upload Integration Tests', () => {
-  const mockWallet = {
-    kty: 'RSA',
-    e: 'AQAB',
-    n: 'mock_n_value',
-    d: 'mock_d_value',
-  };
+  // Load valid test wallet with proper RSA key parameters
+  const testWalletPath = path.join(__dirname, '../fixtures/wallets/test-wallet.json');
+  const mockWallet = JSON.parse(fs.readFileSync(testWalletPath, 'utf-8'));
 
   const mockBundle = Buffer.from('integration test bundle data');
   const mockMetadata = {

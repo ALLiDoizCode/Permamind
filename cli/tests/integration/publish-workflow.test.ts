@@ -6,6 +6,7 @@
  */
 
 import * as path from 'path';
+import * as fs from 'fs';
 import { JWK } from '../../src/types/arweave.js';
 import { NetworkError, ValidationError, AuthorizationError } from '../../src/types/errors.js';
 
@@ -148,12 +149,9 @@ jest.mock('fs/promises', () => ({
 // Don't import execute here - use dynamic import in tests to ensure mocks are applied
 
 describe('Publish Workflow Integration Tests', () => {
-  const mockWallet: JWK = {
-    kty: 'RSA',
-    e: 'AQAB',
-    n: 'mock_n_value',
-    d: 'mock_d_value',
-  };
+  // Load valid test wallet with proper RSA key parameters
+  const testWalletPath = path.join(__dirname, '../fixtures/wallets/test-wallet.json');
+  const mockWallet: JWK = JSON.parse(fs.readFileSync(testWalletPath, 'utf-8'));
 
   const skillDirectory = path.join(__dirname, '../fixtures/skills/valid-skill');
   const mockWalletPath = '/mock/path/to/wallet.json';

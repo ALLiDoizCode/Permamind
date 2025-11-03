@@ -50,6 +50,9 @@ jobs:
       - name: Build CLI
         run: npm run build
 
+      - name: Clear Jest cache
+        run: npx jest --clearCache
+
       - name: Run tests
         run: npm run test:once
 

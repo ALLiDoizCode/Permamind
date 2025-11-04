@@ -2,8 +2,9 @@
  * NodeArweaveWallet Adapter
  *
  * Provides a clean TypeScript interface for browser wallet integration via the
- * node-arweave-wallet library. Enables CLI tools to leverage browser wallets
- * (ArConnect, Wander) without exposing private keys.
+ * @permamind/node-arweave-wallet library (fork with custom UI template support).
+ * Enables CLI tools to leverage browser wallets (ArConnect, Wander) without
+ * exposing private keys.
  *
  * Key Features:
  * - Random port allocation (prevents conflicts)
@@ -28,7 +29,7 @@
  * ```
  */
 
-import { NodeArweaveWallet } from 'node-arweave-wallet';
+import { NodeArweaveWallet } from '@permamind/node-arweave-wallet';
 import type {
   IInitOptions,
   Permission,

@@ -43,7 +43,7 @@
     "human-crypto-keys": "^0.1.4",
     "keytar": "^7.9.0",
     "lodash": "^4.17.21",
-    "node-arweave-wallet": "^0.0.12",
+    "@permamind/node-arweave-wallet": "^0.0.13",
     "ora": "5.4.1",
     "tar": "^6.2.0"
   },

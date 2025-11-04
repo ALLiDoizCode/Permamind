@@ -21,6 +21,7 @@ import {
   JWK,
   ITag,
 } from '../types/arweave.js';
+import { IWalletProvider } from '../types/wallet.js';
 import {
   NetworkError,
   AuthorizationError,
@@ -230,7 +231,7 @@ function formatWinstonToAR(winston: number): string {
 export async function uploadBundle(
   bundle: Buffer,
   metadata: IBundleMetadata,
-  wallet: JWK,
+  walletProvider: IWalletProvider,
   options?: IUploadOptions
 ): Promise<IUploadResult> {
   // Load configuration to get gateway URL
@@ -240,6 +241,21 @@ export async function uploadBundle(
   // Determine bundle size and upload method
   const bundleSizeBytes = bundle.length;
   const useTurboFreeTier = bundleSizeBytes < FREE_TIER_THRESHOLD_BYTES;
+
+  // Story 11.6: Route based on wallet type
+  const source = walletProvider.getSource();
+
+  // Browser wallet: Use Turbo SDK for < 100KB (free tier), direct dispatch for >= 100KB
+  if (source.source === 'browserWallet') {
+    if (useTurboFreeTier) {
+      return await uploadBundleWithBrowserWalletTurbo(bundle, metadata, walletProvider, config, options);
+    } else {
+      return await uploadBundleWithBrowserWallet(bundle, metadata, walletProvider, options);
+    }
+  }
+
+  // File/seed phrase wallet: Extract JWK and use existing paths
+  const wallet = await walletProvider.getJWK!();
 
   // Epic 9: Branch between Turbo SDK (< 100KB) and Arweave SDK (≥ 100KB)
   if (useTurboFreeTier) {
@@ -437,6 +453,280 @@ async function uploadBundleWithArweaveSDK(
     uploadSize,
     cost,
   };
+}
+
+/**
+ * Upload bundle using Turbo SDK with browser wallet signed data item (Story 11.6)
+ *
+ * Used for browser wallet uploads < 100KB to leverage Turbo's subsidized uploads.
+ * Creates signed data item using browser wallet's createDataItemSigner(),
+ * then uploads via Turbo SDK's uploadSignedDataItem() for free tier benefits.
+ *
+ * @param bundle - Compressed tar.gz bundle buffer
+ * @param metadata - Skill name and version for transaction tags
+ * @param walletProvider - Browser wallet provider instance
+ * @param config - Configuration with Turbo settings
+ * @param options - Optional progress callback
+ * @returns Upload result with transaction ID, size, and cost (0 for free tier)
+ * @throws {NetworkError} On network timeout or gateway failure
+ * @throws {AuthorizationError} On user rejection or insufficient credits
+ * @throws {ValidationError} On invalid data item format
+ * @private
+ */
+async function uploadBundleWithBrowserWalletTurbo(
+  bundle: Buffer,
+  metadata: IBundleMetadata,
+  walletProvider: IWalletProvider,
+  config: Awaited<ReturnType<typeof loadConfig>>,
+  options?: IUploadOptions
+): Promise<IUploadResult> {
+  // Report initial progress
+  if (options?.progressCallback) {
+    options.progressCallback(0);
+  }
+
+  logger.debug('Using browser wallet upload via Turbo SDK (free tier)', {
+    bundleSize: bundle.length,
+    skillName: metadata.skillName,
+  });
+
+  // Upload with retry logic for network errors
+  const result = await retryWithBackoff(
+    async () => {
+      // Get the NodeArweaveWallet instance from browser wallet provider
+      const { BrowserWalletProvider } = await import('../lib/wallet-providers/browser-wallet-provider.js');
+      if (!(walletProvider instanceof BrowserWalletProvider)) {
+        throw new ValidationError(
+          '[ValidationError] Invalid wallet provider type for browser wallet Turbo upload',
+          'walletProvider',
+          'Expected BrowserWalletProvider'
+        );
+      }
+
+      const adapter = (walletProvider as any).getAdapter();
+      const wallet = (adapter as any).wallet; // NodeArweaveWallet instance
+
+      if (!wallet || typeof wallet.signDataItem !== 'function') {
+        throw new ValidationError(
+          '[ValidationError] Browser wallet does not support signDataItem',
+          'wallet',
+          'signDataItem method not available'
+        );
+      }
+
+      // Use browser wallet's signDataItem directly (returns Uint8Array of signed data item)
+      const signedDataItemRaw = await wallet.signDataItem({
+        data: bundle,
+        tags: [
+          { name: 'Content-Type', value: 'application/x-gzip' },
+          { name: 'App-Name', value: 'Agent-Skills-Registry' },
+          { name: 'Skill-Name', value: metadata.skillName },
+          { name: 'Skill-Version', value: metadata.skillVersion },
+        ],
+      });
+
+      logger.debug('Created signed data item with browser wallet signDataItem', {
+        signedDataItemSize: signedDataItemRaw.length,
+        bundleSize: bundle.length,
+      });
+
+      // Report signing progress
+      if (options?.progressCallback) {
+        options.progressCallback(25);
+      }
+
+      // Initialize unauthenticated Turbo client (no JWK needed for uploadSignedDataItem)
+      const { TurboFactory } = await import('@ardrive/turbo-sdk');
+      const turboClient = TurboFactory.unauthenticated({
+        gatewayUrl: config.turboGateway,
+      });
+
+      logger.debug('Initialized unauthenticated Turbo client for signed data item upload');
+
+      // Report Turbo init progress
+      if (options?.progressCallback) {
+        options.progressCallback(50);
+      }
+
+      // Convert signed data item to stream
+      const { Readable } = await import('stream');
+      const bufferToStream = (buffer: Uint8Array) => {
+        const stream = new Readable();
+        stream.push(Buffer.from(buffer));
+        stream.push(null);
+        return stream;
+      };
+
+      // Upload signed data item via Turbo SDK
+      const turboResponse = await turboClient.uploadSignedDataItem({
+        dataItemStreamFactory: () => bufferToStream(signedDataItemRaw),
+        dataItemSizeFactory: () => signedDataItemRaw.length,
+        signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
+      });
+
+      logger.debug('Turbo SDK upload successful (browser wallet, free tier)', {
+        txId: turboResponse.id,
+        size: bundle.length,
+        owner: turboResponse.owner,
+      });
+
+      // Report completion
+      if (options?.progressCallback) {
+        options.progressCallback(100);
+      }
+
+      return {
+        txId: turboResponse.id,
+        uploadSize: bundle.length,
+        cost: 0, // Free tier
+      };
+    },
+    isRetryableError,
+    MAX_RETRY_ATTEMPTS,
+    BASE_RETRY_DELAY_MS
+  );
+
+  return result;
+}
+
+/**
+ * Upload bundle using browser wallet dispatch() API (Story 11.6)
+ *
+ * Used for browser wallet uploads >= 100KB (exceeds Turbo free tier).
+ * Creates Arweave transaction, adds tags, and dispatches via browser wallet.
+ * Browser wallet handles signing and upload in single dispatch() call.
+ *
+ * @param bundle - Compressed tar.gz bundle buffer
+ * @param metadata - Skill name and version for transaction tags
+ * @param walletProvider - Browser wallet provider instance
+ * @param options - Optional progress callback
+ * @returns Upload result with transaction ID, size, and cost (0 - dispatch doesn't return cost)
+ * @throws {NetworkError} On network timeout or gateway failure
+ * @throws {AuthorizationError} On user rejection or wallet disconnection
+ * @private
+ */
+async function uploadBundleWithBrowserWallet(
+  bundle: Buffer,
+  metadata: IBundleMetadata,
+  walletProvider: IWalletProvider,
+  options?: IUploadOptions
+): Promise<IUploadResult> {
+  // Report initial progress
+  if (options?.progressCallback) {
+    options.progressCallback(0);
+  }
+
+  logger.debug('Using browser wallet upload via dispatch()', {
+    bundleSize: bundle.length,
+    skillName: metadata.skillName,
+  });
+
+  // Upload with retry logic for network errors
+  const result = await retryWithBackoff(
+    async () => {
+      // Get NodeArweaveWallet instance via adapter
+      const { BrowserWalletProvider } = await import('../lib/wallet-providers/browser-wallet-provider.js');
+      if (!(walletProvider instanceof BrowserWalletProvider)) {
+        throw new ValidationError(
+          '[ValidationError] Invalid wallet provider type for browser wallet upload',
+          'walletProvider',
+          'Expected BrowserWalletProvider'
+        );
+      }
+
+      const adapter = (walletProvider as any).getAdapter();
+      const wallet = (adapter as any).wallet; // NodeArweaveWallet instance
+
+      // Create Arweave instance
+      const arweave = Arweave.init({
+        host: 'arweave.net',
+        port: 443,
+        protocol: 'https',
+      });
+
+      // Create transaction
+      const tx = await arweave.createTransaction({ data: bundle });
+
+      // Add tags
+      tx.addTag('Content-Type', 'application/x-gzip');
+      tx.addTag('App-Name', 'Agent-Skills-Registry');
+      tx.addTag('Skill-Name', metadata.skillName);
+      tx.addTag('Skill-Version', metadata.skillVersion);
+
+      logger.debug('Created transaction for browser wallet dispatch', {
+        txId: tx.id,
+        size: bundle.length,
+        tags: tx.tags.length,
+      });
+
+      // Report mid-progress (transaction created, awaiting dispatch)
+      if (options?.progressCallback) {
+        options.progressCallback(50);
+      }
+
+      // Dispatch (sign + upload in one call)
+      // API: dispatch(transaction, options?) => Promise<{ id: string, type?: "BASE" | "BUNDLED" }>
+      const dispatchResult = await wallet.dispatch(tx);
+
+      logger.debug('Browser wallet dispatch successful', {
+        txId: dispatchResult.id,
+        type: dispatchResult.type,
+      });
+
+      // Report completion
+      if (options?.progressCallback) {
+        options.progressCallback(100);
+      }
+
+      return {
+        txId: dispatchResult.id,
+        uploadSize: bundle.length,
+        cost: 0, // dispatch() doesn't return cost information
+      };
+    },
+    (error: Error) => {
+      // Check if error is retryable (network errors)
+      const isNetworkError =
+        error.message.includes('ETIMEDOUT') ||
+        error.message.includes('ECONNRESET') ||
+        error.message.includes('ENOTFOUND') ||
+        error.message.includes('502') ||
+        error.message.includes('503') ||
+        error.message.includes('gateway') ||
+        error.message.includes('timeout');
+
+      // User cancellation is NOT retryable
+      const isUserCancellation =
+        error.message.includes('User rejected') ||
+        error.message.includes('cancelled') ||
+        error.message.includes('rejected by user');
+
+      if (isUserCancellation) {
+        throw new AuthorizationError(
+          '[AuthorizationError] User cancelled transaction approval in browser wallet → Solution: Approve the transaction in your browser wallet to continue',
+          'user',
+          0
+        );
+      }
+
+      if (!isNetworkError) {
+        // Non-retryable error (validation, etc.)
+        throw new ValidationError(
+          `[ValidationError] Browser wallet upload failed: ${error.message}`,
+          'dispatch',
+          error.message
+        );
+      }
+
+      // Network error - will retry
+      logger.warn(`Network error during browser wallet dispatch: ${error.message}`);
+      return true; // retry
+    },
+    MAX_RETRY_ATTEMPTS,
+    BASE_RETRY_DELAY_MS
+  );
+
+  return result;
 }
 
 /**

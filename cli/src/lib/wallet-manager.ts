@@ -238,9 +238,9 @@ export async function load(walletPath?: string): Promise<IWalletProvider> {
 
       return new BrowserWalletProvider(adapter, address);
     } catch (error) {
-      // Browser wallet connection failed - cleanup and fallback to file wallet
+      // Browser wallet connection failed - cleanup and attempt fallback to file wallet
       const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.warn(`Browser wallet connection failed. Falling back to file-based wallet. Error: ${errorMessage}`);
+      logger.warn(`Browser wallet connection failed. Attempting fallback to file-based wallet. Error: ${errorMessage}`);
 
       // Cleanup adapter to release resources (prevent leaks)
       if (adapter && typeof adapter.disconnect === 'function') {
@@ -254,11 +254,25 @@ export async function load(walletPath?: string): Promise<IWalletProvider> {
         }
       }
 
-      // Fallback to file wallet
+      // Attempt fallback to file wallet (only if file exists)
       const fileWalletPath = walletPath || DEFAULT_WALLET_PATH;
-      logger.debug(`Using file-based wallet from ${fileWalletPath}`);
-      const jwk = await WalletFactory.fromFile(fileWalletPath);
-      return new FileWalletProvider(jwk, fileWalletPath);
+
+      try {
+        // Check if wallet file exists before attempting to load
+        await fs.access(fileWalletPath);
+        logger.debug(`File-based wallet found at ${fileWalletPath}, using it as fallback`);
+        const jwk = await WalletFactory.fromFile(fileWalletPath);
+        return new FileWalletProvider(jwk, fileWalletPath);
+      } catch (fileError) {
+        // File wallet doesn't exist or can't be accessed
+        // Re-throw the original browser wallet error with helpful context
+        const filename = path.basename(fileWalletPath);
+        throw new FileSystemError(
+          `No wallet available: Browser wallet connection failed and wallet file not found at ${filename}. ` +
+          `Solution: Either set SEED_PHRASE environment variable or ensure ${filename} exists with a valid Arweave JWK`,
+          fileWalletPath
+        );
+      }
     }
   }
 

@@ -7,26 +7,37 @@
  * exposing private keys.
  *
  * Key Features:
+ * - **Custom UI Templates (Epic 12)**: Permamind-branded wallet connection UI
  * - Random port allocation (prevents conflicts)
  * - Permission-based wallet access (following arweaveWallet API standards)
  * - Promise-based async API
  * - Comprehensive error handling
  * - Secure logging (no sensitive data exposure)
  *
+ * **Custom UI Integration (Epic 12):**
+ * - Templates: cli/dist/ui/ (copied from src/ui/ during build)
+ * - Path resolution: dist/lib/ + ../ui/wallet-connect.html → dist/ui/wallet-connect.html
+ * - Fallback: Library uses default UI if custom templates not found
+ * - Theme: Terminal dark (#10151B background, #e2e8f0 text)
+ *
  * Lifecycle:
- * 1. initialize() - Start local auth server
- * 2. connect() - Request browser wallet connection
+ * 1. initialize() - Start local auth server with custom UI
+ * 2. connect() - Request browser wallet connection (opens custom UI in browser)
  * 3. getAddress() / sign() - Perform wallet operations
  * 4. disconnect() - Clean up resources
  *
  * @example
  * ```typescript
  * const adapter = new NodeArweaveWalletAdapter();
- * await adapter.initialize({ port: 0 }); // Random port
+ * await adapter.initialize({ port: 0 }); // Random port, custom UI configured
  * await adapter.connect(['ACCESS_ADDRESS', 'SIGN_TRANSACTION']);
  * const address = await adapter.getAddress();
  * await adapter.disconnect();
  * ```
+ *
+ * @see Story 12.1 - Fork repository with custom UI support
+ * @see Story 12.2 - Custom UI design and implementation
+ * @see Story 12.3 - Integration testing and validation
  */
 
 import { NodeArweaveWallet } from '@permamind/node-arweave-wallet';
@@ -38,6 +49,15 @@ import type {
 } from '../types/node-arweave-wallet.js';
 import { AuthorizationError, ConfigurationError, NetworkError } from '../types/errors.js';
 import * as logger from '../utils/logger.js';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/**
+ * ESM-compatible __dirname replacement
+ * Uses import.meta.url to derive the current file's directory
+ */
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Default permissions for browser wallet connection
@@ -81,11 +101,20 @@ export class NodeArweaveWalletAdapter implements INodeArweaveWalletAdapter {
   /** Actual server port after initialization (for error messages) */
   private actualPort: number | null = null;
 
+  /** Custom HTML template path (for testing access) */
+  private customTemplatePath: string = '';
+
   /**
    * Initialize the local authentication server
    *
    * Creates an HTTP server on the specified port (or random port if 0)
-   * to facilitate browser wallet authentication.
+   * to facilitate browser wallet authentication. Configures custom
+   * Permamind-branded UI templates for wallet connection page.
+   *
+   * **Epic 12 Custom UI:**
+   * - Resolves template path: dist/lib/ → dist/ui/wallet-connect.html
+   * - Passes path to fork library via customHtmlTemplatePath
+   * - Fork library serves custom UI or falls back to default if missing
    *
    * @param options - Initialization options (port, requestTimeout)
    * @throws ConfigurationError - Server initialization failed
@@ -99,11 +128,23 @@ export class NodeArweaveWalletAdapter implements INodeArweaveWalletAdapter {
     const port = options?.port ?? 0;
     this.requestTimeout = options?.requestTimeout ?? DEFAULT_REQUEST_TIMEOUT;
 
-    logger.debug('Initializing NodeArweaveWallet', { port, requestTimeout: this.requestTimeout });
+    // Resolve path to custom UI template
+    // Path resolution: cli/dist/lib/ + ../ui/wallet-connect.html -> cli/dist/ui/wallet-connect.html
+    this.customTemplatePath = path.resolve(__dirname, '../ui/wallet-connect.html');
+
+    logger.debug('Initializing NodeArweaveWallet', {
+      port,
+      requestTimeout: this.requestTimeout,
+      customTemplatePath: this.customTemplatePath
+    });
 
     try {
-      // Create NodeArweaveWallet instance with specified port and requestTimeout
-      this.wallet = new NodeArweaveWallet({ port, requestTimeout: this.requestTimeout });
+      // Create NodeArweaveWallet instance with custom UI template
+      this.wallet = new NodeArweaveWallet({
+        port,
+        requestTimeout: this.requestTimeout,
+        customHtmlTemplatePath: this.customTemplatePath
+      });
 
       // Call the library's initialize method to start the server
       await this.wallet.initialize();
@@ -112,7 +153,10 @@ export class NodeArweaveWalletAdapter implements INodeArweaveWalletAdapter {
       // Access the private port property through type assertion
       this.actualPort = (this.wallet as any).port;
 
-      logger.debug('NodeArweaveWallet initialized successfully', { actualPort: this.actualPort });
+      logger.debug('NodeArweaveWallet initialized successfully', {
+        actualPort: this.actualPort,
+        usingCustomUI: true
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error('Failed to initialize NodeArweaveWallet', error as Error);

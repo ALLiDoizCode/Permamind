@@ -24,7 +24,8 @@
     "skills": "dist/index.js"
   },
   "scripts": {
-    "build": "tsc && npm run copy-ui",
+    "build": "tsc && npm run inline-ui",
+    "inline-ui": "mkdir -p dist/ui && node scripts/inline-ui.js",
     "copy-ui": "mkdir -p dist/ui && cp -r src/ui/* dist/ui/",
     "dev": "tsc --watch",
     "test": "jest --watch"

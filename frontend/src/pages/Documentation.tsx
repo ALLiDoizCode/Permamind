@@ -1,3 +1,6 @@
+import { Link } from 'react-router-dom';
+import { Card } from '@/components/ui/card';
+
 export function Documentation() {
   return (
     <div className="container mx-auto px-4 py-12">
@@ -27,7 +30,7 @@ export function Documentation() {
                 <div>
                   <span className="text-syntax-green">$</span>{' '}
                   <span className="text-terminal-text">
-                    npm install -g @permamind/skills
+                    npm install -g @permamind/skills-cli
                   </span>
                 </div>
                 <div>
@@ -52,6 +55,45 @@ export function Documentation() {
               and resources to enable Claude to operate as a domain expert
               rather than a generalist.
             </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold font-mono text-syntax-green mb-4">
+              Documentation Guides
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="bg-terminal-surface border-terminal-border p-6">
+                <h3 className="text-lg font-mono text-syntax-cyan mb-2">
+                  CLI Guide
+                </h3>
+                <p className="text-terminal-muted text-sm mb-4">
+                  Command-line interface for publishing, searching, and
+                  installing skills
+                </p>
+                <Link
+                  to="/cli-guide"
+                  className="text-syntax-blue hover:underline font-mono text-sm"
+                >
+                  View CLI Documentation →
+                </Link>
+              </Card>
+
+              <Card className="bg-terminal-surface border-terminal-border p-6">
+                <h3 className="text-lg font-mono text-syntax-cyan mb-2">
+                  MCP Server
+                </h3>
+                <p className="text-terminal-muted text-sm mb-4">
+                  Integrate Permamind directly into Claude Desktop and Claude
+                  Code
+                </p>
+                <Link
+                  to="/mcp-guide"
+                  className="text-syntax-blue hover:underline font-mono text-sm"
+                >
+                  View MCP Documentation →
+                </Link>
+              </Card>
+            </div>
           </section>
         </div>
       </div>

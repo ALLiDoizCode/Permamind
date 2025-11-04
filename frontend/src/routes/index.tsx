@@ -31,6 +31,11 @@ const PublishSkill = lazy(() =>
     default: module.PublishSkill,
   }))
 );
+const McpGuide = lazy(() =>
+  import('@/pages/McpGuide').then((module) => ({
+    default: module.McpGuide,
+  }))
+);
 const NotFound = lazy(() =>
   import('@/pages/NotFound').then((module) => ({ default: module.NotFound }))
 );
@@ -69,6 +74,7 @@ export function AppRoutes() {
         {/* Documentation pages */}
         <Route path="/docs" element={<Documentation />} />
         <Route path="/cli-guide" element={<CliGuide />} />
+        <Route path="/mcp-guide" element={<McpGuide />} />
         <Route path="/publish" element={<PublishSkill />} />
 
         {/* 404 Not Found - must be last */}

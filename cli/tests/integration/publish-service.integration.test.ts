@@ -124,6 +124,7 @@ describe('PublishService Integration Tests', () => {
     (manifestParser.validate as jest.Mock).mockReturnValue({ valid: true });
 
     (walletManager.load as jest.Mock).mockResolvedValue(mockWallet);
+    (walletManager.loadJWK as jest.Mock).mockResolvedValue(mockWallet);
     (walletManager.checkBalance as jest.Mock).mockResolvedValue(mockWalletInfo);
 
     (bundler.bundle as jest.Mock).mockResolvedValue(mockBundleResult);
@@ -173,7 +174,7 @@ describe('PublishService Integration Tests', () => {
       // Verify workflow steps executed in order
       expect(manifestParser.parse).toHaveBeenCalled();
       expect(manifestParser.validate).toHaveBeenCalled();
-      expect(walletManager.load).toHaveBeenCalledWith(testWalletPath);
+      expect(walletManager.loadJWK).toHaveBeenCalledWith(testWalletPath);
       // Epic 9: Balance check removed from PublishService (deferred to ArweaveClient)
       // expect(walletManager.checkBalance).toHaveBeenCalledWith(mockAddress);
       expect(bundler.bundle).toHaveBeenCalledWith(testSkillDir, expect.any(Object));
@@ -229,7 +230,7 @@ describe('PublishService Integration Tests', () => {
       });
 
       // Verify wallet loaded from file
-      expect(walletManager.load).toHaveBeenCalledWith(testWalletPath);
+      expect(walletManager.loadJWK).toHaveBeenCalledWith(testWalletPath);
 
       // Epic 9: Balance check removed from PublishService (deferred to ArweaveClient)
       // expect(walletManager.checkBalance).toHaveBeenCalledWith(mockAddress);
@@ -407,8 +408,8 @@ describe('PublishService Integration Tests', () => {
     });
 
     it('should propagate wallet loading errors', async () => {
-      // Mock wallet load failure
-      (walletManager.load as jest.Mock).mockRejectedValue(
+      // Mock wallet load failure (walletPath uses loadJWK)
+      (walletManager.loadJWK as jest.Mock).mockRejectedValue(
         new Error('Wallet file not found')
       );
 

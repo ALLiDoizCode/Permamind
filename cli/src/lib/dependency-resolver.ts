@@ -16,12 +16,12 @@ import {
   IDependencyTree,
   IDependencyNode,
   IResolverOptions,
-} from '../types/dependency';
-import { ISkillMetadata } from '../types/ao-registry';
-import { DependencyError } from '../types/errors';
-import { getSkill } from '../clients/ao-registry-client';
-import { detectCircular } from './circular-detector';
-import logger from '../utils/logger';
+} from '../types/dependency.js';
+import { ISkillMetadata } from '../types/ao-registry.js';
+import { DependencyError } from '../types/errors.js';
+import { getSkill } from '../clients/ao-registry-client.js';
+import { detectCircular } from './circular-detector.js';
+import logger from '../utils/logger.js';
 
 // Constants
 const DEFAULT_MAX_DEPTH = 10;

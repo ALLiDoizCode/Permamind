@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { JWK } from '../types/wallet';
+import { JWK } from '../types/wallet.js';
 import { getKeyPairFromSeed } from 'human-crypto-keys';
 
 /**

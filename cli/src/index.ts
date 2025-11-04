@@ -10,7 +10,7 @@
 
 import { config } from 'dotenv';
 import { Command } from 'commander';
-import packageJson from '../package.json';
+import packageJson from '../package.json' with { type: 'json' };
 
 // Load .env file for environment variable configuration
 config();

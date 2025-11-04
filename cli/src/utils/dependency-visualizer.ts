@@ -7,7 +7,7 @@
  * @module utils/dependency-visualizer
  */
 
-import { IDependencyTree, IDependencyNode } from '../types/dependency';
+import { IDependencyTree, IDependencyNode } from '../types/dependency.js';
 
 /**
  * Generates ASCII tree visualization of dependency structure

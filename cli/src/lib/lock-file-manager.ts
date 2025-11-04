@@ -46,8 +46,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import { ILockFile, IInstalledSkillRecord } from '../types/lock-file';
-import { FileSystemError } from '../types/errors';
+import { ILockFile, IInstalledSkillRecord } from '../types/lock-file.js';
+import { FileSystemError } from '../types/errors.js';
 
 /**
  * Lock file schema version (current: 1)

@@ -16,20 +16,21 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as manifestParser from '../parsers/manifest-parser';
-import * as bundler from '../lib/bundler';
-import * as walletManager from '../lib/wallet-manager';
-import * as arweaveClient from '../clients/arweave-client';
-import * as aoRegistryClient from '../clients/ao-registry-client';
-import * as skillAnalyzer from '../lib/skill-analyzer';
-import logger from '../utils/logger';
-import { ISkillMetadata } from '../types/ao-registry';
-import { ISkillManifest } from '../types/skill';
-import { JWK } from '../types/arweave';
+import * as manifestParser from '../parsers/manifest-parser.js';
+import * as bundler from '../lib/bundler.js';
+import * as walletManager from '../lib/wallet-manager.js';
+import * as arweaveClient from '../clients/arweave-client.js';
+import * as aoRegistryClient from '../clients/ao-registry-client.js';
+import * as skillAnalyzer from '../lib/skill-analyzer.js';
+import logger from '../utils/logger.js';
+import { ISkillMetadata } from '../types/ao-registry.js';
+import { ISkillManifest } from '../types/skill.js';
+import { JWK } from '../types/arweave.js';
+import { IWalletProvider } from '../types/wallet.js';
 import {
   ValidationError,
   ConfigurationError,
-} from '../types/errors';
+} from '../types/errors.js';
 
 /**
  * Progress event types for publish workflow stages
@@ -83,23 +84,42 @@ export type IProgressCallback = (event: ProgressEvent) => void;
 /**
  * Options for publish operation
  *
- * Supports both CLI usage (walletPath) and MCP server usage (wallet).
- * Wallet and walletPath are mutually exclusive - wallet takes precedence.
+ * Supports three wallet input methods with priority order:
+ * 1. walletProvider (recommended - supports all wallet types)
+ * 2. wallet (deprecated - JWK only, backward compatibility)
+ * 3. walletPath (deprecated - file wallet, backward compatibility)
  */
 export interface IPublishServiceOptions {
   /**
+   * Pre-loaded wallet provider (optional)
+   *
+   * Recommended: Use this with wallet-manager.load() for unified wallet support.
+   * Supports all wallet types: seed phrase, browser wallet, file wallet.
+   * Takes precedence over wallet and walletPath if provided.
+   *
+   * @example
+   * ```typescript
+   * const provider = await walletManager.load(); // SEED_PHRASE or browser
+   * await publishService.publish(directory, { walletProvider: provider });
+   * ```
+   */
+  walletProvider?: IWalletProvider;
+
+  /**
    * Pre-loaded wallet JWK (optional)
    *
-   * Used by MCP server when wallet is already loaded
-   * Takes precedence over walletPath if both provided
+   * @deprecated Use walletProvider instead for browser wallet support.
+   * Used by legacy code when wallet is already loaded as JWK.
+   * Takes precedence over walletPath if both provided.
    */
   wallet?: JWK;
 
   /**
    * Path to wallet JSON file (optional)
    *
-   * Used by CLI to load wallet from filesystem
-   * Ignored if wallet is provided
+   * @deprecated Use walletProvider with wallet-manager.load(walletPath) instead.
+   * Used by CLI to load wallet from filesystem.
+   * Ignored if wallet or walletProvider is provided.
    */
   walletPath?: string;
 
@@ -329,14 +349,17 @@ export class PublishService {
   /**
    * Load wallet without balance check
    *
-   * Priority: options.wallet (pre-loaded) > options.walletPath (load from file)
+   * Priority: options.walletProvider > options.wallet > options.walletPath
    *
    * Epic 9: Balance check removed - now handled by ArweaveClient only when needed
    * (i.e., for bundles ≥ 100KB that use Arweave SDK, not Turbo SDK free tier)
    *
-   * @param options - Publish options with wallet or walletPath
+   * Epic 11: Wallet provider abstraction added - supports seed phrase, file, and browser wallets
+   * Note: Browser wallet support limited to providers with getJWK() method (file/seedphrase only)
+   *
+   * @param options - Publish options with walletProvider, wallet, or walletPath
    * @returns Validated JWK
-   * @throws {ConfigurationError} If neither wallet nor walletPath provided
+   * @throws {ConfigurationError} If no wallet provided or browser wallet used (JWK export unsupported)
    * @private
    */
   private async loadWallet(
@@ -347,20 +370,42 @@ export class PublishService {
       message: 'Loading wallet...',
     });
 
-    // Priority: wallet > walletPath
+    // Priority: walletProvider > wallet > walletPath
     let wallet: JWK;
-    if (options.wallet) {
-      // Use pre-loaded wallet (MCP server usage)
+
+    // Priority 1: walletProvider (supports all wallet types with JWK export)
+    if (options.walletProvider) {
+      logger.debug('Using wallet provider', {
+        source: options.walletProvider.getSource().source
+      });
+
+      // Check if provider supports JWK export (file/seedphrase only)
+      if (typeof options.walletProvider.getJWK !== 'function') {
+        throw new ConfigurationError(
+          '[ConfigurationError] Wallet provider does not support JWK export (browser wallet) → Solution: Browser wallet support for PublishService is not yet implemented. Use SEED_PHRASE environment variable or --wallet flag instead.',
+          'wallet'
+        );
+      }
+
+      wallet = await options.walletProvider.getJWK();
+      logger.debug('Extracted JWK from wallet provider');
+    }
+    // Priority 2: wallet (JWK - backward compatibility)
+    else if (options.wallet) {
       wallet = options.wallet;
-      logger.debug('Using pre-loaded wallet');
-    } else if (options.walletPath) {
-      // Load wallet from file (CLI usage)
-      wallet = await walletManager.load(options.walletPath);
-      logger.debug('Loaded wallet from file', { path: options.walletPath });
-    } else {
-      // No wallet configured
+      logger.warn('Using deprecated wallet option. Migrate to walletProvider for browser wallet support.');
+      logger.debug('Using pre-loaded wallet (backward compatibility)');
+    }
+    // Priority 3: walletPath (load JWK from file - backward compatibility)
+    else if (options.walletPath) {
+      wallet = await walletManager.loadJWK(options.walletPath);
+      logger.warn('Using deprecated walletPath option. Migrate to walletProvider with wallet-manager.load().');
+      logger.debug('Loaded wallet from file (backward compatibility)', { path: options.walletPath });
+    }
+    // No wallet provided
+    else {
       throw new ConfigurationError(
-        '[ConfigurationError] Wallet not configured. -> Solution: Provide wallet with --wallet flag or SEED_PHRASE environment variable',
+        '[ConfigurationError] No wallet provided → Solution: Provide walletProvider, wallet, or walletPath option',
         'wallet'
       );
     }

@@ -35,6 +35,7 @@
 | **Testing Framework** | Jest | ^29.7.0 | Unit and integration testing | TypeScript support, mocking, snapshot testing (PRD specified) |
 | **AO Testing** | aolite | latest | Local AO process emulation | Lua 5.3-based AO emulator, no network needed for tests (PRD specified) |
 | **Arweave SDK** | arweave | ^1.14.4 | Transaction creation and upload | Official Arweave JavaScript SDK for bundle uploads |
+| **Browser Wallet** | node-arweave-wallet | ^0.0.12 | Browser wallet connection | Random port allocation, ArConnect/Wander support, local server auth for secure wallet interactions |
 | **AO Integration** | @permaweb/aoconnect | ^0.0.53 | AO message passing | Official AO SDK for registry queries and registration (PRD specified) |
 | **HTTP Client** | (built-in fetch) | Node 20.x native | Arweave gateway requests | Native Node.js fetch (18+), no axios/node-fetch needed |
 | **Linter** | ESLint | ^8.56.0 | Code quality and consistency | TypeScript-aware linting, catches common errors |

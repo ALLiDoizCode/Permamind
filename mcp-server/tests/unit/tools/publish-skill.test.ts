@@ -12,16 +12,13 @@ import {
   IPublishResult,
   IMCPSuccessResponse,
 } from '../../../src/tools/publish-skill';
-import { WalletFactory } from '@permamind/skills-cli/src/lib/wallet-factory';
-import { PublishService } from '@permamind/skills-cli/src/lib/publish-service';
-import { loadConfig } from '../../../src/config';
 import {
   ValidationError,
   ConfigurationError,
   AuthorizationError,
   FileSystemError,
   NetworkError,
-} from '@permamind/skills-cli/src/types/errors';
+} from '@permamind/skills-cli/types/errors';
 
 // Mock Arweave FIRST before any other imports
 jest.mock('arweave', () => {
@@ -40,8 +37,12 @@ jest.mock('arweave', () => {
 });
 
 // Mock other dependencies
-jest.mock('@permamind/skills-cli/src/lib/wallet-factory');
-jest.mock('@permamind/skills-cli/src/lib/publish-service');
+jest.mock('@permamind/skills-cli/lib/wallet-manager');
+jest.mock('@permamind/skills-cli/lib/publish-service', () => ({
+  PublishService: jest.fn().mockImplementation(() => ({
+    publish: jest.fn(),
+  })),
+}));
 jest.mock('../../../src/config');
 jest.mock('../../../src/logger', () => ({
   logger: {
@@ -53,13 +54,6 @@ jest.mock('../../../src/logger', () => ({
 }));
 
 describe('publish-skill tool', () => {
-  const mockWallet = {
-    kty: 'RSA',
-    n: 'test-n',
-    e: 'AQAB',
-    d: 'test-d',
-  };
-
   const mockPublishResult: IPublishResult = {
     skillName: 'test-skill',
     version: '1.0.0',
@@ -72,18 +66,45 @@ describe('publish-skill tool', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-
-    // Mock config
-    (loadConfig as jest.Mock).mockReturnValue({
-      seedPhrase: 'test seed phrase with twelve words that are valid mnemonic format',
-      logLevel: 'info',
-    });
   });
 
-  describe('handlePublishSkill', () => {
-    it('should successfully publish a skill', async () => {
+  describe('handlePublishSkill - Browser Wallet Cleanup', () => {
+    let mockBrowserWalletProvider: any;
+    let mockSeedPhraseWalletProvider: any;
+
+    beforeEach(() => {
+      // Mock browser wallet provider with disconnect method and HTTP server
+      mockBrowserWalletProvider = {
+        getAddress: jest.fn().mockResolvedValue('browser-wallet-address'),
+        createDataItemSigner: jest.fn(),
+        disconnect: jest.fn().mockResolvedValue(undefined),
+        getSource: jest.fn().mockReturnValue({
+          source: 'browserWallet',
+          value: 'browser-wallet-address',
+        }),
+        // Simulate circular reference that would cause JSON.stringify to fail
+        _adapter: {
+          wallet: null, // Circular reference placeholder
+        },
+      };
+      // Create circular reference
+      mockBrowserWalletProvider._adapter.wallet = mockBrowserWalletProvider._adapter;
+
+      // Mock seed phrase wallet provider (no disconnect method, no circular refs)
+      mockSeedPhraseWalletProvider = {
+        getAddress: jest.fn().mockResolvedValue('seed-phrase-address'),
+        createDataItemSigner: jest.fn(),
+        getSource: jest.fn().mockReturnValue({
+          source: 'seedPhrase',
+          value: 'abandon abandon ... about',
+        }),
+      };
+    });
+
+    it('should disconnect browser wallet after successful publish', async () => {
       // Arrange
-      (WalletFactory.fromSeedPhrase as jest.Mock).mockResolvedValue(mockWallet);
+      const mockLoad = jest.spyOn(require('@permamind/skills-cli/lib/wallet-manager'), 'load');
+      mockLoad.mockResolvedValue(mockBrowserWalletProvider);
       (PublishService.prototype.publish as jest.Mock).mockResolvedValue(mockPublishResult);
 
       // Act
@@ -91,35 +112,128 @@ describe('publish-skill tool', () => {
 
       // Assert
       expect(result).toEqual(mockPublishResult);
-      expect(WalletFactory.fromSeedPhrase).toHaveBeenCalledWith(
-        'test seed phrase with twelve words that are valid mnemonic format'
+      expect(mockBrowserWalletProvider.disconnect).toHaveBeenCalledTimes(1);
+    });
+
+    it('should disconnect browser wallet even when publish fails', async () => {
+      // Arrange
+      const mockLoad = jest.spyOn(require('@permamind/skills-cli/lib/wallet-manager'), 'load');
+      mockLoad.mockResolvedValue(mockBrowserWalletProvider);
+      const publishError = new Error('Publish failed: network timeout');
+      (PublishService.prototype.publish as jest.Mock).mockRejectedValue(publishError);
+
+      // Act & Assert
+      await expect(handlePublishSkill('/path/to/skill', false)).rejects.toThrow(
+        'Publish failed: network timeout'
       );
+      expect(mockBrowserWalletProvider.disconnect).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle disconnect errors gracefully without masking original error', async () => {
+      // Arrange
+      const mockLoad = jest.spyOn(require('@permamind/skills-cli/lib/wallet-manager'), 'load');
+      mockLoad.mockResolvedValue(mockBrowserWalletProvider);
+      const publishError = new Error('Publish failed: insufficient funds');
+      const disconnectError = new Error('Disconnect failed: server already closed');
+      (PublishService.prototype.publish as jest.Mock).mockRejectedValue(publishError);
+      mockBrowserWalletProvider.disconnect.mockRejectedValue(disconnectError);
+
+      // Act & Assert
+      await expect(handlePublishSkill('/path/to/skill', false)).rejects.toThrow(
+        'Publish failed: insufficient funds'
+      );
+      expect(mockBrowserWalletProvider.disconnect).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not disconnect seed phrase wallet (no cleanup needed)', async () => {
+      // Arrange
+      const mockLoad = jest.spyOn(require('@permamind/skills-cli/lib/wallet-manager'), 'load');
+      mockLoad.mockResolvedValue(mockSeedPhraseWalletProvider);
+      (PublishService.prototype.publish as jest.Mock).mockResolvedValue(mockPublishResult);
+
+      // Act
+      const result = await handlePublishSkill('/path/to/skill', false);
+
+      // Assert
+      expect(result).toEqual(mockPublishResult);
+      expect(mockSeedPhraseWalletProvider.disconnect).toBeUndefined();
+    });
+
+    it('should return JSON-serializable result after browser wallet cleanup', async () => {
+      // Arrange
+      const mockLoad = jest.spyOn(require('@permamind/skills-cli/lib/wallet-manager'), 'load');
+      mockLoad.mockResolvedValue(mockBrowserWalletProvider);
+      (PublishService.prototype.publish as jest.Mock).mockResolvedValue(mockPublishResult);
+
+      // Act
+      const result = await handlePublishSkill('/path/to/skill', false);
+
+      // Assert - Result should be JSON serializable (no circular refs)
+      expect(() => JSON.stringify(result)).not.toThrow();
+      const serialized = JSON.stringify(result);
+      expect(JSON.parse(serialized)).toEqual(mockPublishResult);
+    });
+  });
+
+  describe('handlePublishSkill', () => {
+    it('should successfully publish a skill with seed phrase wallet', async () => {
+      // Arrange
+      const mockSeedPhraseProvider = {
+        getAddress: jest.fn().mockResolvedValue('seed-phrase-address'),
+        createDataItemSigner: jest.fn(),
+        getSource: jest.fn().mockReturnValue({
+          source: 'seedPhrase',
+          value: 'abandon abandon ... about',
+        }),
+      };
+
+      const mockLoad = jest.spyOn(require('@permamind/skills-cli/lib/wallet-manager'), 'load');
+      mockLoad.mockResolvedValue(mockSeedPhraseProvider);
+      const { PublishService } = require('@permamind/skills-cli/lib/publish-service');
+      PublishService.prototype.publish = jest.fn().mockResolvedValue(mockPublishResult);
+
+      // Act
+      const result = await handlePublishSkill('/path/to/skill', false);
+
+      // Assert
+      expect(result).toEqual(mockPublishResult);
+      expect(mockLoad).toHaveBeenCalled();
       expect(PublishService.prototype.publish).toHaveBeenCalledWith('/path/to/skill', {
-        wallet: mockWallet,
+        walletProvider: mockSeedPhraseProvider,
         verbose: false,
       });
     });
 
     it('should handle verbose flag', async () => {
       // Arrange
-      (WalletFactory.fromSeedPhrase as jest.Mock).mockResolvedValue(mockWallet);
-      (PublishService.prototype.publish as jest.Mock).mockResolvedValue(mockPublishResult);
+      const mockSeedPhraseProvider = {
+        getAddress: jest.fn().mockResolvedValue('seed-phrase-address'),
+        createDataItemSigner: jest.fn(),
+        getSource: jest.fn().mockReturnValue({
+          source: 'seedPhrase',
+          value: 'abandon abandon ... about',
+        }),
+      };
+
+      const mockLoad = jest.spyOn(require('@permamind/skills-cli/lib/wallet-manager'), 'load');
+      mockLoad.mockResolvedValue(mockSeedPhraseProvider);
+      const { PublishService } = require('@permamind/skills-cli/lib/publish-service');
+      PublishService.prototype.publish = jest.fn().mockResolvedValue(mockPublishResult);
 
       // Act
       await handlePublishSkill('/path/to/skill', true);
 
       // Assert
       expect(PublishService.prototype.publish).toHaveBeenCalledWith('/path/to/skill', {
-        wallet: mockWallet,
+        walletProvider: mockSeedPhraseProvider,
         verbose: true,
       });
     });
 
     it('should throw InvalidMnemonicError for invalid seed phrase', async () => {
       // Arrange
-      (WalletFactory.fromSeedPhrase as jest.Mock).mockRejectedValue(
-        new Error('Invalid mnemonic format')
-      );
+      const mockLoad = jest.spyOn(require('@permamind/skills-cli/lib/wallet-manager'), 'load');
+      mockLoad.mockRejectedValue(new Error('Invalid mnemonic format'));
 
       // Act & Assert
       await expect(handlePublishSkill('/path/to/skill', false)).rejects.toThrow(
@@ -129,18 +243,30 @@ describe('publish-skill tool', () => {
 
     it('should throw WalletGenerationError for other wallet errors', async () => {
       // Arrange
-      (WalletFactory.fromSeedPhrase as jest.Mock).mockRejectedValue(new Error('Unknown error'));
+      const mockLoad = jest.spyOn(require('@permamind/skills-cli/lib/wallet-manager'), 'load');
+      mockLoad.mockRejectedValue(new Error('Unknown error'));
 
       // Act & Assert
       await expect(handlePublishSkill('/path/to/skill', false)).rejects.toThrow(
-        'Failed to generate wallet'
+        'Failed to load wallet provider'
       );
     });
 
     it('should propagate PublishService errors', async () => {
       // Arrange
-      (WalletFactory.fromSeedPhrase as jest.Mock).mockResolvedValue(mockWallet);
-      (PublishService.prototype.publish as jest.Mock).mockRejectedValue(
+      const mockSeedPhraseProvider = {
+        getAddress: jest.fn().mockResolvedValue('seed-phrase-address'),
+        createDataItemSigner: jest.fn(),
+        getSource: jest.fn().mockReturnValue({
+          source: 'seedPhrase',
+          value: 'abandon abandon ... about',
+        }),
+      };
+
+      const mockLoad = jest.spyOn(require('@permamind/skills-cli/lib/wallet-manager'), 'load');
+      mockLoad.mockResolvedValue(mockSeedPhraseProvider);
+      const { PublishService } = require('@permamind/skills-cli/lib/publish-service');
+      PublishService.prototype.publish = jest.fn().mockRejectedValue(
         new ValidationError('SKILL.md not found', 'manifest', null)
       );
 

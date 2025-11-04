@@ -1,6 +1,7 @@
 {
   "name": "@permamind/skills-cli",
-  "version": "2.0.3",
+  "version": "2.1.4",
+  "type": "module",
   "description": "CLI tool for publishing, searching, and installing Claude Agent Skills",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -42,6 +43,7 @@
     "human-crypto-keys": "^0.1.4",
     "keytar": "^7.9.0",
     "lodash": "^4.17.21",
+    "node-arweave-wallet": "^0.0.12",
     "ora": "5.4.1",
     "tar": "^6.2.0"
   },

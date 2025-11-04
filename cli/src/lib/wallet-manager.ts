@@ -24,7 +24,12 @@ import * as os from 'os';
 import { promises as fs } from 'fs';
 import { FileSystemError, ValidationError } from '../types/errors.js';
 import { WalletFactory } from './wallet-factory.js';
-import type { JWK, WalletInfo } from '../types/wallet.js';
+import {
+  SeedPhraseWalletProvider,
+  BrowserWalletProvider,
+  FileWalletProvider,
+} from './wallet-providers/index.js';
+import type { JWK, WalletInfo, IWalletProvider } from '../types/wallet.js';
 import * as logger from '../utils/logger.js';
 
 /**
@@ -60,11 +65,12 @@ const KEYCHAIN_ACCOUNT_PREFIX = 'arweave-wallet';
 
 /**
  * Wallet source type
+ * Determines how the wallet is loaded and authenticated
  * @private
  */
 type WalletSource = {
-  source: 'seedPhrase' | 'file';
-  value: string;
+  source: 'seedPhrase' | 'browserWallet' | 'file';
+  value: string; // Mnemonic for seedPhrase, address for browserWallet, path for file
 };
 
 /**
@@ -79,27 +85,24 @@ const arweave = Arweave.init({
 /**
  * Determine wallet source based on priority:
  * 1. SEED_PHRASE environment variable (highest priority)
- * 2. walletPath parameter (--wallet flag)
- * 3. DEFAULT_WALLET_PATH (fallback)
+ * 2. Browser wallet (when no SEED_PHRASE)
+ * 3. --wallet flag and DEFAULT_WALLET_PATH (fallbacks when browser wallet fails)
  *
  * @param walletPath - Optional wallet file path from --wallet flag
  * @returns Wallet source configuration
  * @private
  */
-function getWalletSource(walletPath?: string): WalletSource {
+function getWalletSource(_walletPath?: string): WalletSource {
   // Priority 1: SEED_PHRASE environment variable
   const seedPhrase = process.env.SEED_PHRASE;
   if (seedPhrase && seedPhrase.trim() !== '') {
     return { source: 'seedPhrase', value: seedPhrase.trim() };
   }
 
-  // Priority 2: --wallet flag (walletPath parameter)
-  if (walletPath) {
-    return { source: 'file', value: walletPath };
-  }
-
-  // Priority 3: Default wallet path
-  return { source: 'file', value: DEFAULT_WALLET_PATH };
+  // Priority 2: Browser wallet (when no SEED_PHRASE)
+  // Actual connection attempt happens in load() function
+  // If browser wallet fails, load() will fallback to file wallet
+  return { source: 'browserWallet', value: '' };
 }
 
 /**
@@ -168,54 +171,133 @@ export async function loadFromFile(walletPath: string): Promise<JWK> {
 }
 
 /**
- * Load and validate JWK from wallet source (file or seed phrase)
+ * Load wallet provider from configured source with automatic fallback
  *
  * Supports multiple wallet sources with priority-based selection:
  * 1. SEED_PHRASE environment variable (highest priority)
- * 2. --wallet flag (walletPath parameter)
- * 3. Default wallet path ~/.arweave/wallet.json (fallback)
+ * 2. Browser wallet (when no SEED_PHRASE)
+ * 3. --wallet flag (fallback when browser wallet fails)
+ * 4. Default wallet path ~/.arweave/wallet.json (final fallback)
  *
  * @param walletPath - Optional path to JWK file (from --wallet flag)
- * @returns Validated JWK object
- * @throws {FileSystemError} If wallet file doesn't exist or can't be read
+ * @returns Wallet provider implementing IWalletProvider interface
+ * @throws {FileSystemError} If all wallet sources fail
  * @throws {ValidationError} If JSON is malformed or JWK structure is invalid
  * @throws {InvalidMnemonicError} If SEED_PHRASE is not a valid BIP39 mnemonic
- * @throws {InvalidSeedError} If seed buffer is <32 bytes
- * @throws {JWKValidationError} If generated JWK fails Arweave SDK validation
  *
  * @example
  * ```typescript
  * // Load from SEED_PHRASE env var (Priority 1)
  * process.env.SEED_PHRASE = 'abandon abandon ... about';
- * const jwk1 = await load();
+ * const provider = await load();
+ * const address = await provider.getAddress();
  *
- * // Load from --wallet flag (Priority 2)
- * const jwk2 = await load('/path/to/wallet.json');
+ * // Load with browser wallet fallback (Priority 2)
+ * const provider2 = await load();
  *
- * // Load from default path (Priority 3)
- * const jwk3 = await load();
+ * // Load from --wallet flag (Priority 3)
+ * const provider3 = await load('/path/to/wallet.json');
  * ```
  */
-export async function load(walletPath?: string): Promise<JWK> {
+export async function load(walletPath?: string): Promise<IWalletProvider> {
   const { source, value } = getWalletSource(walletPath);
-
-  // Log wallet source (verbose mode only)
-  if (source === 'seedPhrase') {
-    logger.debug('Using seed phrase wallet from SEED_PHRASE environment variable');
-  } else {
-    logger.debug(`Using file-based wallet from ${value}`);
-  }
 
   // Warn if both SEED_PHRASE and --wallet provided
   if (process.env.SEED_PHRASE && process.env.SEED_PHRASE.trim() !== '' && walletPath) {
     logger.warn('Both SEED_PHRASE and --wallet provided. Using SEED_PHRASE (Priority 1).');
   }
 
-  // Load wallet using WalletFactory
+  // Priority 1: SEED_PHRASE environment variable
   if (source === 'seedPhrase') {
-    return await WalletFactory.fromSeedPhrase(value);
+    logger.debug('Using seed phrase wallet from SEED_PHRASE environment variable');
+    const jwk = await WalletFactory.fromSeedPhrase(value);
+    return new SeedPhraseWalletProvider(jwk, value);
+  }
+
+  // Priority 2: Browser wallet (when no SEED_PHRASE)
+  if (source === 'browserWallet') {
+    logger.info('No SEED_PHRASE detected. Opening browser for wallet connection...');
+
+    // Track adapter for cleanup in catch block
+    let adapter: any = null;
+
+    try {
+      // Dynamic import to avoid ESM loading issues in Jest
+      const { NodeArweaveWalletAdapter } = await import('./node-arweave-wallet-adapter.js');
+
+      // Initialize browser wallet adapter
+      adapter = new NodeArweaveWalletAdapter();
+      await adapter.initialize({ port: 0, requestTimeout: 300000 });
+
+      // Request connection with default permissions
+      await adapter.connect(['ACCESS_ADDRESS', 'SIGN_TRANSACTION', 'DISPATCH']);
+
+      // Get wallet address
+      const address = await adapter.getAddress();
+      logger.info(`Connected to wallet: ${address}`);
+
+      return new BrowserWalletProvider(adapter, address);
+    } catch (error) {
+      // Browser wallet connection failed - cleanup and fallback to file wallet
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.warn(`Browser wallet connection failed. Falling back to file-based wallet. Error: ${errorMessage}`);
+
+      // Cleanup adapter to release resources (prevent leaks)
+      if (adapter && typeof adapter.disconnect === 'function') {
+        try {
+          await adapter.disconnect();
+          logger.debug('Browser wallet adapter cleaned up successfully');
+        } catch (disconnectError) {
+          // Log warning but continue with fallback
+          const disconnectMsg = disconnectError instanceof Error ? disconnectError.message : String(disconnectError);
+          logger.debug(`Adapter cleanup failed (non-fatal): ${disconnectMsg}`);
+        }
+      }
+
+      // Fallback to file wallet
+      const fileWalletPath = walletPath || DEFAULT_WALLET_PATH;
+      logger.debug(`Using file-based wallet from ${fileWalletPath}`);
+      const jwk = await WalletFactory.fromFile(fileWalletPath);
+      return new FileWalletProvider(jwk, fileWalletPath);
+    }
+  }
+
+  // Priority 3/4: File wallet (should not reach here due to getWalletSource logic, but included for safety)
+  logger.debug(`Using file-based wallet from ${value}`);
+  const jwk = await WalletFactory.fromFile(value);
+  return new FileWalletProvider(jwk, value);
+}
+
+/**
+ * Load JWK from wallet source (backward compatibility)
+ *
+ * @deprecated Use load() instead which returns IWalletProvider
+ * This function is for backward compatibility with existing code that expects JWK.
+ *
+ * Note: This only works for seed phrase and file wallets (stateless JWK-based).
+ * Browser wallets cannot be represented as JWK since they use remote signing.
+ *
+ * @param walletPath - Optional path to JWK file (from --wallet flag)
+ * @returns JWK object
+ * @throws {Error} If browser wallet is selected (not supported for JWK export)
+ */
+export async function loadJWK(walletPath?: string): Promise<JWK> {
+  const provider = await load(walletPath);
+  const source = provider.getSource();
+
+  // Browser wallets cannot be exported as JWK
+  if (source.source === 'browserWallet') {
+    throw new Error(
+      'Browser wallet cannot be exported as JWK. Use load() to get IWalletProvider instead.'
+    );
+  }
+
+  // For seed phrase and file wallets, we need to reload the JWK directly
+  // This is inefficient but maintains backward compatibility
+  if (source.source === 'seedPhrase') {
+    return await WalletFactory.fromSeedPhrase(source.value);
   } else {
-    return await WalletFactory.fromFile(value);
+    return await WalletFactory.fromFile(source.value);
   }
 }
 

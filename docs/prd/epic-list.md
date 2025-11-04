@@ -29,3 +29,9 @@ Migrate from direct Arweave SDK transaction creation to Turbo SDK for bundle upl
 
 **Epic 10: Jest Test Infrastructure Overhaul**
 Fix Jest automocking infrastructure or migrate to Vitest to restore automated unit testing capabilities project-wide. Addresses critical infrastructure issue where jest.mock() silently fails and returns real implementations instead of mocks, blocking 75+ tests. Delivers modern, reliable test infrastructure with fast feedback loops and proper test isolation.
+
+**Epic 11: Node Arweave Wallet Integration - Brownfield Enhancement**
+Integrate node-arweave-wallet as a fallback authentication mechanism when no SEED_PHRASE environment variable is available, enabling users to securely connect their browser wallets (Wander, ArConnect) to Permamind CLI/MCP tools. Delivers seamless browser wallet authentication with zero breaking changes to existing SEED_PHRASE workflow.
+
+**Epic 12: Custom Wallet UI Fork - Brownfield Enhancement**
+Fork node-arweave-wallet library to enable custom HTML/CSS/JS UI templates for the browser wallet connection interface, providing a fully branded Permamind experience that matches the developer-CLI frontend design system. Delivers customizable wallet UI while maintaining compatibility with upstream library updates and Epic 11 wallet workflows.

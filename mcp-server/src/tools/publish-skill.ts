@@ -6,7 +6,7 @@
  * to the Agent Skills Registry on Arweave and AO.
  */
 
-import { WalletFactory } from '@permamind/skills-cli/lib/wallet-factory';
+import * as walletManager from '@permamind/skills-cli/lib/wallet-manager';
 import { PublishService } from '@permamind/skills-cli/lib/publish-service';
 import {
   ValidationError,
@@ -16,8 +16,6 @@ import {
   NetworkError,
 } from '@permamind/skills-cli/types/errors';
 import { logger } from '../logger.js';
-import { loadConfig } from '../config.js';
-import Arweave from 'arweave';
 
 /**
  * Publish result returned by PublishService
@@ -198,36 +196,38 @@ export async function handlePublishSkill(
 ): Promise<IPublishResult> {
   logger.info('Starting publish_skill tool', { directory, verbose });
 
-  try {
-    // Load configuration
-    const config = loadConfig();
+  // Declare walletProvider at function scope for error handler cleanup
+  let walletProvider: Awaited<ReturnType<typeof walletManager.load>> | undefined;
 
-    // Generate wallet from seed phrase
-    logger.info('Generating wallet from SEED_PHRASE');
-    let wallet;
+  try {
+    // Load wallet provider using wallet-manager (unified wallet loading)
+    // Automatically uses SEED_PHRASE env var or falls back to browser/file wallet
+    logger.info('Loading wallet provider (SEED_PHRASE or browser/file wallet)');
     try {
-      wallet = await WalletFactory.fromSeedPhrase(config.seedPhrase);
+      walletProvider = await walletManager.load();
     } catch (error) {
       if (error instanceof Error && error.message.includes('Invalid mnemonic')) {
         throw new InvalidMnemonicError(`Invalid SEED_PHRASE: ${error.message}`);
       }
       throw new WalletGenerationError(
-        `Failed to generate wallet from seed phrase: ${(error as Error).message}`
+        `Failed to load wallet provider: ${(error as Error).message}`
       );
     }
 
-    // Derive wallet address for logging
-    const arweave = Arweave.init({});
-    const walletAddress = await arweave.wallets.jwkToAddress(wallet);
-    logger.info(`Using wallet address: ${walletAddress}`);
+    // Get wallet address for logging
+    const walletAddress = await walletProvider.getAddress();
+    const walletSource = walletProvider.getSource();
+    logger.info(`Using wallet from ${walletSource.source}`, {
+      address: walletAddress,
+    });
 
     // Instantiate PublishService
     const publishService = new PublishService();
 
-    // Call publish with wallet and verbose flag
+    // Call publish with walletProvider (unified wallet support)
     logger.info('Invoking PublishService.publish', { directory, verbose });
     const result = await publishService.publish(directory, {
-      wallet,
+      walletProvider,
       verbose,
     });
 
@@ -237,12 +237,44 @@ export async function handlePublishSkill(
       arweaveTxId: result.arweaveTxId,
     });
 
+    // Clean up browser wallet adapter to prevent circular reference serialization
+    // Browser wallet contains HTTP server with Socket → HTTPParser → Socket circular ref
+    // Must disconnect before returning result to avoid JSON.stringify errors
+    const source = walletProvider.getSource();
+    if (source.source === 'browserWallet') {
+      logger.debug('Disconnecting browser wallet adapter to release resources');
+      if (typeof walletProvider.disconnect === 'function') {
+        await walletProvider.disconnect();
+        logger.debug('Browser wallet adapter disconnected successfully');
+      }
+    }
+
     return result;
   } catch (error) {
     logger.error('Publish failed', {
       error: (error as Error).message,
       stack: (error as Error).stack,
     });
+
+    // Clean up browser wallet adapter even on error to prevent resource leaks
+    if (walletProvider) {
+      const source = walletProvider.getSource();
+      if (source.source === 'browserWallet') {
+        logger.debug('Disconnecting browser wallet adapter after error');
+        if (typeof walletProvider.disconnect === 'function') {
+          try {
+            await walletProvider.disconnect();
+            logger.debug('Browser wallet adapter disconnected after error');
+          } catch (disconnectError) {
+            // Log but don't throw - original error takes precedence
+            logger.warn('Failed to disconnect browser wallet adapter after error', {
+              error: (disconnectError as Error).message,
+            });
+          }
+        }
+      }
+    }
+
     throw error;
   }
 }

@@ -265,11 +265,26 @@ export async function load(walletPath?: string): Promise<IWalletProvider> {
         return new FileWalletProvider(jwk, fileWalletPath);
       } catch (fileError) {
         // File wallet doesn't exist or can't be accessed
-        // Re-throw the original browser wallet error with helpful context
+        // Provide helpful error message explaining what happened
         const filename = path.basename(fileWalletPath);
+
+        // Check if error indicates timeout or user rejection
+        const isTimeout = errorMessage.toLowerCase().includes('timeout') ||
+                         errorMessage.toLowerCase().includes('timed out');
+        const isUserRejection = errorMessage.toLowerCase().includes('reject') ||
+                               errorMessage.toLowerCase().includes('denied') ||
+                               errorMessage.toLowerCase().includes('cancelled');
+
+        let helpfulMessage = 'Browser wallet opened but connection was not completed';
+        if (isTimeout) {
+          helpfulMessage = 'Browser wallet opened but connection timed out (5 minute limit)';
+        } else if (isUserRejection) {
+          helpfulMessage = 'Browser wallet connection was rejected by user';
+        }
+
         throw new FileSystemError(
-          `No wallet available: Browser wallet connection failed and wallet file not found at ${filename}. ` +
-          `Solution: Either set SEED_PHRASE environment variable or ensure ${filename} exists with a valid Arweave JWK`,
+          `No wallet available: ${helpfulMessage} and wallet file not found at ${filename}. ` +
+          `Solution: Approve the wallet connection in your browser, set SEED_PHRASE environment variable, or ensure ${filename} exists with a valid Arweave JWK`,
           fileWalletPath
         );
       }

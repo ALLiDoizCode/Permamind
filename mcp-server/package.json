@@ -1,6 +1,6 @@
 {
   "name": "@permamind/mcp",
-  "version": "1.0.13",
+  "version": "1.0.15",
   "description": "MCP server for Agent Skills Registry - exposes publish, search, and install to Claude AI",
   "type": "module",
   "main": "dist/index.js",
@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.2",
-    "@permamind/skills-cli": "^2.1.8",
+    "@permamind/skills-cli": "^2.1.10",
     "arweave": "^1.14.4",
     "dotenv": "^16.4.0",
     "winston": "^3.11.0"

@@ -1,0 +1,179 @@
+# Quality Gate: Story 11.6 - Browser Wallet Upload Architecture Refactor
+# Epic 11: Node Arweave Wallet Integration
+# Generated: 2025-11-04
+
+story:
+  id: "11.6"
+  title: "Browser Wallet Upload Architecture Refactor"
+  epic: "11 - Node Arweave Wallet Integration"
+
+gate_decision: DRAFT
+
+rationale: |
+  Story created to address architectural limitation discovered during Epic 11 implementation.
+  Current state: Browser wallet connection and signing working, but upload flow requires JWK.
+  This story refactors the upload chain to support IWalletProvider throughout.
+
+requirements_traceability:
+  - id: AC1
+    requirement: "Refactor PublishService.loadWallet to loadWalletProvider"
+    test_coverage: "Pending implementation"
+    status: "Not Started"
+
+  - id: AC2
+    requirement: "Refactor arweave-client.uploadBundle signature"
+    test_coverage: "Pending implementation"
+    status: "Not Started"
+
+  - id: AC3
+    requirement: "Implement uploadBundleWithBrowserWallet"
+    test_coverage: "Pending implementation"
+    status: "Not Started"
+
+  - id: AC4
+    requirement: "Update PublishService.publish workflow"
+    test_coverage: "Pending implementation"
+    status: "Not Started"
+
+  - id: AC5
+    requirement: "Turbo SDK free tier compatibility"
+    test_coverage: "Critical - must validate SEED_PHRASE still uses free tier"
+    status: "Not Started"
+
+  - id: AC6
+    requirement: "Backward compatibility"
+    test_coverage: "Regression tests for deprecated options"
+    status: "Not Started"
+
+  - id: AC7
+    requirement: "End-to-end validation"
+    test_coverage: "Integration test: browser wallet → upload → registry"
+    status: "Not Started"
+
+risk_assessment:
+  overall_risk: MEDIUM
+  probability: MEDIUM
+  impact: HIGH
+
+  risks:
+    - category: "Architecture"
+      description: "Refactoring upload chain touches critical path"
+      probability: MEDIUM
+      impact: HIGH
+      mitigation: "Comprehensive testing with all three wallet types"
+
+    - category: "Backward Compatibility"
+      description: "Changes to core upload logic could break existing workflows"
+      probability: LOW
+      impact: CRITICAL
+      mitigation: "Maintain existing code paths for seed/file wallets, add new path for browser"
+
+    - category: "Turbo SDK Free Tier"
+      description: "Risk of breaking free uploads for SEED_PHRASE wallets"
+      probability: LOW
+      impact: HIGH
+      mitigation: "Explicitly test free tier still works, preserve JWK extraction logic"
+
+testability_assessment:
+  controllability: HIGH
+  observability: HIGH
+  debuggability: HIGH
+
+  notes: |
+    - Can test all three wallet types independently
+    - Clear logging at each decision point
+    - Wallet type detection explicit and testable
+    - Upload paths isolated and mockable
+
+nfr_validation:
+  performance:
+    requirement: "No performance degradation for existing wallet types"
+    validation_method: "Benchmark uploads: before vs after refactor"
+    status: "Pending"
+
+  reliability:
+    requirement: "100% backward compatibility with SEED_PHRASE and file wallets"
+    validation_method: "Regression test suite"
+    status: "Pending"
+
+  security:
+    requirement: "Browser wallets never expose JWK"
+    validation_method: "Code review + type system validation"
+    status: "Design validated - no getJWK() calls for browser wallets"
+
+technical_debt:
+  identified:
+    - item: "Deprecated `wallet` and `walletPath` options should be removed in v3.0"
+      severity: LOW
+      recommendation: "Document deprecation timeline, add console warnings"
+
+    - item: "Upload logic split across three functions (Turbo/Arweave/Browser)"
+      severity: LOW
+      recommendation: "Consider unified upload interface in future refactor"
+
+decisions:
+  - decision: "Use polymorphic routing based on wallet.getSource().source"
+    rationale: "Clean separation, easy to test, maintains backward compat"
+    alternatives_considered:
+      - "Separate PublishService for browser wallets (rejected: code duplication)"
+      - "Runtime detection of getJWK() method (rejected: implicit behavior)"
+
+  - decision: "Browser wallets use dispatch() instead of Turbo/Arweave SDK"
+    rationale: "Browser wallets handle upload internally, no JWK needed"
+    alternatives_considered:
+      - "Refactor Turbo SDK to accept walletProvider (rejected: external dependency)"
+
+blockers: []
+
+test_scenarios:
+  - scenario: "SEED_PHRASE wallet publishes 50KB skill"
+    given: "User has SEED_PHRASE environment variable set"
+    when: "User runs 'skills publish skill-dir'"
+    then:
+      - "Turbo SDK free tier used"
+      - "Upload cost: 0"
+      - "Transaction succeeds"
+      - "No regression from previous behavior"
+
+  - scenario: "File wallet publishes 50KB skill"
+    given: "User has wallet.json file at ~/.arweave/wallet.json"
+    when: "User runs 'skills publish skill-dir --wallet ~/.arweave/wallet.json'"
+    then:
+      - "Turbo SDK free tier used"
+      - "Upload cost: 0"
+      - "Transaction succeeds"
+
+  - scenario: "Browser wallet publishes any size skill"
+    given: "User has ArConnect/Wander extension installed and no SEED_PHRASE"
+    when: "User runs 'skills publish skill-dir' and approves in browser"
+    then:
+      - "Browser wallet dispatch() API used"
+      - "Transaction signed via browser wallet"
+      - "Upload succeeds to Arweave"
+      - "AO registry registration completes"
+      - "Browser wallet disconnects properly"
+
+recommendations:
+  must_have:
+    - "Comprehensive regression testing for SEED_PHRASE and file wallets"
+    - "Validate Turbo free tier still works after refactor"
+    - "Test browser wallet end-to-end with real skill publish"
+
+  should_have:
+    - "Performance benchmarks before/after refactor"
+    - "Integration test covering all three wallet types"
+    - "Clear logging showing which upload path was used"
+
+  nice_to_have:
+    - "Unified upload interface abstraction for future extensibility"
+    - "Metrics/telemetry for upload path usage distribution"
+
+gate_approval:
+  approved_by: "Quinn (QA Architect)"
+  approved_date: "2025-11-04"
+  conditions:
+    - "All acceptance criteria must be met"
+    - "Regression tests must pass for SEED_PHRASE and file wallets"
+    - "Browser wallet end-to-end test must succeed"
+    - "Turbo SDK free tier validated working"
+    - "Zero breaking changes confirmed"

@@ -137,6 +137,21 @@ Integrate `node-arweave-wallet` as a fallback authentication mechanism when no S
 - Documentation: Troubleshooting guide for browser wallet connections
 - Integration tests for error scenarios
 
+### Story 11.6: Browser Wallet Upload Architecture Refactor
+
+**As a** Permamind user with a browser wallet,
+**I want** to publish skills using my browser wallet through the CLI,
+**so that** I don't need to manage seed phrases or JWK files for skill publishing.
+
+**Key Tasks:**
+- Refactor `PublishService.loadWallet()` to return `IWalletProvider` instead of JWK
+- Update `arweave-client.uploadBundle()` to accept `IWalletProvider` parameter
+- Implement `uploadBundleWithBrowserWallet()` using dispatch API
+- Create polymorphic upload routing based on wallet type
+- Maintain Turbo SDK free tier for SEED_PHRASE and file wallets
+- Ensure full backward compatibility with deprecated options
+- Test all three wallet types end-to-end
+
 ## Compatibility Requirements
 
 - [x] Existing SEED_PHRASE workflow remains unchanged (zero breaking changes)
@@ -164,7 +179,7 @@ Integrate `node-arweave-wallet` as a fallback authentication mechanism when no S
 
 ## Definition of Done
 
-- [x] All 5 stories completed with acceptance criteria met
+- [ ] All 6 stories completed with acceptance criteria met (11.1-11.5 Done, 11.6 Draft)
 - [x] Existing wallet functionality verified (SEED_PHRASE method unchanged)
 - [x] Browser wallet workflow tested with Wander and ArConnect
 - [x] Local server UI matches developer-CLI design system

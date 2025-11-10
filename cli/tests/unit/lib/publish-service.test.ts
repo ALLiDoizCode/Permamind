@@ -109,9 +109,11 @@ describe('PublishService', () => {
     (manifestParser.validate as jest.Mock).mockReturnValue({
       valid: true,
     });
+    (manifestParser.detectMcpInDependencies as jest.Mock).mockReturnValue([]);
 
     (walletManager.load as jest.Mock).mockResolvedValue(mockWallet);
     (walletManager.loadJWK as jest.Mock).mockResolvedValue(mockWallet);
+    (walletManager.loadFromFile as jest.Mock).mockResolvedValue(mockWallet);
     (walletManager.checkBalance as jest.Mock).mockResolvedValue(mockWalletInfo);
 
     (bundler.bundle as jest.Mock).mockResolvedValue(mockBundleResult);
@@ -155,7 +157,7 @@ describe('PublishService', () => {
       // Verify all steps called
       expect(fs.stat).toHaveBeenCalledWith(mockDirectory);
       expect((manifestParser.parse as jest.Mock)).toHaveBeenCalled();
-      expect((walletManager.loadJWK as jest.Mock)).toHaveBeenCalledWith('/test/wallet.json');
+      expect((walletManager.loadFromFile as jest.Mock)).toHaveBeenCalledWith('/test/wallet.json');
       expect((bundler.bundle as jest.Mock)).toHaveBeenCalledWith(mockDirectory, expect.any(Object));
       expect((arweaveClient.uploadBundle as jest.Mock)).toHaveBeenCalled();
       expect((skillAnalyzer.analyzeSkillDirectory as jest.Mock)).toHaveBeenCalled();
@@ -196,8 +198,8 @@ describe('PublishService', () => {
         progressCallback,
       });
 
-      // Verify wallet-manager.load NOT called
-      expect((walletManager.loadJWK as jest.Mock)).not.toHaveBeenCalled();
+      // Verify wallet-manager.loadFromFile NOT called
+      expect((walletManager.loadFromFile as jest.Mock)).not.toHaveBeenCalled();
 
       // Epic 9: Balance check removed from PublishService
       // Balance check now happens in ArweaveClient for bundles ≥ 100KB only
@@ -212,7 +214,7 @@ describe('PublishService', () => {
       });
 
       // Verify wallet loaded from file
-      expect((walletManager.loadJWK as jest.Mock)).toHaveBeenCalledWith('/test/wallet.json');
+      expect((walletManager.loadFromFile as jest.Mock)).toHaveBeenCalledWith('/test/wallet.json');
 
       // Epic 9: Balance check removed from PublishService
       // Balance check now happens in ArweaveClient for bundles ≥ 100KB only
@@ -227,8 +229,8 @@ describe('PublishService', () => {
         progressCallback,
       });
 
-      // Verify wallet-manager.load NOT called (wallet takes precedence)
-      expect((walletManager.loadJWK as jest.Mock)).not.toHaveBeenCalled();
+      // Verify wallet-manager.loadFromFile NOT called (wallet takes precedence)
+      expect((walletManager.loadFromFile as jest.Mock)).not.toHaveBeenCalled();
     });
 
     it('should work without progress callback (optional)', async () => {
@@ -475,7 +477,7 @@ describe('PublishService', () => {
         progressCallback,
       });
 
-      expect((walletManager.loadJWK as jest.Mock)).toHaveBeenCalledWith('/home/user/wallet.json');
+      expect((walletManager.loadFromFile as jest.Mock)).toHaveBeenCalledWith('/home/user/wallet.json');
     });
 
     it('should derive wallet address for debugging (Epic 9: balance check removed)', async () => {

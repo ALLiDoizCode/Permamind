@@ -122,9 +122,11 @@ describe('PublishService Integration Tests', () => {
     // Setup default mock implementations (same pattern as install-service.test.ts)
     (manifestParser.parse as jest.Mock).mockResolvedValue(mockManifest);
     (manifestParser.validate as jest.Mock).mockReturnValue({ valid: true });
+    (manifestParser.detectMcpInDependencies as jest.Mock).mockReturnValue([]);
 
     (walletManager.load as jest.Mock).mockResolvedValue(mockWallet);
     (walletManager.loadJWK as jest.Mock).mockResolvedValue(mockWallet);
+    (walletManager.loadFromFile as jest.Mock).mockResolvedValue(mockWallet);
     (walletManager.checkBalance as jest.Mock).mockResolvedValue(mockWalletInfo);
 
     (bundler.bundle as jest.Mock).mockResolvedValue(mockBundleResult);

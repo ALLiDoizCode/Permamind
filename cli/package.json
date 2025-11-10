@@ -25,8 +25,8 @@
   },
   "scripts": {
     "build": "tsc && npm run inline-ui",
-    "inline-ui": "mkdir -p dist/ui && node scripts/inline-ui.js",
-    "copy-ui": "mkdir -p dist/ui && cp -r src/ui/* dist/ui/",
+    "inline-ui": "node -e \"require('fs').mkdirSync('dist/ui', {recursive: true})\" && node scripts/inline-ui.js",
+    "copy-ui": "node -e \"require('fs').mkdirSync('dist/ui', {recursive: true})\" && node -e \"require('fs').cpSync('src/ui', 'dist/ui', {recursive: true})\"",
     "dev": "tsc --watch",
     "test": "jest --watch"
   },

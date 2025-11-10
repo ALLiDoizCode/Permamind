@@ -18,6 +18,7 @@ import ora from 'ora';
 import chalk from 'chalk';
 import { PublishService, ProgressEvent } from '../lib/publish-service.js';
 import { loadConfig, resolveWalletPath } from '../lib/config-loader.js';
+import * as walletManager from '../lib/wallet-manager.js';
 import logger from '../utils/logger.js';
 import {
   formatError,
@@ -122,6 +123,12 @@ export async function execute(
     ? path.join(process.env.HOME || '', walletPath.slice(1))
     : walletPath;
 
+  // Load wallet provider (supports SEED_PHRASE, browser wallet, and file wallet)
+  logger.debug('Loading wallet provider');
+  const walletProvider = await walletManager.load(expandedWalletPath);
+  const walletSource = walletProvider.getSource();
+  logger.debug('Wallet provider loaded', { source: walletSource.source });
+
   // Create progress callback mapping progress events to ora spinners
   let spinner: ora.Ora | null = null;
   const progressCallback = (event: ProgressEvent) => {
@@ -165,11 +172,20 @@ export async function execute(
   // Call PublishService
   const service = new PublishService();
   const result = await service.publish(directory, {
-    walletPath: expandedWalletPath, // CLI uses walletPath (not pre-loaded wallet)
+    walletProvider, // Use wallet provider (supports all wallet types)
     verbose: options.verbose,
     gatewayUrl: options.gateway,
     progressCallback,
   });
+
+  // Clean up browser wallet adapter if used
+  if (walletSource.source === 'browserWallet') {
+    logger.debug('Disconnecting browser wallet adapter');
+    if (typeof walletProvider.disconnect === 'function') {
+      await walletProvider.disconnect();
+      logger.debug('Browser wallet adapter disconnected');
+    }
+  }
 
   // Display success message (CLI presentation)
   displaySuccess(result);

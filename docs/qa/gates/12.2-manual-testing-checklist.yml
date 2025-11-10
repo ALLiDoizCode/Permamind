@@ -1,0 +1,323 @@
+# Story 12.2 Manual Testing Checklist
+# Design Permamind Branded UI Components
+
+gate_id: 12.2-manual-testing
+story: "12.2: Design Permamind Branded UI Components"
+status: pending
+prerequisites:
+  - "ArConnect or Wander wallet extension installed in browser"
+  - "Wallet has test AR balance (minimum 0.001 AR)"
+  - "CLI built successfully: npm run build"
+  - "Test skill available in skills/ directory"
+
+test_categories:
+  - category: "Visual Design Verification"
+    tests:
+      - id: VD-1
+        name: "Permamind Branding Present"
+        steps:
+          - "Run: skills publish skills/ao-basics"
+          - "Browser should open automatically"
+          - "Verify title: 'Permamind Wallet Connection'"
+          - "Verify subtitle: 'Sign transactions with your Arweave wallet'"
+        expected: "Custom Permamind branding visible (NOT default 'Arweave Wallet Signer')"
+        status: pending
+
+      - id: VD-2
+        name: "Terminal Dark Theme Applied"
+        steps:
+          - "Inspect page background color"
+          - "Verify background: #10151B (dark terminal)"
+          - "Verify container: #1a1f26 (surface)"
+          - "Verify text: #e2e8f0 (light gray)"
+        expected: "Terminal dark theme colors match developer-CLI design system"
+        status: pending
+
+      - id: VD-3
+        name: "Typography Correct"
+        steps:
+          - "Inspect UI text font"
+          - "Verify sans-serif: Inter family"
+          - "Inspect wallet address font"
+          - "Verify monospace: JetBrains Mono"
+        expected: "Inter for UI text, JetBrains Mono for addresses/logs"
+        status: pending
+
+      - id: VD-4
+        name: "No Theme Toggle Present"
+        steps:
+          - "Look for theme toggle button (sun/moon icon)"
+          - "Check for light/dark mode switch"
+        expected: "NO theme toggle visible (dark theme only)"
+        status: pending
+
+  - category: "SSE Protocol Functionality"
+    tests:
+      - id: SSE-1
+        name: "EventSource Connection Established"
+        steps:
+          - "Open browser DevTools (F12)"
+          - "Go to Network tab"
+          - "Run: skills publish skills/ao-basics"
+          - "Filter for 'events' in Network tab"
+          - "Verify EventSource connection active"
+        expected: "EventSource connection to /events endpoint visible and active"
+        status: pending
+
+      - id: SSE-2
+        name: "Wallet Detection Working"
+        steps:
+          - "Open browser with wallet extension"
+          - "Run: skills publish skills/ao-basics"
+          - "Check status message"
+          - "Verify wallet name detected (ArConnect/Wander)"
+        expected: "Status shows 'Waiting for connection request...' with wallet name"
+        status: pending
+
+      - id: SSE-3
+        name: "Wallet Connection Flow"
+        steps:
+          - "Run: skills publish skills/ao-basics"
+          - "Approve wallet permissions in extension popup"
+          - "Verify status changes to 'Connected'"
+          - "Verify wallet address displayed"
+        expected: "Status: 'Wallet connected - Ready for signing', address visible"
+        status: pending
+
+      - id: SSE-4
+        name: "Transaction Signing"
+        steps:
+          - "Run: skills publish skills/ao-basics"
+          - "Connect wallet"
+          - "Approve transaction in wallet extension"
+          - "Verify request appears in queue"
+          - "Verify status changes to 'Signing'"
+          - "Verify completion message"
+        expected: "Transaction signed successfully, queue shows 'completed' status"
+        status: pending
+
+      - id: SSE-5
+        name: "Activity Log Updates"
+        steps:
+          - "During wallet operations, scroll to log section"
+          - "Verify log entries with timestamps"
+          - "Check for success/error color coding"
+        expected: "Log shows timestamped entries, green for success, red for errors"
+        status: pending
+
+  - category: "Cross-Browser Compatibility"
+    tests:
+      - id: CB-1
+        name: "Chrome Latest Stable"
+        browser: "Chrome"
+        steps:
+          - "Install ArConnect or Wander in Chrome"
+          - "Run: skills publish skills/ao-basics"
+          - "Complete full wallet connection + signing flow"
+          - "Check console for JavaScript errors (F12)"
+        expected: "All operations work, no console errors, UI renders correctly"
+        status: pending
+
+      - id: CB-2
+        name: "Firefox Latest Stable"
+        browser: "Firefox"
+        steps:
+          - "Install ArConnect or Wander in Firefox"
+          - "Run: skills publish skills/ao-basics"
+          - "Complete full wallet connection + signing flow"
+          - "Check console for JavaScript errors (F12)"
+        expected: "All operations work, no console errors, UI renders correctly"
+        status: pending
+
+      - id: CB-3
+        name: "Safari macOS"
+        browser: "Safari"
+        steps:
+          - "Install compatible wallet in Safari"
+          - "Run: skills publish skills/ao-basics"
+          - "Complete full wallet connection + signing flow"
+          - "Check console for JavaScript errors"
+        expected: "All operations work, no console errors, UI renders correctly"
+        status: pending
+
+      - id: CB-4
+        name: "Edge Latest Stable"
+        browser: "Edge"
+        steps:
+          - "Install ArConnect or Wander in Edge"
+          - "Run: skills publish skills/ao-basics"
+          - "Complete full wallet connection + signing flow"
+          - "Check console for JavaScript errors (F12)"
+        expected: "All operations work, no console errors, UI renders correctly"
+        status: pending
+
+  - category: "Responsive Design"
+    tests:
+      - id: RD-1
+        name: "Desktop Layout (1440px)"
+        viewport: "1440x900"
+        steps:
+          - "Open browser, resize to 1440px width"
+          - "Run: skills publish skills/ao-basics"
+          - "Verify full layout visible"
+          - "Check spacing and typography optimal"
+        expected: "Full layout, all sections visible, optimal spacing"
+        status: pending
+
+      - id: RD-2
+        name: "Tablet Layout (768px)"
+        viewport: "768x1024"
+        steps:
+          - "Resize browser to 768px width"
+          - "Run: skills publish skills/ao-basics"
+          - "Verify layout adjusts appropriately"
+          - "Check text remains readable"
+          - "Verify touch targets adequate size"
+        expected: "Layout adjusts, text readable, touch-friendly"
+        status: pending
+
+      - id: RD-3
+        name: "Mobile Layout (375px)"
+        viewport: "375x667"
+        steps:
+          - "Resize browser to 375px width"
+          - "Run: skills publish skills/ao-basics"
+          - "Verify stacked layout"
+          - "Check no horizontal scrolling"
+          - "Verify text legible without zooming"
+          - "Check touch targets minimum 44x44px"
+        expected: "Stacked layout, no horizontal scroll, legible text, touch-friendly"
+        status: pending
+
+      - id: RD-4
+        name: "Physical Device: iPhone"
+        device: "iPhone (Safari iOS)"
+        steps:
+          - "Get local network URL from CLI output"
+          - "Open URL on iPhone with Safari"
+          - "Complete wallet connection flow"
+          - "Test all touch interactions"
+        expected: "Full functionality on mobile device, touch interactions work"
+        status: pending
+
+      - id: RD-5
+        name: "Physical Device: Android"
+        device: "Android (Chrome)"
+        steps:
+          - "Get local network URL from CLI output"
+          - "Open URL on Android with Chrome"
+          - "Complete wallet connection flow"
+          - "Test all touch interactions"
+        expected: "Full functionality on mobile device, touch interactions work"
+        status: pending
+
+  - category: "Error Handling & Edge Cases"
+    tests:
+      - id: EH-1
+        name: "SSE Connection Drop Mid-Operation"
+        steps:
+          - "Run: skills publish skills/ao-basics"
+          - "During signing, kill CLI process (Ctrl+C)"
+          - "Observe browser UI behavior"
+          - "Check for error message"
+        expected: "EventSource onerror triggered, UI shows connection error message"
+        status: pending
+
+      - id: EH-2
+        name: "User Rejects Wallet Connection"
+        steps:
+          - "Run: skills publish skills/ao-basics"
+          - "Click 'Reject' in wallet extension popup"
+          - "Observe status message"
+        expected: "Status shows error: 'Connection cancelled or failed'"
+        status: pending
+
+      - id: EH-3
+        name: "User Rejects Transaction Signature"
+        steps:
+          - "Run: skills publish skills/ao-basics"
+          - "Connect wallet successfully"
+          - "Reject transaction signature in wallet"
+          - "Observe status and queue"
+        expected: "Status shows error, queue item marked as error, helpful message displayed"
+        status: pending
+
+      - id: EH-4
+        name: "No Wallet Extension Installed"
+        steps:
+          - "Disable/uninstall wallet extension"
+          - "Run: skills publish skills/ao-basics"
+          - "Observe status message"
+        expected: "Status: 'No Arweave wallet extension detected' with helpful message"
+        status: pending
+
+      - id: EH-5
+        name: "Network Timeout"
+        steps:
+          - "Run: skills publish skills/ao-basics"
+          - "Connect wallet"
+          - "Disconnect network/WiFi during signing"
+          - "Observe timeout behavior"
+        expected: "Timeout error after requestTimeout period, helpful error message"
+        status: pending
+
+      - id: EH-6
+        name: "Browser Tab Closed Mid-Operation"
+        steps:
+          - "Run: skills publish skills/ao-basics"
+          - "During signing, close browser tab"
+          - "Check CLI terminal output"
+        expected: "CLI handles disconnection gracefully, shows appropriate error"
+        status: pending
+
+regression_tests:
+  - category: "Epic 11 Workflow Compatibility"
+    tests:
+      - id: REG-1
+        name: "SEED_PHRASE Wallet Fallback"
+        steps:
+          - "Set SEED_PHRASE environment variable"
+          - "Run: skills publish skills/ao-basics"
+          - "Verify SEED_PHRASE wallet used (no browser opens)"
+        expected: "SEED_PHRASE wallet works, browser wallet not triggered"
+        status: pending
+
+      - id: REG-2
+        name: "File Wallet Support"
+        steps:
+          - "Use wallet file path"
+          - "Run: skills publish skills/ao-basics"
+          - "Verify file wallet used"
+        expected: "File wallet works, browser wallet not triggered"
+        status: pending
+
+      - id: REG-3
+        name: "All Epic 11 Commands Still Work"
+        steps:
+          - "Run: skills search ao"
+          - "Run: skills install ao-basics"
+          - "Run: skills publish skills/ao-basics"
+        expected: "All commands execute successfully with no regressions"
+        status: pending
+
+acceptance_criteria:
+  - "All Visual Design Verification tests pass (VD-1 through VD-4)"
+  - "All SSE Protocol Functionality tests pass (SSE-1 through SSE-5)"
+  - "All Cross-Browser Compatibility tests pass (CB-1 through CB-4)"
+  - "All Responsive Design tests pass (RD-1 through RD-5)"
+  - "All Error Handling tests pass (EH-1 through EH-6)"
+  - "All Regression tests pass (REG-1 through REG-3)"
+  - "No JavaScript console errors during any test"
+  - "No browser-specific rendering issues"
+  - "Performance acceptable (UI loads in <1 second)"
+
+notes:
+  - "Manual testing requires physical wallet extension (ArConnect or Wander)"
+  - "Some tests require physical mobile devices for accurate responsive testing"
+  - "Network timeout tests may require temporarily disabling network"
+  - "Error handling tests may show expected error messages (not bugs)"
+  - "Screenshot documentation recommended for each responsive breakpoint"
+
+created: 2025-11-04
+status: pending
+assigned_to: "QA Team or Story Implementer"

@@ -10,6 +10,7 @@
 import { load, saveToKeychain, loadFromKeychain } from '../../../src/lib/wallet-manager.js';
 import { WalletFactory } from '../../../src/lib/wallet-factory.js';
 import { InvalidMnemonicError, FileSystemError } from '../../../src/types/errors.js';
+import { SeedPhraseWalletProvider, FileWalletProvider } from '../../../src/lib/wallet-providers/index.js';
 import type { JWK } from '../../../src/types/wallet.js';
 
 // Mock WalletFactory
@@ -51,7 +52,8 @@ describe('Wallet Manager - Refactored Load Function (Story 8.2)', () => {
     it('should use WalletFactory.fromSeedPhrase when SEED_PHRASE is set', async () => {
       // Arrange
       process.env.SEED_PHRASE = validMnemonic;
-      (WalletFactory.fromSeedPhrase as jest.Mock).mockResolvedValue(mockJWK);
+      const mockProvider = new SeedPhraseWalletProvider(mockJWK, validMnemonic);
+      (WalletFactory.fromSeedPhrase as jest.Mock).mockResolvedValue(mockProvider);
 
       // Act
       const result = await load();
@@ -59,13 +61,16 @@ describe('Wallet Manager - Refactored Load Function (Story 8.2)', () => {
       // Assert
       expect(WalletFactory.fromSeedPhrase).toHaveBeenCalledWith(validMnemonic);
       expect(WalletFactory.fromFile).not.toHaveBeenCalled();
-      expect(result).toEqual(mockJWK);
+      expect(result).toBeInstanceOf(SeedPhraseWalletProvider);
+      // Note: getJWK() returns the provider's internal JWK (no interface change needed)
+      expect(typeof result.getJWK).toBe('function');
     });
 
     it('should trim whitespace from SEED_PHRASE', async () => {
       // Arrange
       process.env.SEED_PHRASE = `  ${validMnemonic}  `;
-      (WalletFactory.fromSeedPhrase as jest.Mock).mockResolvedValue(mockJWK);
+      const mockProvider = new SeedPhraseWalletProvider(mockJWK, validMnemonic);
+      (WalletFactory.fromSeedPhrase as jest.Mock).mockResolvedValue(mockProvider);
 
       // Act
       await load();
@@ -77,7 +82,8 @@ describe('Wallet Manager - Refactored Load Function (Story 8.2)', () => {
     it('should ignore --wallet flag when SEED_PHRASE is set', async () => {
       // Arrange
       process.env.SEED_PHRASE = validMnemonic;
-      (WalletFactory.fromSeedPhrase as jest.Mock).mockResolvedValue(mockJWK);
+      const mockProvider = new SeedPhraseWalletProvider(mockJWK, validMnemonic);
+      (WalletFactory.fromSeedPhrase as jest.Mock).mockResolvedValue(mockProvider);
 
       // Act
       const result = await load('/path/to/wallet.json');
@@ -85,7 +91,9 @@ describe('Wallet Manager - Refactored Load Function (Story 8.2)', () => {
       // Assert
       expect(WalletFactory.fromSeedPhrase).toHaveBeenCalledWith(validMnemonic);
       expect(WalletFactory.fromFile).not.toHaveBeenCalled();
-      expect(result).toEqual(mockJWK);
+      expect(result).toBeInstanceOf(SeedPhraseWalletProvider);
+      // Note: getJWK() returns the provider's internal JWK (no interface change needed)
+      expect(typeof result.getJWK).toBe('function');
     });
 
     it('should throw InvalidMnemonicError for invalid SEED_PHRASE', async () => {
@@ -131,7 +139,8 @@ describe('Wallet Manager - Refactored Load Function (Story 8.2)', () => {
     it('should use WalletFactory.fromFile with custom path when --wallet provided', async () => {
       // Arrange
       const customPath = '/custom/path/to/wallet.json';
-      (WalletFactory.fromFile as jest.Mock).mockResolvedValue(mockJWK);
+      const mockProvider = new FileWalletProvider(mockJWK, customPath);
+      (WalletFactory.fromFile as jest.Mock).mockResolvedValue(mockProvider);
 
       // Act
       const result = await load(customPath);
@@ -139,7 +148,9 @@ describe('Wallet Manager - Refactored Load Function (Story 8.2)', () => {
       // Assert
       expect(WalletFactory.fromFile).toHaveBeenCalledWith(customPath);
       expect(WalletFactory.fromSeedPhrase).not.toHaveBeenCalled();
-      expect(result).toEqual(mockJWK);
+      expect(result).toBeInstanceOf(FileWalletProvider);
+      // Note: getJWK() returns the provider's internal JWK (no interface change needed)
+      expect(typeof result.getJWK).toBe('function');
     });
 
     it('should throw FileSystemError when wallet file not found', async () => {
@@ -158,7 +169,16 @@ describe('Wallet Manager - Refactored Load Function (Story 8.2)', () => {
   describe('Priority 3: Default wallet path', () => {
     it('should use default path when no SEED_PHRASE and no --wallet flag', async () => {
       // Arrange
-      (WalletFactory.fromFile as jest.Mock).mockResolvedValue(mockJWK);
+      // Mock NodeArweaveWalletAdapter to throw error (skip browser wallet)
+      jest.doMock('../../../src/lib/node-arweave-wallet-adapter.js', () => ({
+        NodeArweaveWalletAdapter: jest.fn().mockImplementation(() => {
+          throw new Error('Browser wallet not available');
+        }),
+      }));
+
+      const defaultPath = expect.stringContaining('.arweave/wallet.json');
+      const mockProvider = new FileWalletProvider(mockJWK, defaultPath as any);
+      (WalletFactory.fromFile as jest.Mock).mockResolvedValue(mockProvider);
 
       // Act
       const result = await load();
@@ -168,12 +188,15 @@ describe('Wallet Manager - Refactored Load Function (Story 8.2)', () => {
         expect.stringContaining('.arweave/wallet.json')
       );
       expect(WalletFactory.fromSeedPhrase).not.toHaveBeenCalled();
-      expect(result).toEqual(mockJWK);
+      expect(result).toBeInstanceOf(FileWalletProvider);
+      // Note: getJWK() returns the provider's internal JWK (no interface change needed)
+      expect(typeof result.getJWK).toBe('function');
     });
 
     it('should use home directory for default path', async () => {
       // Arrange
-      (WalletFactory.fromFile as jest.Mock).mockResolvedValue(mockJWK);
+      const mockProvider = new FileWalletProvider(mockJWK, '/mock/path/wallet.json');
+      (WalletFactory.fromFile as jest.Mock).mockResolvedValue(mockProvider);
 
       // Act
       await load();

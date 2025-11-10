@@ -47,6 +47,58 @@ npm install
 npm run build
 ```
 
+## Skill Authoring Best Practices
+
+When creating or migrating Skills with MCP server requirements, it's important to properly document dependencies to ensure users understand what needs to be installed separately.
+
+### Documenting Dependencies
+
+Use the `dependencies` field in your SKILL.md frontmatter for **installable skill dependencies** that can be installed via the `skills install` command:
+
+```yaml
+---
+name: my-advanced-skill
+version: 1.0.0
+dependencies:
+  - ao-basics
+  - arweave-fundamentals
+---
+```
+
+These dependencies will be automatically resolved and installed when users run `skills install my-advanced-skill`.
+
+### MCP Server Requirements
+
+Use the `mcpServers` field in your SKILL.md frontmatter for **MCP server requirements** that users must install separately through Claude Desktop:
+
+```yaml
+---
+name: my-ui-skill
+version: 1.0.0
+mcpServers:
+  - mcp__pixel-art
+  - mcp__shadcn-ui
+---
+```
+
+**Important:** MCP servers are NOT installed automatically by the CLI. Users must configure them in Claude Desktop's `claude_desktop_config.json` separately.
+
+### Quick Reference Table
+
+| Scenario | Correct Field | Example |
+|----------|--------------|---------|
+| Installable skill dependency | `dependencies` | `dependencies: ["ao-basics"]` |
+| MCP server requirement | `mcpServers` | `mcpServers: ["mcp__pixel-art"]` |
+| Mixed dependencies | Use both fields | See migration guide below |
+
+### Migration from Legacy Patterns
+
+Existing Skills may have MCP servers (items with `mcp__` prefix) in the `dependencies` field. This pattern is backward compatible, but the CLI will issue validation warnings during publish to guide you toward migrating to the dedicated `mcpServers` field.
+
+**For detailed migration instructions**, see the [MCP Server Migration Guide](docs/guides/mcp-migration-guide.md).
+
+**Validation warnings are non-blocking** - your skill will still publish and install successfully. MCP servers are automatically detected and skipped during installation, with informational messages guiding users to install them separately.
+
 ## Quick Start
 
 ### 1. Install the CLI

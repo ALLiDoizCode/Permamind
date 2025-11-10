@@ -54,4 +54,29 @@
 | **CI/CD** | GitHub Actions | latest | Automated testing and deployment | Free for public repos, integrated with GitHub |
 | **Environment Config** | dotenv | ^16.4.0 | Environment variable management | Load .env files for process IDs, network config |
 
+## Custom UI Templates
+
+### Browser Wallet Connection UI
+
+**Location:** `cli/src/ui/`
+
+**Purpose:** Permamind-branded browser wallet connection interface matching developer-CLI terminal dark theme
+
+**Components:**
+- **wallet-connect.html** - HTML structure with SSE protocol DOM elements
+- **wallet-connect.css** - Terminal dark theme styles
+- **wallet-connect.js** - SSE protocol implementation
+
+**Design System:**
+- Colors: Terminal dark theme (`#10151B` background, `#1a1f26` surface, `#e2e8f0` text)
+- Fonts: Inter (sans-serif), JetBrains Mono (monospace)
+- Responsive: 375px (mobile), 768px (tablet), 1440px (desktop)
+
+**Integration:**
+- Configured in `NodeArweaveWalletAdapter` via `customHtmlTemplatePath`
+- Copied to `dist/ui/` during build via `npm run copy-ui`
+- Loaded by `@permamind/node-arweave-wallet` library at runtime
+
+**Browser Support:** Chrome, Firefox, Safari (macOS/iOS), Edge (all latest stable)
+
 ---

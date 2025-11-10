@@ -297,7 +297,7 @@ export function McpGuide() {
   "mcpServers": {
     "permamind": {
       "command": "npx",
-      "args": ["-y", "@permamind/mcp"],
+      "args": ["@permamind/mcp@latest"],
       "env": {
         "SEED_PHRASE": "your twelve word seed phrase here"
       }
@@ -387,7 +387,7 @@ export function McpGuide() {
   "mcpServers": {
     "permamind": {
       "command": "npx",
-      "args": ["-y", "@permamind/mcp"],
+      "args": ["@permamind/mcp@latest"],
       "env": {
         "SEED_PHRASE": "your twelve word seed phrase here"
       }

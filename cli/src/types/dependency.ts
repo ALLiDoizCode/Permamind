@@ -49,6 +49,9 @@ export interface IDependencyNode {
 
   /** Local file system path if already installed */
   installPath?: string;
+
+  /** MCP servers filtered from this node's dependencies during resolution */
+  filteredMcpServers?: string[];
 }
 
 /**

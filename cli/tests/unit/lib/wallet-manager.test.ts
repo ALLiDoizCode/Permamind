@@ -10,25 +10,14 @@ import {
   FileSystemError,
   ValidationError,
 } from '../../../src/types/errors.js';
+import { FileWalletProvider } from '../../../src/lib/wallet-providers/index.js';
 
-// Mock Arweave SDK
-jest.mock('arweave', () => {
-  const mockWallets = {
-    jwkToAddress: jest.fn().mockResolvedValue('mock_arweave_address_43_characters_long_abc'),
-    getBalance: jest.fn().mockResolvedValue('5200000000000'), // 5.2 AR in winston
-  };
-
-  const mockArweaveInstance = {
-    wallets: mockWallets,
-  };
-
-  return {
-    __esModule: true,
-    default: {
-      init: jest.fn(() => mockArweaveInstance),
-    },
-  };
-});
+// Mock browser wallet adapter to skip browser wallet fallback
+jest.mock('../../../src/lib/node-arweave-wallet-adapter.js', () => ({
+  NodeArweaveWalletAdapter: jest.fn().mockImplementation(() => {
+    throw new Error('Browser wallet not available in test environment');
+  }),
+}));
 
 import {
   load,
@@ -56,9 +45,12 @@ describe('Wallet Manager', () => {
     describe('valid JWK loading', () => {
       it('should load valid JWK from file path', async () => {
         const walletPath = path.join(fixturesPath, 'valid-wallet.json');
-        const jwk = await load(walletPath);
+        const provider = await load(walletPath);
 
-        expect(jwk).toBeDefined();
+        expect(provider).toBeDefined();
+        expect(provider).toBeInstanceOf(FileWalletProvider);
+
+        const jwk = await provider.getJWK();
         expect(jwk.kty).toBe('RSA');
         expect(jwk.e).toBe('AQAB');
         expect(jwk.n).toBeDefined();
@@ -66,18 +58,20 @@ describe('Wallet Manager', () => {
 
       it('should derive Arweave address from JWK', async () => {
         const walletPath = path.join(fixturesPath, 'valid-wallet.json');
-        const jwk = await load(walletPath);
+        const provider = await load(walletPath);
 
         // Address derivation happens internally during load()
         // If load() succeeds, address was derived successfully
-        expect(jwk).toBeDefined();
+        expect(provider).toBeDefined();
+        expect(await provider.getAddress()).toBeDefined();
       });
 
       it('should validate JWK structure', async () => {
         const walletPath = path.join(fixturesPath, 'valid-wallet.json');
-        const jwk = await load(walletPath);
+        const provider = await load(walletPath);
 
         // Validate required fields are present
+        const jwk = await provider.getJWK();
         expect(jwk.kty).toBeDefined();
         expect(jwk.e).toBeDefined();
         expect(jwk.n).toBeDefined();

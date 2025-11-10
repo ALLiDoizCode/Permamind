@@ -118,6 +118,11 @@ export async function parse(skillMdPath: string): Promise<ISkillManifest> {
     manifest.tags = [];
   }
 
+  // Ensure mcpServers is an array (default to empty array if null/undefined)
+  if (!manifest.mcpServers) {
+    manifest.mcpServers = [];
+  }
+
   return manifest;
 }
 
@@ -162,6 +167,40 @@ export function validate(manifest: ISkillManifest): ValidationResult {
     valid: false,
     errors,
   };
+}
+
+/**
+ * Detect MCP server references in dependencies array
+ *
+ * Scans dependencies for items with 'mcp__' prefix, indicating MCP servers
+ * that should be documented in mcpServers field instead.
+ *
+ * This function helps identify misplaced MCP server references during publish
+ * validation. MCP servers should be documented in the mcpServers field rather
+ * than the dependencies field, as they are not installed automatically.
+ *
+ * @param manifest - Parsed skill manifest
+ * @returns Array of dependency names with mcp__ prefix
+ *
+ * @example
+ * ```typescript
+ * const manifest = {
+ *   name: 'my-skill',
+ *   dependencies: ['ao-basics', 'mcp__pixel-art'],
+ *   // ...
+ * };
+ * const mcpDeps = detectMcpInDependencies(manifest);
+ * console.log(mcpDeps); // ['mcp__pixel-art']
+ * ```
+ */
+export function detectMcpInDependencies(manifest: ISkillManifest): string[] {
+  if (!manifest.dependencies || manifest.dependencies.length === 0) {
+    return [];
+  }
+
+  return manifest.dependencies
+    .map((dep) => (typeof dep === 'string' ? dep : dep.name))
+    .filter((name) => name.startsWith('mcp__'));
 }
 
 /**

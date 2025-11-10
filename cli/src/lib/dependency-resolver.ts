@@ -52,6 +52,14 @@ const persistentCache = new Map<string, CacheEntry>();
 const metadataCache = new Map<string, Promise<ISkillMetadata | null>>();
 
 /**
+ * Result of filtering MCP servers from dependency list
+ */
+interface IFilterResult {
+  validDependencies: Array<string | { name: string; version: string }>;
+  mcpServers: string[];
+}
+
+/**
  * Resolves complete dependency tree for a skill
  *
  * Builds a recursive dependency tree starting from the root skill,
@@ -158,6 +166,33 @@ export async function resolve(
  * Used to detect circular dependencies early during tree building
  */
 const visitingNodes = new Set<string>();
+
+/**
+ * Filter MCP servers from dependency list
+ *
+ * Separates skill dependencies from MCP server references using mcp__ prefix detection.
+ * MCP servers are excluded from recursive dependency resolution but tracked for reporting.
+ *
+ * @param dependencies - Array of dependencies (string or object format)
+ * @returns FilterResult with valid skills and detected MCP servers
+ */
+function filterMcpServers(
+  dependencies: Array<string | { name: string; version: string }>
+): IFilterResult {
+  const validDependencies: typeof dependencies = [];
+  const mcpServers: string[] = [];
+
+  for (const dep of dependencies) {
+    const depName = typeof dep === 'string' ? dep : dep.name;
+    if (depName.startsWith('mcp__')) {
+      mcpServers.push(depName);
+    } else {
+      validDependencies.push(dep);
+    }
+  }
+
+  return { validDependencies, mcpServers };
+}
 
 /**
  * Recursively builds a dependency node and its children
@@ -282,6 +317,22 @@ async function buildDependencyNode(
     logger.warn(`Dependency '${skillName}@${metadata.version}' already installed - skipping`);
   }
 
+  // Filter MCP servers from dependencies (Story 13.2)
+  const dependencies = metadata.dependencies || [];
+  const { validDependencies, mcpServers } = filterMcpServers(dependencies);
+
+  if (mcpServers.length > 0) {
+    if (options.verbose) {
+      logger.debug('Filtering MCP servers from dependencies', {
+        skill: skillName,
+        depth,
+        allDependencies: dependencies,
+        validDependencies,
+        mcpServers
+      });
+    }
+  }
+
   // Build node
   const node: IDependencyNode = {
     name: metadata.name,
@@ -291,6 +342,7 @@ async function buildDependencyNode(
     depth,
     isInstalled,
     installPath,
+    filteredMcpServers: mcpServers.length > 0 ? mcpServers : undefined
   };
 
   // Skip recursive dependency traversal if already installed
@@ -302,20 +354,18 @@ async function buildDependencyNode(
   visitingNodes.add(skillName);
 
   try {
-    // Recursively process dependencies
-    const dependencies = metadata.dependencies || [];
-
-    if (dependencies.length > 0 && options.verbose) {
-      const depDescriptions = dependencies.map(dep =>
+    // Recursively process valid dependencies (MCP servers already filtered)
+    if (validDependencies.length > 0 && options.verbose) {
+      const depDescriptions = validDependencies.map(dep =>
         typeof dep === 'string' ? dep : `${dep.name}@${dep.version}`
       );
-      logger.debug(`Found ${dependencies.length} dependencies: [${depDescriptions.join(', ')}]`, { skillName });
+      logger.debug(`Found ${validDependencies.length} dependencies: [${depDescriptions.join(', ')}]`, { skillName });
     }
 
     // Process dependencies (using Promise.all for performance)
     const newPath = [...path, skillName];
     const depNodes = await Promise.all(
-      dependencies.map((dep: string | { name: string; version: string }) => {
+      validDependencies.map((dep: string | { name: string; version: string }) => {
         // Extract dependency name (support both string and object format)
         const depName = typeof dep === 'string' ? dep : dep.name;
         // TODO: Version checking will be implemented when we fetch dependencies

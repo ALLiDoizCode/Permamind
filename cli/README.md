@@ -205,6 +205,93 @@ skills install my-skill
 cat ~/.claude/skills/skills-lock.json
 ```
 
+## Creating Skills
+
+### SKILL.md Structure
+
+Every skill requires a `SKILL.md` file with YAML frontmatter:
+
+```yaml
+---
+name: my-skill
+version: 1.0.0
+description: A clear description of what this skill does
+author: Your Name
+tags:
+  - category
+  - topic
+dependencies: []  # Other skills this skill depends on
+license: MIT
+---
+
+# Skill Content
+
+Your skill instructions, workflows, and documentation go here.
+```
+
+### Documenting MCP Server Requirements
+
+If your skill requires MCP (Model Context Protocol) servers, document them in the `mcpServers` field:
+
+**✅ Correct Example:**
+
+```yaml
+---
+name: pixel-art-generator
+version: 1.0.0
+description: Generate pixel art using Claude's MCP integration
+author: Skill Author
+tags: ["pixel-art", "mcp"]
+dependencies: []  # Other skills only
+mcpServers:
+  - mcp__pixel-art
+  - mcp__shadcn-ui
+---
+```
+
+**❌ Incorrect Example (Anti-pattern):**
+
+```yaml
+---
+name: pixel-art-generator
+version: 1.0.0
+dependencies:
+  - mcp__pixel-art  # ❌ WRONG: MCP servers should be in mcpServers field
+---
+```
+
+**Important Notes:**
+- MCP servers are **NOT installed automatically** by the CLI
+- Users must install required MCP servers separately through Claude Desktop
+- The `mcpServers` field is informational only (helps users understand requirements)
+- MCP servers in `dependencies` will be skipped during skill installation
+- You will receive a warning during publish if MCP servers are in the wrong field
+
+**Example Warning:**
+
+```bash
+skills publish ./my-skill
+
+⚠ Warning: MCP server references detected in dependencies field
+
+The following MCP servers should be documented in the 'mcpServers' field instead:
+  - mcp__pixel-art
+  - mcp__shadcn-ui
+
+Solution: Move these to 'mcpServers' field in SKILL.md frontmatter:
+
+---
+name: my-skill
+version: 1.0.0
+dependencies: []  # Remove MCP servers from here
+mcpServers:
+  - mcp__pixel-art
+  - mcp__shadcn-ui
+---
+
+Note: This skill will still publish successfully. MCP servers in dependencies will be skipped during installation.
+```
+
 ## Architecture
 
 This CLI uses a **decentralized infrastructure**:
@@ -213,6 +300,78 @@ This CLI uses a **decentralized infrastructure**:
 - **npm Registry**: CLI tool distribution
 
 ## Troubleshooting
+
+### MCP Server Validation Warnings
+
+#### Understanding the Warning Message
+
+When you run `skills publish`, you may see a validation warning if your SKILL.md has MCP servers (items with `mcp__` prefix) in the `dependencies` field:
+
+```bash
+skills publish ./my-skill
+
+⚠ Warning: MCP server dependencies detected in 'dependencies' field
+
+The following MCP servers should be documented in the 'mcpServers' field instead:
+  - mcp__pixel-art
+  - mcp__shadcn-ui
+
+Solution: Move these to 'mcpServers' field in SKILL.md frontmatter:
+
+---
+name: my-skill
+version: 1.0.0
+dependencies: []  # Remove MCP servers from here
+mcpServers:
+  - mcp__pixel-art
+  - mcp__shadcn-ui
+---
+
+Note: This skill will still publish successfully. MCP servers in dependencies will be skipped during installation.
+```
+
+**This warning is informational only** - your skill will still publish successfully. MCP servers in the `dependencies` field are automatically detected and skipped during installation.
+
+#### How to Migrate Your Skill
+
+Follow these steps to resolve the validation warning:
+
+1. **Open your SKILL.md file**
+2. **Identify items starting with `mcp__` in the `dependencies` field**
+3. **Add `mcpServers` field to your frontmatter** (if it doesn't exist)
+4. **Move `mcp__` prefixed items from `dependencies` to `mcpServers`**
+5. **Run `skills publish` again** (no warnings should appear)
+
+#### Quick Fix Example
+
+**Before (causes validation warning):**
+
+```yaml
+---
+name: my-skill
+version: 1.0.0
+dependencies:
+  - ao-basics
+  - mcp__pixel-art
+---
+```
+
+**After (no warnings):**
+
+```yaml
+---
+name: my-skill
+version: 1.0.0
+dependencies:
+  - ao-basics
+mcpServers:
+  - mcp__pixel-art
+---
+```
+
+**Explanation:** Move `mcp__` prefixed items from `dependencies` to new `mcpServers` field.
+
+**For detailed migration guidance**, see the [MCP Server Migration Guide](../docs/guides/mcp-migration-guide.md).
 
 ### "command not found: skills"
 

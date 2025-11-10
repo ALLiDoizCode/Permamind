@@ -18,7 +18,6 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as manifestParser from '../parsers/manifest-parser.js';
 import * as bundler from '../lib/bundler.js';
-import * as walletManager from '../lib/wallet-manager.js';
 import * as arweaveClient from '../clients/arweave-client.js';
 import * as aoRegistryClient from '../clients/ao-registry-client.js';
 import * as skillAnalyzer from '../lib/skill-analyzer.js';
@@ -217,7 +216,15 @@ export class PublishService {
       logger.setLevel('debug');
     }
 
-    logger.debug('Starting publish workflow', { directory, options });
+    // Log sanitized options (exclude walletProvider to avoid circular refs)
+    logger.debug('Starting publish workflow', {
+      directory,
+      verbose: options.verbose,
+      gatewayUrl: options.gatewayUrl,
+      hasWalletProvider: !!options.walletProvider,
+      hasWallet: !!options.wallet,
+      hasWalletPath: !!options.walletPath,
+    });
 
     // Workflow orchestration
     const skillMdPath = await this.validateDirectory(
@@ -228,7 +235,7 @@ export class PublishService {
       skillMdPath,
       options.progressCallback
     );
-    const wallet = await this.loadWallet(options);
+    const walletProvider = await this.loadWalletProvider(options);
     const bundleResult = await this.createBundle(
       directory,
       options.progressCallback
@@ -236,7 +243,7 @@ export class PublishService {
     const uploadResult = await this.uploadBundle(
       bundleResult.buffer,
       manifest,
-      wallet,
+      walletProvider,
       options.gatewayUrl,
       options.progressCallback
     );
@@ -247,7 +254,7 @@ export class PublishService {
     const registryMessageId = await this.registerInAORegistry(
       manifest,
       uploadResult.txId,
-      wallet,
+      walletProvider,
       bundledFiles,
       options.progressCallback
     );
@@ -343,64 +350,77 @@ export class PublishService {
       );
     }
 
+    // Check for MCP servers in dependencies (Story 13.1)
+    const mcpDepsInDependencies = manifestParser.detectMcpInDependencies(manifest);
+    if (mcpDepsInDependencies.length > 0) {
+      logger.warn('\n⚠ Warning: MCP server references detected in dependencies field\n');
+      logger.warn('The following MCP servers should be documented in the \'mcpServers\' field instead:');
+      mcpDepsInDependencies.forEach((dep) => logger.warn(`  - ${dep}`));
+      logger.warn('\nSolution: Move these to \'mcpServers\' field in SKILL.md frontmatter:\n');
+      logger.warn('---');
+      logger.warn('name: my-skill');
+      logger.warn('version: 1.0.0');
+      logger.warn('dependencies: []  # Remove MCP servers from here');
+      logger.warn('mcpServers:');
+      mcpDepsInDependencies.forEach((dep) => logger.warn(`  - ${dep}`));
+      logger.warn('---\n');
+      logger.warn('Note: This skill will still publish successfully. MCP servers in dependencies will be skipped during installation.\n');
+    }
+
     return manifest;
   }
 
   /**
-   * Load wallet without balance check
+   * Load wallet provider without balance check
    *
    * Priority: options.walletProvider > options.wallet > options.walletPath
    *
-   * Epic 9: Balance check removed - now handled by ArweaveClient only when needed
-   * (i.e., for bundles ≥ 100KB that use Arweave SDK, not Turbo SDK free tier)
-   *
-   * Epic 11: Wallet provider abstraction added - supports seed phrase, file, and browser wallets
-   * Note: Browser wallet support limited to providers with getJWK() method (file/seedphrase only)
+   * Story 11.6: Refactored to return IWalletProvider instead of JWK
+   * - Supports all wallet types: seed phrase, file, browser wallet
+   * - Browser wallets can now publish via dispatch() API
+   * - Legacy wallet/walletPath wrapped in providers for backward compatibility
    *
    * @param options - Publish options with walletProvider, wallet, or walletPath
-   * @returns Validated JWK
-   * @throws {ConfigurationError} If no wallet provided or browser wallet used (JWK export unsupported)
+   * @returns Wallet provider instance
+   * @throws {ConfigurationError} If no wallet provided
    * @private
    */
-  private async loadWallet(
+  private async loadWalletProvider(
     options: IPublishServiceOptions
-  ): Promise<JWK> {
+  ): Promise<IWalletProvider> {
     options.progressCallback?.({
       type: 'validating',
       message: 'Loading wallet...',
     });
 
     // Priority: walletProvider > wallet > walletPath
-    let wallet: JWK;
+    let walletProvider: IWalletProvider;
 
-    // Priority 1: walletProvider (supports all wallet types with JWK export)
+    // Priority 1: walletProvider (recommended - supports all wallet types)
     if (options.walletProvider) {
       logger.debug('Using wallet provider', {
         source: options.walletProvider.getSource().source
       });
-
-      // Check if provider supports JWK export (file/seedphrase only)
-      if (typeof options.walletProvider.getJWK !== 'function') {
-        throw new ConfigurationError(
-          '[ConfigurationError] Wallet provider does not support JWK export (browser wallet) → Solution: Browser wallet support for PublishService is not yet implemented. Use SEED_PHRASE environment variable or --wallet flag instead.',
-          'wallet'
-        );
-      }
-
-      wallet = await options.walletProvider.getJWK();
-      logger.debug('Extracted JWK from wallet provider');
+      walletProvider = options.walletProvider;
     }
-    // Priority 2: wallet (JWK - backward compatibility)
+    // Priority 2: wallet (JWK - backward compatibility, wrap in SeedPhraseWalletProvider)
     else if (options.wallet) {
-      wallet = options.wallet;
       logger.warn('Using deprecated wallet option. Migrate to walletProvider for browser wallet support.');
       logger.debug('Using pre-loaded wallet (backward compatibility)');
+
+      // Wrap JWK in SeedPhraseWalletProvider for consistent interface
+      const { SeedPhraseWalletProvider } = await import('../lib/wallet-providers/seed-phrase-provider.js');
+      walletProvider = new SeedPhraseWalletProvider(options.wallet, ''); // Empty mnemonic for JWK-only provider
     }
-    // Priority 3: walletPath (load JWK from file - backward compatibility)
+    // Priority 3: walletPath (load as FileWalletProvider - backward compatibility)
     else if (options.walletPath) {
-      wallet = await walletManager.loadJWK(options.walletPath);
       logger.warn('Using deprecated walletPath option. Migrate to walletProvider with wallet-manager.load().');
       logger.debug('Loaded wallet from file (backward compatibility)', { path: options.walletPath });
+
+      // Use FileWalletProvider
+      const { FileWalletProvider } = await import('../lib/wallet-providers/file-wallet-provider.js');
+      const jwk = await import('../lib/wallet-manager.js').then(m => m.loadFromFile(options.walletPath!));
+      walletProvider = new FileWalletProvider(jwk, options.walletPath);
     }
     // No wallet provided
     else {
@@ -416,20 +436,14 @@ export class PublishService {
     // Bundles < 100KB use Turbo SDK free tier (no balance check needed)
 
     // Log wallet address for debugging
-    const Arweave = (await import('arweave')).default;
-    const arweave = Arweave.init({
-      host: 'arweave.net',
-      port: 443,
-      protocol: 'https',
-    });
-    const address = await arweave.wallets.jwkToAddress(wallet);
-
-    logger.debug('Wallet loaded successfully', {
+    const address = await walletProvider.getAddress();
+    logger.debug('Wallet provider loaded successfully', {
       address: address,
+      source: walletProvider.getSource().source,
       note: 'Balance check deferred to upload stage (only for bundles ≥ 100KB)'
     });
 
-    return wallet;
+    return walletProvider;
   }
 
   /**
@@ -479,9 +493,12 @@ export class PublishService {
   /**
    * Upload bundle to Arweave with progress tracking
    *
+   * Story 11.6: Updated to accept IWalletProvider instead of JWK
+   * Supports all wallet types: seed phrase, file, browser wallet
+   *
    * @param buffer - Bundle buffer
    * @param manifest - Skill manifest
-   * @param wallet - Wallet JWK
+   * @param walletProvider - Wallet provider instance
    * @param gatewayUrl - Custom gateway URL (optional)
    * @param callback - Progress callback (optional)
    * @returns Upload result with transaction ID and cost
@@ -491,7 +508,7 @@ export class PublishService {
   private async uploadBundle(
     buffer: Buffer,
     manifest: ISkillManifest,
-    wallet: JWK,
+    walletProvider: IWalletProvider,
     gatewayUrl: string | undefined,
     callback?: IProgressCallback
   ): Promise<{ txId: string; cost: number }> {
@@ -501,14 +518,14 @@ export class PublishService {
       percent: 0,
     });
 
-    // Upload with progress callback
+    // Upload with progress callback (arweaveClient handles wallet type routing)
     const uploadResult = await arweaveClient.uploadBundle(
       buffer,
       {
         skillName: manifest.name,
         skillVersion: manifest.version,
       },
-      wallet,
+      walletProvider,
       {
         gatewayUrl,
         progressCallback: (percent: number) => {
@@ -567,19 +584,23 @@ export class PublishService {
    *
    * Checks if skill exists and uses Update-Skill or Register-Skill accordingly
    *
+   * Story 11.6: Updated to accept IWalletProvider, extracts JWK for AO registry
+   * (AO registry currently requires JWK for signing)
+   *
    * @param manifest - Skill manifest
    * @param arweaveTxId - Arweave transaction ID
-   * @param wallet - Wallet JWK
+   * @param walletProvider - Wallet provider instance
    * @param bundledFiles - Analyzed bundled files metadata
    * @param callback - Progress callback (optional)
    * @returns AO message ID for registry registration
    * @throws {NetworkError} If registration fails
+   * @throws {ConfigurationError} If browser wallet used (JWK not available)
    * @private
    */
   private async registerInAORegistry(
     manifest: ISkillManifest,
     arweaveTxId: string,
-    wallet: JWK,
+    walletProvider: IWalletProvider,
     bundledFiles: skillAnalyzer.BundledFile[],
     callback?: IProgressCallback
   ): Promise<string> {
@@ -587,6 +608,10 @@ export class PublishService {
       type: 'registering',
       message: 'Checking if skill exists...',
     });
+
+    // Story 11.6: No longer need to extract JWK - use wallet provider directly
+    // createDataItemSigner() supports all wallet types including browser wallets
+    logger.debug('Using wallet provider for AO registry signing');
 
     // Check if skill already exists in registry
     let existingSkill: ISkillMetadata | null = null;
@@ -609,13 +634,7 @@ export class PublishService {
     }
 
     // Derive wallet address for owner field
-    const Arweave = (await import('arweave')).default;
-    const arweave = Arweave.init({
-      host: 'arweave.net',
-      port: 443,
-      protocol: 'https',
-    });
-    const ownerAddress = await arweave.wallets.jwkToAddress(wallet);
+    const ownerAddress = await walletProvider.getAddress();
 
     // Prepare skill metadata for registry
     const metadata: ISkillMetadata = {
@@ -640,14 +659,14 @@ export class PublishService {
         type: 'registering',
         message: 'Updating skill in AO registry...',
       });
-      messageId = await aoRegistryClient.updateSkill(metadata, wallet);
+      messageId = await aoRegistryClient.updateSkill(metadata, walletProvider);
       logger.debug('Registry update successful', { messageId });
     } else {
       callback?.({
         type: 'registering',
         message: 'Registering skill in AO registry...',
       });
-      messageId = await aoRegistryClient.registerSkill(metadata, wallet);
+      messageId = await aoRegistryClient.registerSkill(metadata, walletProvider);
       logger.debug('Registry registration successful', { messageId });
     }
 

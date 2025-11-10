@@ -1,0 +1,11 @@
+{
+  "kty": "RSA",
+  "e": "AQAB",
+  "n": "xL3WVaRXcgFvF2OkKjCwDCsyHCqcU_GjP-Qg7W_-YXZ9qN5XqGXg_g7KjP5cF_Q0kXVqK6LZH3G8FqP3L3sZ7Q",
+  "d": "mock-private-exponent",
+  "p": "mock-p",
+  "q": "mock-q",
+  "dp": "mock-dp",
+  "dq": "mock-dq",
+  "qi": "mock-qi"
+}

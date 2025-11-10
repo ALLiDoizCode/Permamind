@@ -46,7 +46,8 @@ Fork `node-arweave-wallet` library to enable custom HTML/CSS/JS UI templates for
 **What's being added/changed:**
 
 1. **Fork node-arweave-wallet Repository**
-   - Fork https://github.com/pawanpaudel93/node-arweave-wallet to Permamind organization
+   - Fork: https://github.com/ALLiDoizCode/node-arweave-wallet (COMPLETED)
+   - Upstream: https://github.com/pawanpaudel93/node-arweave-wallet
    - Create custom branch: `permamind-custom-ui`
    - Add upstream remote for syncing future updates
    - Document fork maintenance process
@@ -94,7 +95,7 @@ Fork `node-arweave-wallet` library to enable custom HTML/CSS/JS UI templates for
 **so that** we can serve branded HTML templates from our CLI.
 
 **Key Tasks:**
-- Fork https://github.com/pawanpaudel93/node-arweave-wallet
+- Fork: https://github.com/ALLiDoizCode/node-arweave-wallet (COMPLETED)
 - Add `customHtmlTemplatePath` config option to library
 - Modify `getSignerHTML()` to support custom template loading
 - Add unit tests for custom template configuration
@@ -214,8 +215,9 @@ The epic should maintain system integrity while delivering fully branded Permami
 ---
 
 **Created**: 2025-11-03
+**Updated**: 2025-11-04 (Fork repository URL updated)
 **Epic**: Epic 12 (Custom Wallet UI Fork - Brownfield Enhancement)
 **Priority**: LOW (UI enhancement, not functional requirement)
 **Estimated Effort**: 2-3 days (3 stories)
-**Dependencies**: Epic 11 (Node Arweave Wallet Integration), node-arweave-wallet fork repository
+**Dependencies**: Epic 11 (Node Arweave Wallet Integration), node-arweave-wallet fork: https://github.com/ALLiDoizCode/node-arweave-wallet
 **Upstream Contribution**: Plan to submit PR adding custom UI config to original library

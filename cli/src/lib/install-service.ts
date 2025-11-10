@@ -172,7 +172,40 @@ export class InstallService {
     this.emitProgress(options, { type: 'query-registry', message: 'Querying registry...' });
     const metadata = await this.querySkill(skillName, requestedVersion);
 
+    // Check for MCP server requirements in skill metadata (Story 13.2)
+    if (metadata.mcpServers && metadata.mcpServers.length > 0) {
+      if (options.verbose) {
+        logger.debug('Loaded mcpServers field', { mcpServers: metadata.mcpServers });
+      }
+
+      this.emitProgress(options, {
+        type: 'query-registry',
+        message: `Note: This skill requires MCP servers: ${metadata.mcpServers.join(', ')}. Install them separately via their installation methods.`
+      });
+    }
+
     const dependencyTree = await this.resolveDependencies(skillName, options);
+
+    // Collect filtered MCP servers from dependency tree (Story 13.2)
+    const allFilteredMcpServers: string[] = [];
+    for (const node of dependencyTree.flatList) {
+      if (node.filteredMcpServers && node.filteredMcpServers.length > 0) {
+        allFilteredMcpServers.push(...node.filteredMcpServers);
+      }
+    }
+
+    // Deduplicate MCP server names (same MCP server may appear in multiple skills)
+    const uniqueMcpServers = Array.from(new Set(allFilteredMcpServers));
+
+    // Display informational messages for skipped MCP servers
+    if (uniqueMcpServers.length > 0) {
+      for (const mcpServer of uniqueMcpServers) {
+        this.emitProgress(options, {
+          type: 'resolve-dependencies',
+          message: `Skipping MCP server: ${mcpServer} (must be installed separately)`
+        });
+      }
+    }
 
     const downloadedBundles = await this.downloadBundles(dependencyTree, options);
 

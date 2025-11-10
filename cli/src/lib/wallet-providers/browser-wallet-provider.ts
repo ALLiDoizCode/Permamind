@@ -141,4 +141,17 @@ export class BrowserWalletProvider implements IWalletProvider {
       value: this.address,
     };
   }
+
+  /**
+   * Get the underlying NodeArweaveWallet adapter
+   *
+   * Provides access to the wallet adapter for operations that need direct
+   * access to the NodeArweaveWallet instance (e.g., dispatch() for uploads).
+   *
+   * @returns NodeArweaveWalletAdapter instance
+   * @internal Used by arweave-client.ts for browser wallet upload operations
+   */
+  getAdapter(): NodeArweaveWalletAdapter {
+    return this.adapter;
+  }
 }

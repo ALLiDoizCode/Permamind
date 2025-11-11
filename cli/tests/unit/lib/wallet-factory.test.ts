@@ -113,7 +113,8 @@ describe('WalletFactory', () => {
     }, 30000); // Increased timeout for CI environment
   });
 
-  describe('fromFile', () => {
+  // CPU-intensive tests - run via integration tests locally
+  describe.skip('fromFile', () => {
     const FIXTURES_DIR = path.join(__dirname, '../../fixtures');
     const VALID_WALLET_PATH = path.join(FIXTURES_DIR, 'test-wallet.json');
     const MISSING_WALLET_PATH = path.join(FIXTURES_DIR, 'nonexistent-wallet.json');
@@ -180,8 +181,9 @@ describe('WalletFactory', () => {
     });
   });
 
-  describe('determinism validation', () => {
-    it.skip('should be platform-independent (same seed produces same JWK)', async () => {
+  // CPU-intensive tests - run via integration tests locally
+  describe.skip('determinism validation', () => {
+    it('should be platform-independent (same seed produces same JWK)', async () => {
       // Test with known mnemonic
       const jwk1 = await WalletFactory.fromSeedPhrase(TEST_MNEMONIC);
       const jwk2 = await WalletFactory.fromSeedPhrase(TEST_MNEMONIC);

@@ -37,6 +37,27 @@ jest.mock('../../../src/lib/skill-analyzer');
 jest.mock('fs/promises');
 jest.mock('arweave');
 
+// Mock wallet providers for Epic 11 compatibility
+jest.mock('../../../src/lib/wallet-providers/file-wallet-provider', () => ({
+  FileWalletProvider: jest.fn().mockImplementation((jwk, path) => ({
+    getAddress: jest.fn().mockResolvedValue('mock-arweave-address'),
+    createDataItemSigner: jest.fn(),
+    disconnect: jest.fn(),
+    getSource: jest.fn().mockReturnValue({ source: 'file', value: path }),
+    getJWK: jest.fn().mockResolvedValue(jwk),
+  })),
+}));
+
+jest.mock('../../../src/lib/wallet-providers/seed-phrase-provider', () => ({
+  SeedPhraseWalletProvider: jest.fn().mockImplementation((jwk, mnemonic) => ({
+    getAddress: jest.fn().mockResolvedValue('mock-arweave-address'),
+    createDataItemSigner: jest.fn(),
+    disconnect: jest.fn(),
+    getSource: jest.fn().mockReturnValue({ source: 'seedPhrase', value: mnemonic }),
+    getJWK: jest.fn().mockResolvedValue(jwk),
+  })),
+}));
+
 describe('PublishService', () => {
   let service: PublishService;
   let progressEvents: ProgressEvent[];

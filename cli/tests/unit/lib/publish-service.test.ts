@@ -486,12 +486,10 @@ describe('PublishService', () => {
         progressCallback,
       });
 
-      // Verify Arweave.init called for address derivation
-      expect((Arweave.init as jest.Mock)).toHaveBeenCalled();
-
-      // Verify jwkToAddress called to derive address for logging
-      const mockArweave = (Arweave.init as jest.Mock).mock.results[0]?.value;
-      expect(mockArweave.wallets.jwkToAddress).toHaveBeenCalledWith(mockWallet);
+      // Epic 11: Address derivation now happens inside wallet providers
+      // PublishService no longer directly calls Arweave.init or jwkToAddress
+      // Verify wallet was loaded via FileWalletProvider
+      expect((walletManager.loadFromFile as jest.Mock)).toHaveBeenCalledWith('/test/wallet.json');
 
       // Epic 9: Balance check removed from PublishService
       // Balance check now happens in ArweaveClient for bundles ≥ 100KB only
@@ -522,7 +520,7 @@ describe('PublishService', () => {
           publishedAt: expect.any(Number),
           updatedAt: expect.any(Number),
         }),
-        mockWallet
+        expect.any(Object) // Epic 11: Now passes walletProvider instead of JWK
       );
     });
 

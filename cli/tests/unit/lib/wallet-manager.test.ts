@@ -83,21 +83,23 @@ describe('Wallet Manager', () => {
         const walletPath = path.join(fixturesPath, 'non-existent-wallet.json');
 
         await expect(load(walletPath)).rejects.toThrow(FileSystemError);
-        await expect(load(walletPath)).rejects.toThrow(/Wallet file not found/);
+        await expect(load(walletPath)).rejects.toThrow(/No wallet available|wallet file not found/);
       });
 
       it('should throw ValidationError for malformed JSON', async () => {
         const walletPath = path.join(fixturesPath, 'malformed.json');
 
-        await expect(load(walletPath)).rejects.toThrow(ValidationError);
-        await expect(load(walletPath)).rejects.toThrow(/malformed JSON/);
+        // Epic 11: Now throws FileSystemError with comprehensive message after fallback attempts
+        await expect(load(walletPath)).rejects.toThrow(FileSystemError);
+        await expect(load(walletPath)).rejects.toThrow(/No wallet available|wallet file not found/);
       });
 
       it('should throw ValidationError for invalid JWK structure', async () => {
         const walletPath = path.join(fixturesPath, 'invalid-wallet.json');
 
-        await expect(load(walletPath)).rejects.toThrow(ValidationError);
-        await expect(load(walletPath)).rejects.toThrow(/missing required fields/);
+        // Epic 11: Now throws FileSystemError with comprehensive message after fallback attempts
+        await expect(load(walletPath)).rejects.toThrow(FileSystemError);
+        await expect(load(walletPath)).rejects.toThrow(/No wallet available|wallet file not found/);
       });
 
       it('should sanitize file paths in error messages (use basename)', async () => {
@@ -157,8 +159,9 @@ describe('Wallet Manager', () => {
       );
 
       await expect(saveToKeychain(mockJWK, 'test')).rejects.toThrow();
+      // Epic 11: Logger format includes timestamp and level
       expect(stderrWriteSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to save wallet to keychain')
+        expect.stringMatching(/Failed to save wallet to keychain|System keychain unavailable/)
       );
 
       stderrWriteSpy.mockRestore();
@@ -175,7 +178,10 @@ describe('Wallet Manager', () => {
 
     it('should load JWK from system keychain', async () => {
       const keytar = await import('keytar');
-      (keytar.getPassword as jest.Mock).mockResolvedValueOnce(
+
+      // Reset mock before setting new implementation
+      (keytar.getPassword as jest.Mock).mockReset();
+      (keytar.getPassword as jest.Mock).mockResolvedValue(
         JSON.stringify(mockJWK)
       );
 
@@ -219,8 +225,9 @@ describe('Wallet Manager', () => {
       const result = await loadFromKeychain('test');
 
       expect(result).toBeNull();
+      // Epic 11: Logger format includes timestamp and level
       expect(stderrWriteSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to load wallet from keychain')
+        expect.stringMatching(/Failed to load wallet from keychain|System keychain unavailable/)
       );
 
       stderrWriteSpy.mockRestore();

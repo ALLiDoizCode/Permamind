@@ -5,13 +5,13 @@
  */
 
 // Mock the node-arweave-wallet library BEFORE any imports
-jest.mock('node-arweave-wallet', () => {
+jest.mock('@permamind/node-arweave-wallet', () => {
   return {
     NodeArweaveWallet: jest.fn(),
   };
 });
 
-import { NodeArweaveWallet } from 'node-arweave-wallet';
+import { NodeArweaveWallet } from '@permamind/node-arweave-wallet';
 import { NodeArweaveWalletAdapter } from '../../../src/lib/node-arweave-wallet-adapter.js';
 import type {
   IInitOptions,

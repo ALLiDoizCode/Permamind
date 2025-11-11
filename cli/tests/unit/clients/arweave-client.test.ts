@@ -232,9 +232,12 @@ describe('Arweave Client', () => {
 
     describe('error handling', () => {
       it('should throw NetworkError on timeout', async () => {
-        mockTransactions.post.mockRejectedValueOnce(
-          Object.assign(new Error('timeout'), { code: 'ABORT_ERR' })
-        );
+        // Mock all retry attempts to fail with timeout
+        const timeoutError = Object.assign(new Error('timeout'), { code: 'ABORT_ERR' });
+        mockTransactions.post
+          .mockRejectedValueOnce(timeoutError)
+          .mockRejectedValueOnce(timeoutError)
+          .mockRejectedValueOnce(timeoutError);
 
         await expect(
           uploadBundle(mockBundle, mockMetadata, mockWalletProvider)
@@ -276,9 +279,12 @@ describe('Arweave Client', () => {
       });
 
       it('should include helpful solution in error message', async () => {
-        mockTransactions.post.mockRejectedValueOnce(
-          Object.assign(new Error('timeout'), { code: 'ABORT_ERR' })
-        );
+        // Mock all retry attempts to fail with timeout
+        const timeoutError = Object.assign(new Error('timeout'), { code: 'ABORT_ERR' });
+        mockTransactions.post
+          .mockRejectedValueOnce(timeoutError)
+          .mockRejectedValueOnce(timeoutError)
+          .mockRejectedValueOnce(timeoutError);
 
         await expect(
           uploadBundle(mockBundle, mockMetadata, mockWalletProvider)
@@ -764,21 +770,24 @@ describe('Arweave Client', () => {
     });
 
     it('should throw NetworkError after timeout (30 seconds)', async () => {
-      // Mock fetch that respects abort signal
-      (global.fetch).mockImplementationOnce(
-        (url: string, options: any) =>
-          new Promise((resolve, reject) => {
-            // Listen for abort signal
-            if (options?.signal) {
-              options.signal.addEventListener('abort', () => {
-                const abortError = new Error('The operation was aborted');
-                abortError.name = 'AbortError';
-                reject(abortError);
-              });
-            }
-            // Never resolve otherwise
-          })
-      );
+      // Mock fetch that respects abort signal for all retry attempts
+      const abortMock = (url: string, options: any) =>
+        new Promise((resolve, reject) => {
+          // Listen for abort signal
+          if (options?.signal) {
+            options.signal.addEventListener('abort', () => {
+              const abortError = new Error('The operation was aborted');
+              abortError.name = 'AbortError';
+              reject(abortError);
+            });
+          }
+          // Never resolve otherwise
+        });
+
+      (global.fetch as jest.Mock)
+        .mockImplementationOnce(abortMock)
+        .mockImplementationOnce(abortMock)
+        .mockImplementationOnce(abortMock);
 
       await expect(
         downloadBundle('abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG', {

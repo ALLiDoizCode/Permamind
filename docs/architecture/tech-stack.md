@@ -35,6 +35,7 @@
 | **Testing Framework** | Jest | ^29.7.0 | Unit and integration testing | TypeScript support, mocking, snapshot testing (PRD specified) |
 | **AO Testing** | aolite | latest | Local AO process emulation | Lua 5.3-based AO emulator, no network needed for tests (PRD specified) |
 | **Arweave SDK** | arweave | ^1.14.4 | Transaction creation and upload | Official Arweave JavaScript SDK for bundle uploads |
+| **Browser Wallet** | @permamind/node-arweave-wallet | ^0.0.13 | Browser wallet connection (forked) | Random port allocation, ArConnect/Wander support, local server auth, **custom UI template support** (fork feature) |
 | **AO Integration** | @permaweb/aoconnect | ^0.0.53 | AO message passing | Official AO SDK for registry queries and registration (PRD specified) |
 | **HTTP Client** | (built-in fetch) | Node 20.x native | Arweave gateway requests | Native Node.js fetch (18+), no axios/node-fetch needed |
 | **Linter** | ESLint | ^8.56.0 | Code quality and consistency | TypeScript-aware linting, catches common errors |
@@ -52,5 +53,30 @@
 | **Manual Deployment** | Permamind MCP Server | latest | AO process spawning (local development) | Interactive deployment for testing and development |
 | **CI/CD** | GitHub Actions | latest | Automated testing and deployment | Free for public repos, integrated with GitHub |
 | **Environment Config** | dotenv | ^16.4.0 | Environment variable management | Load .env files for process IDs, network config |
+
+## Custom UI Templates
+
+### Browser Wallet Connection UI
+
+**Location:** `cli/src/ui/`
+
+**Purpose:** Permamind-branded browser wallet connection interface matching developer-CLI terminal dark theme
+
+**Components:**
+- **wallet-connect.html** - HTML structure with SSE protocol DOM elements
+- **wallet-connect.css** - Terminal dark theme styles
+- **wallet-connect.js** - SSE protocol implementation
+
+**Design System:**
+- Colors: Terminal dark theme (`#10151B` background, `#1a1f26` surface, `#e2e8f0` text)
+- Fonts: Inter (sans-serif), JetBrains Mono (monospace)
+- Responsive: 375px (mobile), 768px (tablet), 1440px (desktop)
+
+**Integration:**
+- Configured in `NodeArweaveWalletAdapter` via `customHtmlTemplatePath`
+- Copied to `dist/ui/` during build via `npm run copy-ui`
+- Loaded by `@permamind/node-arweave-wallet` library at runtime
+
+**Browser Support:** Chrome, Firefox, Safari (macOS/iOS), Edge (all latest stable)
 
 ---

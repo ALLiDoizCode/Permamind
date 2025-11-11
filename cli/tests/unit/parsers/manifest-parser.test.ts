@@ -10,7 +10,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import * as path from 'path';
-import { parse, validate } from '../../../src/parsers/manifest-parser.js';
+import { parse, validate, detectMcpInDependencies } from '../../../src/parsers/manifest-parser.js';
 import { FileSystemError, ParseError } from '../../../src/types/errors.js';
 import { ISkillManifest } from '../../../src/types/skill.js';
 
@@ -283,6 +283,162 @@ describe('ManifestParser', () => {
         expect(result.valid).toBe(false);
         expect(result.errors?.[0]).toMatch(/Unexpected field/);
       });
+    });
+
+    describe('mcpServers field (Story 13.1)', () => {
+      it('should validate manifest with mcpServers field', () => {
+        const manifest: ISkillManifest = {
+          name: 'test',
+          version: '1.0.0',
+          description: 'Test',
+          author: 'Test',
+          mcpServers: ['mcp__pixel-art', 'mcp__shadcn-ui'],
+        };
+
+        const result = validate(manifest);
+        expect(result.valid).toBe(true);
+        expect(result.errors).toBeUndefined();
+      });
+
+      it('should validate manifest without mcpServers field (backward compatible)', () => {
+        const manifest: ISkillManifest = {
+          name: 'test',
+          version: '1.0.0',
+          description: 'Test',
+          author: 'Test',
+        };
+
+        const result = validate(manifest);
+        expect(result.valid).toBe(true);
+        expect(result.errors).toBeUndefined();
+      });
+
+      it('should validate manifest with empty mcpServers array', () => {
+        const manifest: ISkillManifest = {
+          name: 'test',
+          version: '1.0.0',
+          description: 'Test',
+          author: 'Test',
+          mcpServers: [],
+        };
+
+        const result = validate(manifest);
+        expect(result.valid).toBe(true);
+        expect(result.errors).toBeUndefined();
+      });
+
+      it('should handle manifest with null mcpServers', () => {
+        const manifest: ISkillManifest = {
+          name: 'test',
+          version: '1.0.0',
+          description: 'Test',
+          author: 'Test',
+          mcpServers: undefined,
+        };
+
+        const result = validate(manifest);
+        expect(result.valid).toBe(true);
+      });
+    });
+  });
+
+  describe('detectMcpInDependencies() (Story 13.1)', () => {
+    it('should return empty array when no dependencies', () => {
+      const manifest: ISkillManifest = {
+        name: 'test',
+        version: '1.0.0',
+        description: 'Test',
+        author: 'Test',
+        dependencies: [],
+      };
+
+      const result = detectMcpInDependencies(manifest);
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty array when dependencies is undefined', () => {
+      const manifest: ISkillManifest = {
+        name: 'test',
+        version: '1.0.0',
+        description: 'Test',
+        author: 'Test',
+      };
+
+      const result = detectMcpInDependencies(manifest);
+      expect(result).toEqual([]);
+    });
+
+    it('should detect single mcp__ prefixed dependency', () => {
+      const manifest: ISkillManifest = {
+        name: 'test',
+        version: '1.0.0',
+        description: 'Test',
+        author: 'Test',
+        dependencies: ['mcp__pixel-art'],
+      };
+
+      const result = detectMcpInDependencies(manifest);
+      expect(result).toEqual(['mcp__pixel-art']);
+    });
+
+    it('should detect multiple mcp__ prefixed dependencies', () => {
+      const manifest: ISkillManifest = {
+        name: 'test',
+        version: '1.0.0',
+        description: 'Test',
+        author: 'Test',
+        dependencies: ['ao-basics', 'mcp__pixel-art', 'mcp__shadcn-ui'],
+      };
+
+      const result = detectMcpInDependencies(manifest);
+      expect(result).toEqual(['mcp__pixel-art', 'mcp__shadcn-ui']);
+    });
+
+    it('should handle object format dependencies', () => {
+      const manifest: ISkillManifest = {
+        name: 'test',
+        version: '1.0.0',
+        description: 'Test',
+        author: 'Test',
+        dependencies: [
+          { name: 'ao-basics', version: '1.0.0' },
+          { name: 'mcp__pixel-art', version: '1.0.0' },
+        ],
+      };
+
+      const result = detectMcpInDependencies(manifest);
+      expect(result).toEqual(['mcp__pixel-art']);
+    });
+
+    it('should be case-sensitive (only mcp__ not MCP__)', () => {
+      const manifest: ISkillManifest = {
+        name: 'test',
+        version: '1.0.0',
+        description: 'Test',
+        author: 'Test',
+        dependencies: ['MCP__pixel-art', 'mcp__shadcn-ui', 'Mcp__test'],
+      };
+
+      const result = detectMcpInDependencies(manifest);
+      expect(result).toEqual(['mcp__shadcn-ui']);
+    });
+
+    it('should handle mixed string and object format dependencies', () => {
+      const manifest: ISkillManifest = {
+        name: 'test',
+        version: '1.0.0',
+        description: 'Test',
+        author: 'Test',
+        dependencies: [
+          'mcp__pixel-art',
+          { name: 'ao-basics', version: '1.0.0' },
+          { name: 'mcp__shadcn-ui', version: '1.0.0' },
+          'arweave-fundamentals',
+        ],
+      };
+
+      const result = detectMcpInDependencies(manifest);
+      expect(result).toEqual(['mcp__pixel-art', 'mcp__shadcn-ui']);
     });
   });
 });

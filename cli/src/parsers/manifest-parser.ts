@@ -14,12 +14,13 @@
 import { readFile } from 'fs/promises';
 import * as path from 'path';
 import matter from 'gray-matter';
-import Ajv, { type ErrorObject } from 'ajv';
+import AjvModule, { ErrorObject } from 'ajv';
 import { ISkillManifest, ValidationResult } from '../types/skill.js';
 import { FileSystemError, ParseError } from '../types/errors.js';
-import * as skillManifestSchema from '../schemas/skill-manifest.schema.json';
+import skillManifestSchema from '../schemas/skill-manifest.schema.json' with { type: 'json' };
 
-// Initialize AJV validator with skill manifest schema
+// Initialize AJV validator with skill manifest schema (handle ESM default export)
+const Ajv = (AjvModule as any).default || AjvModule;
 const ajv = new Ajv({ allErrors: true, verbose: true });
 const validateSchema = ajv.compile(skillManifestSchema);
 
@@ -117,6 +118,11 @@ export async function parse(skillMdPath: string): Promise<ISkillManifest> {
     manifest.tags = [];
   }
 
+  // Ensure mcpServers is an array (default to empty array if null/undefined)
+  if (!manifest.mcpServers) {
+    manifest.mcpServers = [];
+  }
+
   return manifest;
 }
 
@@ -161,6 +167,40 @@ export function validate(manifest: ISkillManifest): ValidationResult {
     valid: false,
     errors,
   };
+}
+
+/**
+ * Detect MCP server references in dependencies array
+ *
+ * Scans dependencies for items with 'mcp__' prefix, indicating MCP servers
+ * that should be documented in mcpServers field instead.
+ *
+ * This function helps identify misplaced MCP server references during publish
+ * validation. MCP servers should be documented in the mcpServers field rather
+ * than the dependencies field, as they are not installed automatically.
+ *
+ * @param manifest - Parsed skill manifest
+ * @returns Array of dependency names with mcp__ prefix
+ *
+ * @example
+ * ```typescript
+ * const manifest = {
+ *   name: 'my-skill',
+ *   dependencies: ['ao-basics', 'mcp__pixel-art'],
+ *   // ...
+ * };
+ * const mcpDeps = detectMcpInDependencies(manifest);
+ * console.log(mcpDeps); // ['mcp__pixel-art']
+ * ```
+ */
+export function detectMcpInDependencies(manifest: ISkillManifest): string[] {
+  if (!manifest.dependencies || manifest.dependencies.length === 0) {
+    return [];
+  }
+
+  return manifest.dependencies
+    .map((dep) => (typeof dep === 'string' ? dep : dep.name))
+    .filter((name) => name.startsWith('mcp__'));
 }
 
 /**

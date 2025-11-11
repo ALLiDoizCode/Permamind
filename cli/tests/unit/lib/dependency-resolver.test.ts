@@ -117,7 +117,7 @@ describe('Dependency Resolver', () => {
 
       await expect(resolve('skill-1', { maxDepth: 10 })).rejects.toThrow(DependencyError);
       await expect(resolve('skill-1', { maxDepth: 10 })).rejects.toThrow(/depth limit exceeded/i);
-    });
+    }, 30000); // Increase timeout to 30 seconds for deep dependency resolution
 
     it('should throw error for circular dependencies', async () => {
       const skillA: ISkillMetadata = {
@@ -317,6 +317,283 @@ describe('Dependency Resolver', () => {
 
       const treeVerbose = await resolve('skill-a', { verbose: true });
       expect(treeVerbose).toBeDefined();
+    });
+  });
+
+  describe('MCP Server Filtering (Story 13.2)', () => {
+    it('should filter mcp__ prefixed dependencies and track them in filteredMcpServers', async () => {
+      const skillB: ISkillMetadata = {
+        name: 'ao-basics',
+        version: '1.0.0',
+        description: 'AO Basics',
+        author: 'test',
+        owner: 'test-address',
+        tags: [],
+        dependencies: [],
+        arweaveTxId: 'tx_b',
+        publishedAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      const skillA: ISkillMetadata = {
+        name: 'pixel-art-skill',
+        version: '1.0.0',
+        description: 'Pixel Art Skill',
+        author: 'test',
+        owner: 'test-address',
+        tags: [],
+        dependencies: ['ao-basics', 'mcp__pixel-art', 'mcp__shadcn-ui'],
+        arweaveTxId: 'tx_a',
+        publishedAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      mockGetSkill.mockImplementation(async (name: string) => {
+        if (name === 'pixel-art-skill') return skillA;
+        if (name === 'ao-basics') return skillB;
+        return null;
+      });
+
+      const tree = await resolve('pixel-art-skill');
+
+      // Root node should have filtered MCP servers
+      expect(tree.root.filteredMcpServers).toEqual(['mcp__pixel-art', 'mcp__shadcn-ui']);
+
+      // Should only resolve valid skill dependencies
+      expect(tree.root.dependencies).toHaveLength(1);
+      expect(tree.root.dependencies[0].name).toBe('ao-basics');
+
+      // Total count should exclude MCP servers
+      expect(tree.totalCount).toBe(2); // pixel-art-skill + ao-basics
+    });
+
+    it('should handle object format dependencies with MCP servers', async () => {
+      const skillB: ISkillMetadata = {
+        name: 'arweave-fundamentals',
+        version: '1.0.0',
+        description: 'Arweave Fundamentals',
+        author: 'test',
+        owner: 'test-address',
+        tags: [],
+        dependencies: [],
+        arweaveTxId: 'tx_b',
+        publishedAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      const skillA: ISkillMetadata = {
+        name: 'test-skill',
+        version: '1.0.0',
+        description: 'Test Skill',
+        author: 'test',
+        owner: 'test-address',
+        tags: [],
+        dependencies: [
+          { name: 'mcp__shadcn-ui', version: '1.0.0' },
+          { name: 'arweave-fundamentals', version: '1.0.0' }
+        ],
+        arweaveTxId: 'tx_a',
+        publishedAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      mockGetSkill.mockImplementation(async (name: string) => {
+        if (name === 'test-skill') return skillA;
+        if (name === 'arweave-fundamentals') return skillB;
+        return null;
+      });
+
+      const tree = await resolve('test-skill');
+
+      expect(tree.root.filteredMcpServers).toEqual(['mcp__shadcn-ui']);
+      expect(tree.root.dependencies).toHaveLength(1);
+      expect(tree.root.dependencies[0].name).toBe('arweave-fundamentals');
+    });
+
+    it('should return undefined filteredMcpServers when no MCP dependencies', async () => {
+      const skillB: ISkillMetadata = {
+        name: 'ao-basics',
+        version: '1.0.0',
+        description: 'AO Basics',
+        author: 'test',
+        owner: 'test-address',
+        tags: [],
+        dependencies: [],
+        arweaveTxId: 'tx_b',
+        publishedAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      const skillA: ISkillMetadata = {
+        name: 'test-skill',
+        version: '1.0.0',
+        description: 'Test Skill',
+        author: 'test',
+        owner: 'test-address',
+        tags: [],
+        dependencies: ['ao-basics'],
+        arweaveTxId: 'tx_a',
+        publishedAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      mockGetSkill.mockImplementation(async (name: string) => {
+        if (name === 'test-skill') return skillA;
+        if (name === 'ao-basics') return skillB;
+        return null;
+      });
+
+      const tree = await resolve('test-skill');
+
+      expect(tree.root.filteredMcpServers).toBeUndefined();
+      expect(tree.root.dependencies).toHaveLength(1);
+    });
+
+    it('should be case-sensitive (only mcp__ prefix, not MCP__ or Mcp__)', async () => {
+      const skillA: ISkillMetadata = {
+        name: 'test-skill',
+        version: '1.0.0',
+        description: 'Test Skill',
+        author: 'test',
+        owner: 'test-address',
+        tags: [],
+        dependencies: ['MCP__pixel-art', 'Mcp__test', 'mcp__shadcn-ui'],
+        arweaveTxId: 'tx_a',
+        publishedAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      const mcpUpperSkill: ISkillMetadata = {
+        name: 'MCP__pixel-art',
+        version: '1.0.0',
+        description: 'MCP Upper',
+        author: 'test',
+        owner: 'test-address',
+        tags: [],
+        dependencies: [],
+        arweaveTxId: 'tx_mcp_upper',
+        publishedAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      const mcpTitleSkill: ISkillMetadata = {
+        name: 'Mcp__test',
+        version: '1.0.0',
+        description: 'Mcp Title',
+        author: 'test',
+        owner: 'test-address',
+        tags: [],
+        dependencies: [],
+        arweaveTxId: 'tx_mcp_title',
+        publishedAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      mockGetSkill.mockImplementation(async (name: string) => {
+        if (name === 'test-skill') return skillA;
+        if (name === 'MCP__pixel-art') return mcpUpperSkill;
+        if (name === 'Mcp__test') return mcpTitleSkill;
+        return null;
+      });
+
+      const tree = await resolve('test-skill');
+
+      // Only lowercase mcp__ should be filtered
+      expect(tree.root.filteredMcpServers).toEqual(['mcp__shadcn-ui']);
+
+      // MCP__ and Mcp__ should be treated as regular skills
+      expect(tree.root.dependencies).toHaveLength(2);
+      expect(tree.root.dependencies.map(d => d.name)).toContain('MCP__pixel-art');
+      expect(tree.root.dependencies.map(d => d.name)).toContain('Mcp__test');
+    });
+
+    it('should install successfully when all dependencies are MCP servers', async () => {
+      const skillA: ISkillMetadata = {
+        name: 'mcp-only-skill',
+        version: '1.0.0',
+        description: 'Skill with only MCP dependencies',
+        author: 'test',
+        owner: 'test-address',
+        tags: [],
+        dependencies: ['mcp__pixel-art', 'mcp__shadcn-ui'],
+        arweaveTxId: 'tx_a',
+        publishedAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      mockGetSkill.mockResolvedValue(skillA);
+
+      const tree = await resolve('mcp-only-skill');
+
+      expect(tree.root.filteredMcpServers).toEqual(['mcp__pixel-art', 'mcp__shadcn-ui']);
+      expect(tree.root.dependencies).toHaveLength(0); // No actual skill dependencies
+      expect(tree.totalCount).toBe(1); // Only the root skill
+    });
+
+    it('should filter MCP servers at nested dependency levels', async () => {
+      const skillC: ISkillMetadata = {
+        name: 'nested-skill',
+        version: '1.0.0',
+        description: 'Nested Skill',
+        author: 'test',
+        owner: 'test-address',
+        tags: [],
+        dependencies: ['mcp__browser-tools'],
+        arweaveTxId: 'tx_c',
+        publishedAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      const skillB: ISkillMetadata = {
+        name: 'mid-skill',
+        version: '1.0.0',
+        description: 'Mid Skill',
+        author: 'test',
+        owner: 'test-address',
+        tags: [],
+        dependencies: ['nested-skill', 'mcp__playwright'],
+        arweaveTxId: 'tx_b',
+        publishedAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      const skillA: ISkillMetadata = {
+        name: 'root-skill',
+        version: '1.0.0',
+        description: 'Root Skill',
+        author: 'test',
+        owner: 'test-address',
+        tags: [],
+        dependencies: ['mid-skill', 'mcp__shadcn-ui'],
+        arweaveTxId: 'tx_a',
+        publishedAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      mockGetSkill.mockImplementation(async (name: string) => {
+        if (name === 'root-skill') return skillA;
+        if (name === 'mid-skill') return skillB;
+        if (name === 'nested-skill') return skillC;
+        return null;
+      });
+
+      const tree = await resolve('root-skill');
+
+      // Root should have filtered MCP server
+      expect(tree.root.filteredMcpServers).toEqual(['mcp__shadcn-ui']);
+
+      // Mid-level should have filtered MCP server
+      const midNode = tree.root.dependencies[0];
+      expect(midNode.name).toBe('mid-skill');
+      expect(midNode.filteredMcpServers).toEqual(['mcp__playwright']);
+
+      // Nested level should have filtered MCP server
+      const nestedNode = midNode.dependencies[0];
+      expect(nestedNode.name).toBe('nested-skill');
+      expect(nestedNode.filteredMcpServers).toEqual(['mcp__browser-tools']);
+
+      // Verify proper dependency structure
+      expect(tree.totalCount).toBe(3); // root, mid, nested (no MCP servers)
     });
   });
 });

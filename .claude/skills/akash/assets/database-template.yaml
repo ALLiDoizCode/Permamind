@@ -1,0 +1,66 @@
+---
+version: "2.0"
+
+services:
+  db:
+    image: postgres:15
+    expose:
+      - port: 5432
+        as: 5432
+        to:
+          - service: api
+    env:
+      - "POSTGRES_PASSWORD=changeme"
+      - "POSTGRES_USER=dbuser"
+      - "POSTGRES_DB=myapp"
+
+  api:
+    image: node:18-alpine
+    expose:
+      - port: 3000
+        as: 80
+        to:
+          - global: true
+    env:
+      - "DATABASE_URL=postgresql://dbuser:changeme@db:5432/myapp"
+      - "NODE_ENV=production"
+    depends_on:
+      - db
+
+profiles:
+  compute:
+    db:
+      resources:
+        cpu:
+          units: 1.0
+        memory:
+          size: 2Gi
+        storage:
+          size: 10Gi
+    api:
+      resources:
+        cpu:
+          units: 0.5
+        memory:
+          size: 512Mi
+        storage:
+          size: 1Gi
+  placement:
+    dcloud:
+      pricing:
+        db:
+          denom: uakt
+          amount: 5000
+        api:
+          denom: uakt
+          amount: 2000
+
+deployment:
+  db:
+    dcloud:
+      profile: db
+      count: 1
+  api:
+    dcloud:
+      profile: api
+      count: 1

@@ -4,6 +4,20 @@
  */
 
 /**
+ * Bundled file metadata
+ */
+export interface IBundledFile {
+  name: string;
+  icon: string;
+  type: 'markdown' | 'python' | 'javascript' | 'script' | 'text';
+  size: string; // Formatted size like "4.2 KB"
+  description: string;
+  level: 'Level 2' | 'Level 3';
+  preview: string;
+  path?: string;
+}
+
+/**
  * Complete skill metadata stored in AO registry
  * Extends ISkillManifest with registry-specific fields
  */
@@ -29,6 +43,9 @@ export interface ISkillMetadata {
   /** Array of required skill dependencies with versions */
   dependencies: Array<{ name: string; version: string } | string>;
 
+  /** Optional array of required MCP server names (Story 13.1) */
+  mcpServers?: string[];
+
   /** 43-character Arweave transaction ID */
   arweaveTxId: string;
 
@@ -37,6 +54,9 @@ export interface ISkillMetadata {
 
   /** Optional changelog for this version */
   changelog?: string;
+
+  /** Optional bundled files metadata */
+  bundledFiles?: IBundledFile[];
 
   /** Download count for this version */
   downloadCount?: number;

@@ -1,0 +1,49 @@
+---
+version: "2.0"
+
+services:
+  ml-service:
+    image: pytorch/pytorch:latest
+    expose:
+      - port: 8080
+        as: 80
+        to:
+          - global: true
+    env:
+      - "CUDA_VISIBLE_DEVICES=0"
+
+profiles:
+  compute:
+    ml-service:
+      resources:
+        cpu:
+          units: 2.0
+        memory:
+          size: 8Gi
+        storage:
+          size: 20Gi
+        gpu:
+          units: 1
+          attributes:
+            vendor:
+              nvidia:
+                - model: rtx3090
+                - model: rtx4090
+                - model: a100
+  placement:
+    dcloud:
+      attributes:
+        host: akash
+      signedBy:
+        anyOf:
+          - "akash1365yvmc4s7awdyj3n2sav7xfx76adc6dnmlx63"
+      pricing:
+        ml-service:
+          denom: uakt
+          amount: 100000
+
+deployment:
+  ml-service:
+    dcloud:
+      profile: ml-service
+      count: 1

@@ -83,6 +83,15 @@
       "description": "Changes in this version (supports markdown)",
       "minLength": 1,
       "maxLength": 2048
+    },
+    "mcpServers": {
+      "type": "array",
+      "description": "MCP server requirements for this skill. Use this field to document MCP servers (not installable skills). Example: mcpServers: ['mcp__pixel-art', 'mcp__shadcn-ui']. Users install MCP servers via their own installation methods, not via 'skills install'. Use 'dependencies' field for installable skill dependencies.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
     }
   },
   "additionalProperties": false

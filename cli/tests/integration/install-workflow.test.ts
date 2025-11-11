@@ -372,7 +372,7 @@ describe('Install Command Integration', () => {
       );
 
       // Verify getSkill was called but nothing else
-      expect(getSkill).toHaveBeenCalledWith('nonexistent-skill');
+      expect(getSkill).toHaveBeenCalledWith('nonexistent-skill', undefined);
       expect(downloadBundle).not.toHaveBeenCalled();
       expect(extractBundle).not.toHaveBeenCalled();
     });

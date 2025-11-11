@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permamind - Skills Install Demo</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #1e1e1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .terminal {
+            background: #1e1e1e;
+            border: 2px solid #333;
+            border-radius: 8px;
+            width: 900px;
+            box-shadow: 0 20px 60px rgba(0, 255, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: #2d2d2d;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #444;
+        }
+
+        .terminal-button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .terminal-button.close { background: #ff5f56; }
+        .terminal-button.minimize { background: #ffbd2e; }
+        .terminal-button.maximize { background: #27c93f; }
+
+        .terminal-title {
+            color: #999;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .terminal-body {
+            padding: 30px;
+            color: #00ff00;
+            font-size: 16px;
+            line-height: 1.8;
+            position: relative;
+            min-height: 400px;
+        }
+
+        .line {
+            margin: 10px 0;
+            opacity: 0;
+        }
+
+        .line.visible {
+            animation: fadeIn 0.3s ease-in forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .prompt {
+            color: #ffbd2e;
+            font-weight: bold;
+        }
+
+        .command {
+            color: #00ffff;
+        }
+
+        .output {
+            color: #888;
+        }
+
+        .success {
+            color: #27c93f;
+        }
+
+        .highlight {
+            color: #00ffff;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background: #00ff00;
+            animation: blink 1s infinite;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .scanlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                transparent 50%,
+                rgba(0, 255, 0, 0.02) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <div class="terminal-header">
+            <div class="terminal-button close"></div>
+            <div class="terminal-button minimize"></div>
+            <div class="terminal-button maximize"></div>
+            <div class="terminal-title">bash — 100×30</div>
+        </div>
+        <div class="terminal-body">
+            <div class="scanlines"></div>
+
+            <div class="line" id="line1">
+                <span class="prompt">$</span> <span class="command">skills install ao</span>
+            </div>
+
+            <div class="line" id="line2">
+                <span class="output">Searching registry...</span>
+            </div>
+
+            <div class="line" id="line3">
+                <span class="success">✓</span> <span class="output">Found: ao@2.0.1</span>
+            </div>
+
+            <div class="line" id="line4">
+                <span class="success">✓</span> <span class="output">Downloading from Arweave</span>
+            </div>
+
+            <div class="line" id="line5">
+                <span class="success">✓</span> <span class="output">Verifying bundle integrity</span>
+            </div>
+
+            <div class="line" id="line6">
+                <span class="success">✓</span> <span class="output">Resolving dependencies (3 found)</span>
+            </div>
+
+            <div class="line" id="line7">
+                <span class="success">✓</span> <span class="output">Installing to ~/.claude/skills/ao</span>
+            </div>
+
+            <div class="line" id="line8">
+                <span class="success">✓</span> <span class="output">Updating skills-lock.json</span>
+            </div>
+
+            <div class="line" id="line9">
+                <br>
+                <span class="highlight">🎉 Installation complete!</span>
+            </div>
+
+            <div class="line" id="line10">
+                <br>
+                <span class="output">Installed: </span><span class="highlight">ao@2.0.1</span><br>
+                <span class="output">Location: </span><span class="highlight">~/.claude/skills/ao</span><br>
+                <span class="output">Dependencies: </span><span class="highlight">3 installed</span><br>
+                <span class="output">Storage: </span><span class="highlight">Permanent (Arweave)</span>
+            </div>
+
+            <div class="line" id="line11">
+                <br>
+                <span class="prompt">$</span><span class="cursor"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Animation sequence - staggered line appearances
+        const sequence = [
+            { id: 'line1', delay: 500 },
+            { id: 'line2', delay: 1000 },
+            { id: 'line3', delay: 1800 },
+            { id: 'line4', delay: 2400 },
+            { id: 'line5', delay: 3000 },
+            { id: 'line6', delay: 3600 },
+            { id: 'line7', delay: 4200 },
+            { id: 'line8', delay: 4800 },
+            { id: 'line9', delay: 5600 },
+            { id: 'line10', delay: 6200 },
+            { id: 'line11', delay: 7000 }
+        ];
+
+        function runAnimation() {
+            sequence.forEach(item => {
+                setTimeout(() => {
+                    document.getElementById(item.id).classList.add('visible');
+                }, item.delay);
+            });
+        }
+
+        // Start animation
+        runAnimation();
+
+        // Loop animation every 10 seconds (7s animation + 3s pause)
+        setInterval(() => {
+            // Hide all lines
+            sequence.forEach(item => {
+                document.getElementById(item.id).classList.remove('visible');
+            });
+
+            // Restart after brief pause
+            setTimeout(() => {
+                runAnimation();
+            }, 500);
+        }, 10000);
+    </script>
+</body>
+</html>

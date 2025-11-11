@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Creator - CLI</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0e27;
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px;
+        }
+
+        .terminal {
+            background: #1a1e35;
+            border-radius: 8px;
+            width: 1200px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid #2d3348;
+        }
+
+        .header {
+            background: #0f1320;
+            padding: 12px 20px;
+            border-bottom: 1px solid #2d3348;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot.red { background: #ff5f57; }
+        .dot.yellow { background: #ffbd2e; }
+        .dot.green { background: #28c840; }
+
+        .title {
+            color: #6b7280;
+            font-size: 13px;
+            margin-left: 12px;
+        }
+
+        .content {
+            padding: 30px;
+            color: #e5e7eb;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .line {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .prompt {
+            color: #6ee7b7;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .command {
+            color: #e5e7eb;
+        }
+
+        .comment {
+            color: #6b7280;
+            margin-left: 8px;
+        }
+
+        .output {
+            margin-left: 20px;
+            margin-bottom: 16px;
+        }
+
+        .success {
+            color: #6ee7b7;
+        }
+
+        .info {
+            color: #60a5fa;
+        }
+
+        .dim {
+            color: #9ca3af;
+        }
+
+        .box {
+            border: 1px solid #374151;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0 20px 20px;
+            background: rgba(15, 19, 32, 0.5);
+        }
+
+        .box-title {
+            color: #60a5fa;
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .step {
+            margin: 8px 0;
+            padding-left: 20px;
+            color: #d1d5db;
+            position: relative;
+        }
+
+        .step:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #6ee7b7;
+        }
+
+        .cta {
+            margin-top: 30px;
+            padding: 24px;
+            border: 2px solid #6ee7b7;
+            border-radius: 6px;
+            text-align: center;
+            background: rgba(110, 231, 183, 0.05);
+        }
+
+        .cta-title {
+            color: #6ee7b7;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .cta-cmd {
+            color: #e5e7eb;
+            font-size: 18px;
+            background: #0f1320;
+            padding: 12px 24px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 8px;
+        }
+
+        .spacer {
+            height: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <div class="header">
+            <div class="dot red"></div>
+            <div class="dot yellow"></div>
+            <div class="dot green"></div>
+            <span class="title">terminal — skills@permamind</span>
+        </div>
+        <div class="content">
+            <div class="line">
+                <span class="prompt">$</span>
+                <span class="command">skills install skill-creator</span>
+            </div>
+            <div class="output">
+                <div class="dim">→ Installing skill-creator@1.0.1...</div>
+                <div class="success">✓ Installed successfully</div>
+            </div>
+
+            <div class="spacer"></div>
+
+            <div class="line">
+                <span class="prompt">$</span>
+                <span class="command">claude "Help me create a skill for Python testing"</span>
+            </div>
+
+            <div class="box">
+                <div class="box-title">Skill Creator Activated</div>
+                <div class="step">Analyzing domain: Python testing best practices</div>
+                <div class="step">Generating SKILL.md with proper structure</div>
+                <div class="step">Including pytest, unittest, coverage patterns</div>
+                <div class="step">Adding real-world examples & common pitfalls</div>
+            </div>
+
+            <div class="output">
+                <div class="success">✓ Created python-testing-pro/SKILL.md</div>
+                <div class="success">✓ Validated manifest & structure</div>
+                <div class="info">→ Ready to publish!</div>
+            </div>
+
+            <div class="spacer"></div>
+
+            <div class="line">
+                <span class="prompt">$</span>
+                <span class="command">skills publish python-testing-pro</span>
+            </div>
+            <div class="output">
+                <div class="dim">→ Creating bundle...</div>
+                <div class="dim">→ Uploading to Arweave...</div>
+                <div class="success">✓ Published: python-testing-pro@1.0.0</div>
+                <div class="success">✓ Transaction: abc123...def789</div>
+                <div class="info">→ Your skill is now permanent & discoverable!</div>
+            </div>
+
+            <div class="cta">
+                <div class="cta-title">Turn Your Expertise into Permanent Skills</div>
+                <div class="cta-cmd">skills install skill-creator</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

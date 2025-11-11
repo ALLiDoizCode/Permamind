@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Creator - Build Your Own Skills</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6ee7b7 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .hero p {
+            font-size: 20px;
+            color: #94a3b8;
+            max-width: 800px;
+            margin: 0 auto 30px;
+            line-height: 1.6;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .terminal-wrapper {
+            background: #1e293b;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid #334155;
+            animation: fadeInScale 1s ease-out 0.4s both;
+        }
+
+        .terminal-header {
+            background: #0f172a;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .terminal-dot.red { background: #ef4444; }
+        .terminal-dot.yellow { background: #f59e0b; animation-delay: 0.2s; }
+        .terminal-dot.green { background: #10b981; animation-delay: 0.4s; }
+
+        .terminal-title {
+            color: #64748b;
+            font-size: 13px;
+            margin-left: 12px;
+        }
+
+        .terminal-body {
+            padding: 30px;
+            min-height: 600px;
+            position: relative;
+        }
+
+        .command-line {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        .prompt {
+            color: #6ee7b7;
+            margin-right: 8px;
+            flex-shrink: 0;
+            font-weight: 600;
+        }
+
+        .command {
+            color: #e2e8f0;
+            word-break: break-word;
+        }
+
+        .output {
+            color: #94a3b8;
+            margin-left: 28px;
+            margin-bottom: 24px;
+            line-height: 1.8;
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        .success {
+            color: #6ee7b7;
+            font-weight: 600;
+        }
+
+        .info {
+            color: #60a5fa;
+        }
+
+        .highlight {
+            color: #fbbf24;
+            font-weight: 600;
+        }
+
+        .box {
+            border: 2px solid #334155;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0 20px 28px;
+            background: rgba(15, 23, 42, 0.5);
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        .box-title {
+            color: #3b82f6;
+            font-weight: 700;
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+
+        .box-content {
+            color: #cbd5e1;
+            line-height: 1.8;
+        }
+
+        .workflow-step {
+            display: flex;
+            align-items: flex-start;
+            margin: 16px 0;
+            padding: 16px;
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid #3b82f6;
+            border-radius: 4px;
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        .step-number {
+            background: #3b82f6;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        .cta {
+            text-align: center;
+            margin-top: 40px;
+            padding: 30px;
+            background: linear-gradient(135deg, rgba(110, 231, 183, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+            border-radius: 12px;
+            border: 2px solid #334155;
+            opacity: 0;
+        }
+
+        .cta-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #6ee7b7;
+            margin-bottom: 16px;
+        }
+
+        .cta-text {
+            font-size: 16px;
+            color: #94a3b8;
+            margin-bottom: 24px;
+        }
+
+        .cta-command {
+            display: inline-block;
+            background: #0f172a;
+            color: #6ee7b7;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            border: 2px solid #6ee7b7;
+            box-shadow: 0 0 20px rgba(110, 231, 183, 0.3);
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInY {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>Build Your Own Skills</h1>
+            <p>Use the skill-creator meta skill to create, publish, and share your expertise with the Claude community</p>
+        </div>
+
+        <div class="terminal-wrapper">
+            <div class="terminal-header">
+                <div class="terminal-dot red"></div>
+                <div class="terminal-dot yellow"></div>
+                <div class="terminal-dot green"></div>
+                <span class="terminal-title">skills@permamind ~ creating your first skill</span>
+            </div>
+            <div class="terminal-body" id="terminal">
+                <!-- Content will be dynamically inserted -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const terminal = document.getElementById('terminal');
+        let step = 0;
+        const steps = [
+            {
+                type: 'command',
+                delay: 500,
+                content: 'skills install skill-creator'
+            },
+            {
+                type: 'output',
+                delay: 800,
+                content: `<span class="success">✓</span> Installed skill-creator@1.0.1
+<span class="info">→</span> Now you can create professional skills with expert guidance`
+            },
+            {
+                type: 'command',
+                delay: 1200,
+                content: 'claude "Help me create a skill for Python testing best practices"'
+            },
+            {
+                type: 'box',
+                delay: 1000,
+                title: 'Skill Creator Activated',
+                content: `<div class="workflow-step" style="animation: slideIn 0.5s ease-out forwards;">
+    <div class="step-number">1</div>
+    <div class="step-content">Analyzing your domain: <span class="highlight">Python testing</span></div>
+</div>
+<div class="workflow-step" style="animation: slideIn 0.5s ease-out 0.3s forwards;">
+    <div class="step-number">2</div>
+    <div class="step-content">Generating SKILL.md with best practices structure</div>
+</div>
+<div class="workflow-step" style="animation: slideIn 0.5s ease-out 0.6s forwards;">
+    <div class="step-number">3</div>
+    <div class="step-content">Including pytest, unittest, and coverage patterns</div>
+</div>
+<div class="workflow-step" style="animation: slideIn 0.5s ease-out 0.9s forwards;">
+    <div class="step-number">4</div>
+    <div class="step-content">Adding real-world examples and common pitfalls</div>
+</div>`
+            },
+            {
+                type: 'output',
+                delay: 2500,
+                content: `<span class="success">✓</span> Created: python-testing-pro/SKILL.md
+<span class="success">✓</span> Validated manifest structure
+<span class="info">→</span> Ready to publish!`
+            },
+            {
+                type: 'command',
+                delay: 1000,
+                content: 'skills publish python-testing-pro'
+            },
+            {
+                type: 'output',
+                delay: 1200,
+                content: `<span class="info">→</span> Uploading to Arweave...
+<span class="success">✓</span> Published: python-testing-pro@1.0.0
+<span class="success">✓</span> Transaction: abc123...def789
+<span class="info">→</span> Your skill is now permanent and discoverable!`
+            },
+            {
+                type: 'cta',
+                delay: 1500,
+                content: `<div class="cta-title">Ready to Share Your Expertise?</div>
+<div class="cta-text">Create skills for your domain knowledge and help the community</div>
+<div class="cta-command">skills install skill-creator</div>`
+            }
+        ];
+
+        function addElement(element) {
+            terminal.appendChild(element);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function createCommand(text) {
+            const line = document.createElement('div');
+            line.className = 'command-line';
+            line.innerHTML = `
+                <span class="prompt">$</span>
+                <span class="command">${text}</span>
+            `;
+            line.style.animation = 'slideIn 0.4s ease-out forwards';
+            return line;
+        }
+
+        function createOutput(text) {
+            const output = document.createElement('div');
+            output.className = 'output';
+            output.innerHTML = text;
+            output.style.animation = 'slideIn 0.4s ease-out forwards';
+            return output;
+        }
+
+        function createBox(title, content) {
+            const box = document.createElement('div');
+            box.className = 'box';
+            box.innerHTML = `
+                <div class="box-title">${title}</div>
+                <div class="box-content">${content}</div>
+            `;
+            box.style.animation = 'slideInY 0.5s ease-out forwards';
+            return box;
+        }
+
+        function createCTA(content) {
+            const cta = document.createElement('div');
+            cta.className = 'cta';
+            cta.innerHTML = content;
+            cta.style.animation = 'slideInY 0.6s ease-out forwards';
+            return cta;
+        }
+
+        function runStep() {
+            if (step >= steps.length) {
+                // Loop back to start after delay
+                setTimeout(() => {
+                    terminal.innerHTML = '';
+                    step = 0;
+                    runStep();
+                }, 3000);
+                return;
+            }
+
+            const current = steps[step];
+
+            setTimeout(() => {
+                let element;
+                switch(current.type) {
+                    case 'command':
+                        element = createCommand(current.content);
+                        break;
+                    case 'output':
+                        element = createOutput(current.content);
+                        break;
+                    case 'box':
+                        element = createBox(current.title, current.content);
+                        break;
+                    case 'cta':
+                        element = createCTA(current.content);
+                        break;
+                }
+
+                if (element) {
+                    addElement(element);
+                }
+
+                step++;
+                runStep();
+            }, current.delay);
+        }
+
+        // Start animation
+        runStep();
+    </script>
+</body>
+</html>

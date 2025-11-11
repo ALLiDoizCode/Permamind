@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Creator</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .hero h1 {
+            font-size: 64px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6ee7b7 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }
+
+        .hero p {
+            font-size: 24px;
+            color: #94a3b8;
+            max-width: 900px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .terminal {
+            background: #1e293b;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid #334155;
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: #0f172a;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot.red { background: #ef4444; }
+        .dot.yellow { background: #f59e0b; }
+        .dot.green { background: #10b981; }
+
+        .terminal-title {
+            color: #64748b;
+            font-size: 13px;
+            margin-left: 12px;
+        }
+
+        .terminal-body {
+            padding: 50px;
+            min-height: 400px;
+        }
+
+        .line {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+            font-size: 20px;
+        }
+
+        .prompt {
+            color: #6ee7b7;
+            margin-right: 12px;
+            font-weight: 700;
+        }
+
+        .command {
+            color: #e2e8f0;
+        }
+
+        .highlight {
+            color: #60a5fa;
+            font-weight: 700;
+        }
+
+        .output {
+            margin: 20px 0 40px 32px;
+            color: #94a3b8;
+            font-size: 18px;
+            line-height: 1.8;
+        }
+
+        .success {
+            color: #6ee7b7;
+        }
+
+        .divider {
+            height: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>Build Your Own Skills</h1>
+            <p>Turn your expertise into permanent Claude skills with the skill-creator meta skill</p>
+        </div>
+
+        <div class="terminal">
+            <div class="terminal-header">
+                <div class="dot red"></div>
+                <div class="dot yellow"></div>
+                <div class="dot green"></div>
+                <span class="terminal-title">terminal</span>
+            </div>
+
+            <div class="terminal-body">
+                <!-- Step 1: Install -->
+                <div class="line">
+                    <span class="prompt">$</span>
+                    <span class="command">skills install <span class="highlight">skill-creator</span></span>
+                </div>
+                <div class="output">
+                    <div class="success">✓ Installed skill-creator@1.0.1</div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Step 2: Create with Claude -->
+                <div class="line">
+                    <span class="prompt">></span>
+                    <span class="command">Help me create a skill for <span class="highlight">[your expertise]</span></span>
+                </div>
+                <div class="output">
+                    <div class="success">✓ Generating SKILL.md structure...</div>
+                    <div class="success">✓ Ready to publish!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

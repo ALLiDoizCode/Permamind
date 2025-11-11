@@ -7,7 +7,7 @@ This repository uses GitHub Actions for continuous integration and deployment wi
 ### 1. **Test Workflow** (`test.yml`)
 - **Triggers**: Push and PR to `development` and `main` branches
 - **Purpose**: Run tests on all code changes
-- **Node Versions**: Tests on Node 18.x and 20.x
+- **Node Versions**: Tests on Node 20.x
 - **Steps**:
   - Checkout code
   - Install dependencies
@@ -21,7 +21,7 @@ This repository uses GitHub Actions for continuous integration and deployment wi
 - **Requirements**: All tests must pass first
 - **Versioning**: Automatically bumps patch version
 - **Steps**:
-  1. Run full test suite (Node 18.x and 20.x)
+  1. Run full test suite (Node 20.x)
   2. Build package
   3. Bump version (patch: x.y.Z)
   4. Push version tag to Git

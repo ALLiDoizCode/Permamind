@@ -1,36 +1,20 @@
 /**
  * Install command implementation
  * Handles skill installation with dependency resolution
+ *
+ * This module provides a thin CLI wrapper around InstallService,
+ * mapping service progress callbacks to ora spinners and handling
+ * CLI-specific presentation concerns.
  */
 
 import { Command } from 'commander';
 import * as path from 'path';
 import * as os from 'os';
-import { promises as fs } from 'fs';
 import { Ora } from 'ora';
 import { IInstallOptions, IInstallResult } from '../types/commands.js';
-import { getSkill } from '../clients/ao-registry-client.js';
-import { downloadBundle } from '../clients/arweave-client.js';
-import { resolve as resolveDependencies } from '../lib/dependency-resolver.js';
-import { extract as extractBundle } from '../lib/bundler.js';
-import { update as updateLockFile, resolveLockFilePath } from '../lib/lock-file-manager.js';
-import { ISkillManifest } from '../types/skill.js';
-import { IInstalledSkillRecord } from '../types/lock-file.js';
-import { IDependencyNode } from '../types/dependency.js';
+import { InstallService, IInstallServiceOptions, InstallProgressEvent } from '../lib/install-service.js';
 import { isInteractive } from '../utils/terminal.js';
 import { createSpinner, INoOpSpinner } from '../utils/progress-factory.js';
-
-/**
- * Installation phase messages
- */
-const INSTALL_PHASES = {
-  QUERY_REGISTRY: 'Querying registry...',
-  RESOLVE_DEPENDENCIES: 'Resolving dependencies...',
-  DOWNLOAD_BUNDLES: 'Downloading bundles...',
-  INSTALL_FILES: 'Installing files...',
-  UPDATE_LOCK_FILE: 'Updating lock file...',
-  COMPLETE: 'Complete!'
-} as const;
 
 /**
  * Create the install command
@@ -88,7 +72,6 @@ Documentation:
       let spinner: Ora | INoOpSpinner | undefined;
 
       try {
-
         await execute(skillName, options);
         process.exit(0);
       } catch (error) {
@@ -119,7 +102,7 @@ export function resolveInstallLocation(options: IInstallOptions): string {
 }
 
 /**
- * Execute skill installation
+ * Execute skill installation using InstallService
  * @param skillName - Name of skill to install
  * @param options - Installation options
  * @returns Installation result with metrics
@@ -128,250 +111,112 @@ export async function execute(
   skillNameWithVersion: string,
   options: IInstallOptions
 ): Promise<IInstallResult> {
-  const startTime = performance.now();
   const interactive = isInteractive();
   let spinner: Ora | INoOpSpinner | undefined;
+  let lastEventType: string | undefined;
 
-  try {
-    // Parse name@version format
-    const [skillName, requestedVersion] = skillNameWithVersion.includes('@')
-      ? skillNameWithVersion.split('@')
-      : [skillNameWithVersion, undefined];
+  // Resolve installation location for display purposes
+  const installLocation = resolveInstallLocation(options);
 
-    // Task 3: Resolve installation location
-    const installLocation = resolveInstallLocation(options);
+  // Map CLI options to service options
+  const serviceOptions: IInstallServiceOptions = {
+    global: options.global,
+    force: options.force,
+    verbose: options.verbose,
+    noLock: options.noLock,
 
-    // Validate installation directory is writable
-    try {
-      await fs.mkdir(installLocation, { recursive: true });
-      await fs.access(installLocation, fs.constants.W_OK);
-    } catch (error) {
-      throw new Error(
-        `Permission denied writing to ${installLocation}\n` +
-        `→ Solution: Check directory permissions\n` +
-        `→ Try: chmod 755 ${installLocation} or use --local flag for project installation`
-      );
-    }
-
-    // Task 9: Installation progress indicators
-    spinner = createSpinner(INSTALL_PHASES.QUERY_REGISTRY, interactive);
-
-    // Task 4: Query registry for skill metadata (with optional version)
-    const metadataOrNull = await getSkill(skillName, requestedVersion);
-
-    if (metadataOrNull === null) {
-      spinner.fail();
-      throw new Error(
-        `Skill '${skillName}' not found in registry\n` +
-        `→ Solution: Run 'skills search ${skillName}' to find available skills\n` +
-        `→ Try: Check skill name spelling`
-      );
-    }
-
-    // Type narrowing: metadataOrNull is confirmed to be ISkillManifest here
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- getSkill return type is ISkillManifest | null, narrowed by null check above
-    const metadata = metadataOrNull as ISkillManifest;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Type narrowed to ISkillManifest
-    spinner.succeed(`Found ${metadata.name}@${metadata.version}`);
-
-    // Task 5: Resolve dependencies
-    spinner = createSpinner(INSTALL_PHASES.RESOLVE_DEPENDENCIES, interactive);
-
-    try {
-      const tree = await resolveDependencies(skillName, {
-        maxDepth: 10,
-        skipInstalled: options.force !== true,
-        verbose: options.verbose === true
-      });
-
-      if (options.verbose === true && tree.flatList.length > 0) {
-        spinner.info('Dependency Tree:');
-        tree.flatList.forEach((node: IDependencyNode) => {
-          const indent = '  '.repeat(node.depth);
-          const treeSpinner = createSpinner(`${indent}${node.name}@${node.version}`, interactive);
-          treeSpinner.info();
-        });
-      }
-
-      spinner.succeed(`Resolved ${tree.flatList.length} total packages`);
-
-      // Task 6: Download bundles with progress
-      const bundlesToInstall = tree.flatList;
-      const installedSkills: string[] = [];
-      let totalSize = 0;
-
-      for (let i = 0; i < bundlesToInstall.length; i++) {
-        const node = bundlesToInstall[i];
-        const skillMetadata = await getSkill(node.name);
-
-        if (!skillMetadata) {
-          spinner = createSpinner('', interactive);
-          spinner.fail(`Skill '${node.name}' metadata not found`);
-          continue;
+    // Progress callback maps service events to ora spinners
+    progressCallback: (event: InstallProgressEvent) => {
+      // Handle different event types
+      if (event.type === 'query-registry') {
+        if (spinner) {
+          spinner.succeed();
         }
-
-        spinner = createSpinner(`Downloading ${node.name}@${node.version} (${i + 1}/${bundlesToInstall.length})`, interactive);
-
-        const progressCallback = (progress: number): void => {
-          spinner!.text = `Downloading ${node.name}@${node.version} (${Math.round(progress)}%)`;
-        };
-
-        let buffer: Buffer;
-        try {
-          buffer = await downloadBundle(skillMetadata.arweaveTxId, { progressCallback });
-        } catch (error) {
-          spinner.fail();
-          throw new Error(
-            `Failed to download bundle from Arweave\n` +
-            `→ Solution: Check internet connection and retry\n` +
-            `→ Try: Use alternative gateway via .skillsrc config`
-          );
+        spinner = createSpinner(event.message, interactive);
+      } else if (event.type === 'resolve-dependencies') {
+        if (spinner) {
+          spinner.succeed();
         }
-
-        totalSize += buffer.length;
-        spinner.succeed(`Downloaded ${node.name}@${node.version} (${(buffer.length / 1024).toFixed(2)} KB)`);
-
-        // Task 7: Extract bundle
-        spinner = createSpinner(`Installing ${node.name}@${node.version}...`, interactive);
-
-        const targetDir = path.join(installLocation, node.name);
-
-        // Check if skill already installed
-        try {
-          await fs.access(path.join(targetDir, 'SKILL.md'));
-
-          if (options.force !== true) {
-            spinner.warn(`Skill '${node.name}' already installed. Use --force to overwrite.`);
-            continue;
+        spinner = createSpinner(event.message, interactive);
+      } else if (event.type === 'download-bundle') {
+        // Download bundle events have nested progress (percentage)
+        if (lastEventType !== 'download-bundle' || !spinner) {
+          if (spinner) {
+            spinner.succeed();
           }
-        } catch {
-          // Skill not installed, proceed
-        }
-
-        try {
-          await extractBundle(buffer, {
-            targetDir,
-            force: options.force === true,
-            verbose: options.verbose === true
-          });
-        } catch (error) {
-          spinner.fail();
-          throw new Error(
-            `Failed to extract bundle\n` +
-            `→ Solution: Check disk space and permissions\n` +
-            `→ Error: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-
-        spinner.succeed(`Installed ${node.name}@${node.version}`);
-        installedSkills.push(`${node.name}@${node.version}`);
-
-        // Task 8: Update lock file
-        if (options.noLock !== true) {
-          try {
-            const lockFilePath = resolveLockFilePath(installLocation);
-            const installedRecord: IInstalledSkillRecord = {
-              name: node.name,
-              version: node.version,
-              arweaveTxId: skillMetadata.arweaveTxId,
-              installedAt: Date.now(),
-              installedPath: targetDir,
-              dependencies: node.dependencies.map((dep: IDependencyNode) => ({
-                name: dep.name,
-                version: dep.version,
-                arweaveTxId: '', // Will be filled during resolution
-                installedAt: 0,
-                installedPath: '',
-                dependencies: [],
-                isDirectDependency: false
-              })),
-              isDirectDependency: i === bundlesToInstall.length - 1 // Last item is root skill
-            };
-
-            await updateLockFile(installedRecord, lockFilePath);
-          } catch (error) {
-            // Graceful degradation - warn but don't fail installation
-            if (options.verbose === true) {
-              const warnSpinner = createSpinner(`Failed to update lock file: ${error instanceof Error ? error.message : String(error)}`, interactive);
-              warnSpinner.warn();
+          spinner = createSpinner(event.message, interactive);
+        } else {
+          // Update existing spinner with percentage if available
+          if (spinner) {
+            if (event.percent !== undefined) {
+              spinner.text = `${event.message} (${Math.round(event.percent)}%)`;
+            } else {
+              spinner.text = event.message;
             }
           }
         }
-      }
-
-      // Task 10: Record download (fire-and-forget, non-critical)
-      try {
-        const { loadConfig, resolveWalletPath } = await import('../lib/config-loader.js');
-        const { load: loadWallet } = await import('../lib/wallet-manager.js');
-        const { recordDownload } = await import('../clients/ao-registry-client.js');
-        const logger = (await import('../utils/logger.js')).default;
-
-        const config = await loadConfig();
-        const walletPath = resolveWalletPath(undefined, config);
-
-        if (walletPath) {
-          const wallet = await loadWallet(walletPath);
-          await recordDownload(metadata.name, metadata.version, wallet);
-          logger.debug('Download recorded', { name: metadata.name, version: metadata.version });
+      } else if (event.type === 'extract-bundle') {
+        if (spinner) {
+          spinner.succeed();
         }
-      } catch (error) {
-        // Silently ignore download tracking errors - non-critical feature
+        spinner = createSpinner(event.message, interactive);
+      } else if (event.type === 'update-lock-file') {
+        if (event.message.includes('Warning:')) {
+          // Warning message - show as warning
+          if (options.verbose === true && spinner) {
+            const warnSpinner = createSpinner(event.message, interactive);
+            warnSpinner.warn();
+          }
+        } else {
+          // Normal lock file update message
+          if (spinner && lastEventType !== 'update-lock-file') {
+            spinner.succeed();
+          }
+        }
+      } else if (event.type === 'complete') {
+        if (spinner) {
+          spinner.succeed();
+        }
       }
 
-      // Task 11: Success message
-      const elapsedTime = (performance.now() - startTime) / 1000;
-      const dependencyCount = installedSkills.length - 1; // Exclude root skill
+      lastEventType = event.type;
+    },
+  };
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Type narrowed to ISkillManifest earlier
-      spinner = createSpinner(`Success: Installed ${metadata.name}@${metadata.version} with ${dependencyCount} dependencies in ${elapsedTime.toFixed(2)}s`, interactive);
+  try {
+    // Call InstallService
+    const service = new InstallService();
+    const result = await service.install(skillNameWithVersion, serviceOptions);
+
+    // Display final success message (CLI presentation responsibility)
+    if (spinner) {
       spinner.succeed();
-
-      const locationSpinner = createSpinner(`Location: ${installLocation}`, interactive);
-      locationSpinner.info();
-
-      if (options.verbose === true && installedSkills.length > 0) {
-        const packagesSpinner = createSpinner('Installed packages:', interactive);
-        packagesSpinner.info();
-        installedSkills.forEach((skill: string) => {
-          const skillSpinner = createSpinner(`  - ${skill}`, interactive);
-          skillSpinner.info();
-        });
-      }
-
-      return {
-        installedSkills,
-        dependencyCount,
-        totalSize,
-        elapsedTime
-      };
-
-    } catch (error) {
-      if (spinner !== undefined) {
-        spinner.fail();
-      }
-
-      // Task 11: Error handling
-      if (error instanceof Error) {
-        if (error.message.includes('Circular dependency')) {
-          throw new Error(
-            `Circular dependency detected\n` +
-            `→ Solution: Contact skill author to fix dependency cycle\n` +
-            `→ Report: File issue at skill repository`
-          );
-        }
-
-        if (error.message.includes('ENOSPC')) {
-          throw new Error(
-            `Insufficient disk space for installation\n` +
-            `→ Solution: Free up disk space or use different installation directory`
-          );
-        }
-      }
-
-      throw error;
     }
+
+    // Extract skill name and version from first installed skill for success message
+    const firstSkill = result.installedSkills[result.installedSkills.length - 1]; // Last is root
+    const successMessage = `Success: Installed ${firstSkill} with ${result.dependencyCount} dependencies in ${result.elapsedTime.toFixed(2)}s`;
+    spinner = createSpinner(successMessage, interactive);
+    spinner.succeed();
+
+    // Show installation location
+    const locationSpinner = createSpinner(`Location: ${installLocation}`, interactive);
+    locationSpinner.info();
+
+    // Show verbose package list if requested
+    if (options.verbose === true && result.installedSkills.length > 0) {
+      const packagesSpinner = createSpinner('Installed packages:', interactive);
+      packagesSpinner.info();
+      result.installedSkills.forEach((skill: string) => {
+        const skillSpinner = createSpinner(`  - ${skill}`, interactive);
+        skillSpinner.info();
+      });
+    }
+
+    return result;
   } catch (error) {
-    if (spinner !== undefined) {
+    // Let service errors propagate (they're already formatted with solutions)
+    if (spinner) {
       spinner.fail();
     }
     throw error;

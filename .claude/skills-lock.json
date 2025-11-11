@@ -1,0 +1,44 @@
+{
+  "lockfileVersion": 1,
+  "generatedAt": 1761302182097,
+  "skills": [
+    {
+      "name": "aolite",
+      "version": "1.0.1",
+      "arweaveTxId": "o5iawVZJo0F3RNd3H9yRtsj9aezoqtTAACvgUXCJEbA",
+      "installedAt": 1761302182097,
+      "installedPath": "/Users/jonathangreen/Documents/Permamind/.claude/skills/aolite",
+      "dependencies": [],
+      "isDirectDependency": true
+    },
+    {
+      "name": "skill-creator",
+      "version": "1.0.0",
+      "arweaveTxId": "3K2__gEzXcL6UR-jhfUr8xTji4H5Q1pNspYyw605iCE",
+      "installedAt": 1761301466937,
+      "installedPath": "/Users/jonathangreen/Documents/Permamind/.claude/skills/skill-creator",
+      "dependencies": [],
+      "isDirectDependency": true
+    },
+    {
+      "name": "ao",
+      "version": "1.0.2",
+      "arweaveTxId": "hfLply5ttpgGgWnWVJepFvhO5WngvCaxiGoB3HOTuEc",
+      "installedAt": 1761302181615,
+      "installedPath": "/Users/jonathangreen/Documents/Permamind/.claude/skills/ao",
+      "dependencies": [
+        {
+          "name": "aolite",
+          "version": "1.0.1",
+          "arweaveTxId": "",
+          "installedAt": 0,
+          "installedPath": "",
+          "dependencies": [],
+          "isDirectDependency": false
+        }
+      ],
+      "isDirectDependency": false
+    }
+  ],
+  "installLocation": "/Users/jonathangreen/Documents/Permamind/.claude"
+}

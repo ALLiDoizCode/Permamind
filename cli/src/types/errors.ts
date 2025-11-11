@@ -40,10 +40,14 @@ export function getExitCode(error: unknown): number {
   if (error instanceof ConfigurationError) return ExitCode.USER_ERROR;
   if (error instanceof AuthorizationError) return ExitCode.USER_ERROR;
   if (error instanceof DependencyError) return ExitCode.USER_ERROR;
+  if (error instanceof InvalidMnemonicError) return ExitCode.USER_ERROR;
+  if (error instanceof InvalidSeedError) return ExitCode.USER_ERROR;
   if (error instanceof UserCancelledError) return ExitCode.SUCCESS;
   if (error instanceof NetworkError) return ExitCode.SYSTEM_ERROR;
   if (error instanceof FileSystemError) return ExitCode.SYSTEM_ERROR;
   if (error instanceof ParseError) return ExitCode.SYSTEM_ERROR;
+  if (error instanceof KeyGenerationError) return ExitCode.SYSTEM_ERROR;
+  if (error instanceof JWKValidationError) return ExitCode.SYSTEM_ERROR;
   return ExitCode.SYSTEM_ERROR; // Default for unexpected errors
 }
 
@@ -70,13 +74,15 @@ export class ValidationError extends Error {
    * @param value - The invalid value that was provided
    * @param expected - Optional description of expected format/value
    * @param schemaError - Optional JSON Schema validation error details
+   * @param code - Optional error code for categorization (e.g., 'empty', 'invalid_protocol', 'missing_hostname', 'malformed')
    */
   constructor(
     message: string,
     public field: string,
     public value: unknown,
     public expected?: string,
-    public schemaError?: string
+    public schemaError?: string,
+    public code?: string
   ) {
     super(message);
     this.name = 'ValidationError';
@@ -302,6 +308,115 @@ export class DependencyError extends Error {
     this.name = 'DependencyError';
     if (typeof Error.captureStackTrace === 'function') {
       Error.captureStackTrace(this, DependencyError);
+    }
+  }
+}
+
+/**
+ * Error thrown when BIP39 mnemonic validation fails
+ *
+ * Used when provided mnemonic is not valid BIP39 (wrong wordlist, incorrect word count)
+ * Never includes the actual mnemonic in error message for security
+ *
+ * @example
+ * ```typescript
+ * throw new InvalidMnemonicError(
+ *   'Invalid BIP39 mnemonic phrase → Solution: Provide a valid 12-word BIP39 mnemonic using standard wordlist'
+ * );
+ * ```
+ */
+export class InvalidMnemonicError extends Error {
+  /**
+   * @param message - User-friendly error message with solution guidance
+   */
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidMnemonicError';
+    if (typeof Error.captureStackTrace === 'function') {
+      Error.captureStackTrace(this, InvalidMnemonicError);
+    }
+  }
+}
+
+/**
+ * Error thrown when seed buffer validation fails
+ *
+ * Used when generated seed buffer is too short (<32 bytes)
+ * Never includes the actual seed in error message for security
+ *
+ * @example
+ * ```typescript
+ * throw new InvalidSeedError(
+ *   'Seed buffer too short (16 bytes, minimum 32 bytes required) → Solution: Use a valid 12-word BIP39 mnemonic'
+ * );
+ * ```
+ */
+export class InvalidSeedError extends Error {
+  /**
+   * @param message - User-friendly error message with solution guidance
+   */
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidSeedError';
+    if (typeof Error.captureStackTrace === 'function') {
+      Error.captureStackTrace(this, InvalidSeedError);
+    }
+  }
+}
+
+/**
+ * Error thrown when RSA key generation fails
+ *
+ * Used when deterministic RSA key material generation encounters errors
+ * Never includes private key components in error message for security
+ *
+ * @example
+ * ```typescript
+ * throw new KeyGenerationError(
+ *   'Failed to generate RSA key material from seed → Solution: Ensure seed buffer is at least 32 bytes',
+ *   originalError
+ * );
+ * ```
+ */
+export class KeyGenerationError extends Error {
+  /**
+   * @param message - User-friendly error message with solution guidance
+   * @param cause - Original error that caused the key generation failure
+   */
+  constructor(
+    message: string,
+    public cause?: Error
+  ) {
+    super(message);
+    this.name = 'KeyGenerationError';
+    if (typeof Error.captureStackTrace === 'function') {
+      Error.captureStackTrace(this, KeyGenerationError);
+    }
+  }
+}
+
+/**
+ * Error thrown when JWK validation with Arweave SDK fails
+ *
+ * Used when generated JWK cannot derive a valid Arweave address
+ * Never includes private key components in error message for security
+ *
+ * @example
+ * ```typescript
+ * throw new JWKValidationError(
+ *   'Generated JWK failed Arweave SDK validation → Solution: Ensure RSA key material is properly formatted with 4096-bit modulus'
+ * );
+ * ```
+ */
+export class JWKValidationError extends Error {
+  /**
+   * @param message - User-friendly error message with solution guidance
+   */
+  constructor(message: string) {
+    super(message);
+    this.name = 'JWKValidationError';
+    if (typeof Error.captureStackTrace === 'function') {
+      Error.captureStackTrace(this, JWKValidationError);
     }
   }
 }

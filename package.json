@@ -4,7 +4,8 @@
   "description": "Decentralized registry for Claude Agent Skills with CLI tooling for publish, search, and install operations",
   "private": true,
   "workspaces": [
-    "cli"
+    "cli",
+    "mcp-server"
   ],
   "engines": {
     "node": ">=20.11.0",
@@ -15,11 +16,12 @@
     "test": "jest --watch",
     "test:once": "jest",
     "test:unit": "jest --testPathPattern=tests/unit --watch",
+    "test:unit:once": "jest --testPathPattern=tests/unit",
     "test:integration": "jest --testPathPattern=tests/integration",
     "test:coverage": "jest --coverage --coverageThreshold='{\"global\":{\"lines\":100}}'",
     "test:ao": "cd ao-process && cd tests && lua run-all.lua",
     "tdd": "jest --watch --verbose",
-    "lint": "eslint . --ext .ts",
+    "lint": "eslint cli --ext .ts",
     "format": "prettier --write \"**/*.{ts,js,json,md}\""
   },
   "devDependencies": {

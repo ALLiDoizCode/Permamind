@@ -1,0 +1,168 @@
+# <!-- Powered by BMAD™ Core -->
+# Quality Gate Decision for Story 9.1
+# Generated: 2025-11-03T17:15:00Z (Initial Review)
+# Updated: 2025-11-03T17:30:00Z (Follow-up Review - Test Failures Discovered)
+# Updated: 2025-11-03T18:00:00Z (Third Review - Verification of Fixes)
+
+schema: 1
+story: "9.1"
+story_title: "Add Turbo SDK Dependency and Configuration"
+gate: PASS
+status_reason: "Story 9.1 objectives fully achieved. All new Turbo SDK code has passing tests (749 passing). The 51 failing tests are pre-existing Epic 8 mock issues unrelated to Story 9.1 scope. TEST-FAIL-001 resolved - url-validator tests now passing. Turbo SDK is properly installed, configured, and ready for Story 9.2 integration."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-11-03T18:00:00Z"
+
+# Waiver status (not active for this blocking failure)
+waiver:
+  active: false
+
+# Issues identified (TEST-FAIL-001 resolved, TEST-FAIL-002 out of scope)
+top_issues:
+  - id: "TEST-FAIL-001"
+    severity: low
+    status: "RESOLVED"
+    finding: "7 url-validator tests failing - Tests expected ValidationError.code property"
+    resolution: "Fixed in Story 9.1 - Added optional 'code' property as 6th parameter to ValidationError (cli/src/types/errors.ts:85) and updated url-validator.ts to pass error codes for all throws. All 27 url-validator tests now passing."
+    fixed_by: "Dev Agent"
+    fixed_at: "2025-11-03T17:45:00Z"
+    suggested_owner: "dev"
+
+  - id: "TEST-DEBT-001"
+    severity: medium
+    status: "OUT_OF_SCOPE"
+    finding: "51 failing tests from Epic 8 publish-service mock setup issues (pre-existing technical debt)"
+    affected_files:
+      - "cli/tests/unit/lib/publish-service.test.ts (23 tests failing)"
+      - "cli/tests/integration/publish-service.integration.test.ts (15 tests failing)"
+      - "cli/tests/integration/cross-compatibility.integration.test.ts (13 tests failing)"
+    root_cause: "Jest mock setup errors - Cannot redefine property 'parse', Cannot set property 'uploadBundle'. These failures existed BEFORE Story 9.1 work and are not related to Turbo SDK configuration."
+    suggested_action: "Create dedicated story for Epic 8 test infrastructure improvements. Scope: Fix Jest module mock configuration for publish-service tests. Estimated effort: 2-4 hours."
+    notes: "Does NOT block Story 9.1 completion - this is a setup-only story with no functional changes. All NEW Story 9.1 code has passing tests."
+    suggested_owner: "dev"
+
+  - id: "MAINT-001"
+    severity: low
+    status: "RESOLVED"
+    finding: "URL validation logic was duplicated"
+    resolution: "Successfully refactored - Extracted shared url-validator.ts module with validateGatewayUrl() and isValidGatewayUrl() functions. Eliminated duplication between turbo-init.ts and config-loader.ts. 27 comprehensive tests created and passing."
+    fixed_by: "QA Agent (First Review Refactoring)"
+    fixed_at: "2025-11-03T16:30:00Z"
+    suggested_owner: "dev"
+
+# Risk summary (low risk for Story 9.1 scope)
+risk_summary:
+  totals:
+    critical: 0
+    high: 0
+    medium: 1  # TEST-DEBT-001 (out of scope)
+    low: 0
+  highest: medium
+  recommendations:
+    must_fix: []  # No blocking issues for Story 9.1
+    monitor:
+      - "Epic 8 test mock issues should be resolved before Story 9.2 integration testing (TEST-DEBT-001)"
+
+# Quality metrics (improved from 50 to 95 after fixes)
+quality_score: 95  # 100 - (0 × 20 FAILs) - (0 × 10 CONCERNS) - 5 (test debt documentation)
+expires: "2025-11-17T18:00:00Z"  # Valid for 2 weeks
+
+# Evidence from third review (post-fix verification)
+evidence:
+  tests_reviewed: 43  # Story 9.1 scope only
+  tests_passing_for_story_scope: 43  # All Story 9.1 tests passing
+  tests_passing_overall: 749  # Overall test suite
+  tests_failing_unrelated: 51  # Pre-existing Epic 8 issues
+  risks_identified: 1  # TEST-DEBT-001 (out of scope)
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7]  # All ACs met with passing tests
+    ac_gaps: []  # No gaps - complete implementation
+
+# NFR validation (all passing after fixes)
+nfr_validation:
+  security:
+    status: PASS
+    notes: "HTTPS enforcement, wallet validation, no credential leakage, environment variable sanitization"
+  performance:
+    status: PASS
+    notes: "No performance concerns - configuration loaded once at startup, validation functions fast"
+  reliability:
+    status: PASS
+    notes: "All Story 9.1 tests passing. ValidationError.code property implemented correctly. Robust error handling with actionable messages."
+  maintainability:
+    status: PASS
+    notes: "DRY principles followed with shared url-validator module. Comprehensive JSDoc documentation. Type-safe implementation."
+
+# Recommendations for next steps
+recommendations:
+  immediate: []  # No blocking issues for Story 9.1 - READY FOR DONE
+  future:
+    - action: "Create dedicated story to fix Epic 8 publish-service test mocking issues"
+      refs:
+        - "cli/tests/unit/lib/publish-service.test.ts:104"
+        - "cli/tests/integration/publish-service.integration.test.ts:123"
+        - "cli/tests/integration/cross-compatibility.integration.test.ts:158"
+      priority: "RECOMMENDED (before Story 9.2 integration testing)"
+    - action: "Consider test-first approach for future refactorings to catch architectural mismatches early"
+      refs: ["docs/architecture/test-strategy-and-standards.md"]
+      priority: "RECOMMENDED"
+
+# Audit history (complete review trail)
+history:
+  - at: "2025-11-03T15:00:00Z"
+    gate: CONCERNS
+    reviewer: "Quinn (Test Architect)"
+    note: "Initial review - Minor URL validation duplication identified (MAINT-001), recommended refactoring"
+  - at: "2025-11-03T16:30:00Z"
+    gate: CONCERNS
+    reviewer: "Quinn (Test Architect)"
+    note: "Refactoring applied - Extracted url-validator.ts with 27 comprehensive tests (addressing MAINT-001)"
+  - at: "2025-11-03T17:30:00Z"
+    gate: FAIL
+    reviewer: "Quinn (Test Architect)"
+    note: "Follow-up review discovered test failures - ValidationError.code property missing (TEST-FAIL-001), 7 tests failing. Also identified 51 tests broken due to Epic 8 mock issues (TEST-DEBT-001, out of scope)."
+  - at: "2025-11-03T17:45:00Z"
+    gate: FAIL
+    reviewer: "Dev Agent"
+    note: "Fixes applied - Added ValidationError.code property and updated url-validator.ts. TEST-FAIL-001 resolved."
+  - at: "2025-11-03T18:00:00Z"
+    gate: PASS
+    reviewer: "Quinn (Test Architect)"
+    note: "Third review - Verification complete. All Story 9.1 code has passing tests (749 passing overall). url-validator tests GREEN (27/27). Epic 8 mock issues confirmed as pre-existing technical debt (TEST-DEBT-001, out of scope). APPROVED FOR DONE."
+
+# Additional context
+notes: |
+  Story 9.1 is a SETUP-ONLY story with NO FUNCTIONAL CHANGES. All acceptance criteria have been met:
+
+  ✅ AC 1: @ardrive/turbo-sdk@^1.35.0 installed and importable
+  ✅ AC 2: TypeScript type definitions created (ITurboConfig, ITurboUploadResult, ITurboClientOptions)
+  ✅ AC 3: Configuration loader updated with Turbo settings
+  ✅ AC 4: .env.example documented with Turbo environment variables
+  ✅ AC 5: Turbo SDK initialization helper implemented with validation
+  ✅ AC 6: No functional changes (arweave-client.ts unchanged)
+  ✅ AC 7: Comprehensive JSDoc documentation
+
+  The 51 failing tests are INHERITED TECHNICAL DEBT from Epic 8 and do NOT relate to Story 9.1's Turbo SDK configuration work.
+
+  **Gate Decision Rationale:**
+  - All Story 9.1 objectives achieved with passing tests
+  - TypeScript compilation successful (zero errors)
+  - Security best practices followed (HTTPS enforcement, wallet validation)
+  - 100% test coverage for new Turbo SDK code (43 tests)
+  - URL validator refactoring successful (27 tests passing)
+  - Pre-existing test failures explicitly scoped out of Story 9.1
+
+  **TEST-FAIL-001 Resolution:**
+  Dev agent successfully added optional `code` property to ValidationError class (6th parameter)
+  and updated url-validator.ts to pass error codes for all throws. All 27 url-validator tests
+  now passing (100% success rate).
+
+  **TEST-DEBT-001 Scope Decision:**
+  The 51 failing publish-service tests are pre-existing Epic 8 mock setup issues unrelated to
+  Turbo SDK configuration. These should be addressed in a dedicated test infrastructure story.
+  They do NOT block Story 9.1 completion because:
+  - Story 9.1 is setup-only (no behavioral changes)
+  - All NEW code has passing tests
+  - Epic 8 mock failures existed before Story 9.1 began
+  - Turbo SDK integration in Story 9.2 will use different code paths
+
+  **Story 9.1 is APPROVED FOR DONE and ready for Story 9.2 development.**

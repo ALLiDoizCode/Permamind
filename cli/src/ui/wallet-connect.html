@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#10151B" />
+    <meta name="description" content="Connect your Arweave wallet to Permamind CLI" />
+    <title>$ permamind _</title>
+    <link rel="stylesheet" href="wallet-connect.css" />
+    <script src="https://unpkg.com/arweave/bundles/web.bundle.min.js"></script>
+  </head>
+  <body>
+    <!-- Header matching frontend -->
+    <header class="header">
+      <div class="header-container">
+        <div class="header-brand">
+          <span class="brand-dollar">$</span>
+          <span class="brand-text">permamind</span>
+          <span class="brand-cursor">_</span>
+        </div>
+        <div class="header-subtitle">
+          <span>Arweave Wallet Connection</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+      <!-- Status Card -->
+      <div class="card status-card">
+        <div class="card-header">
+          <h2 class="card-title">Wallet Status</h2>
+        </div>
+        <div class="card-content">
+          <div id="status" class="status-display connecting">
+            <div class="status-icon">
+              <div class="spinner"></div>
+            </div>
+            <div class="status-content">
+              <div class="status-title">Connecting...</div>
+              <div class="status-description">Waiting for wallet connection</div>
+            </div>
+          </div>
+
+          <!-- Wallet Info (hidden until connected) -->
+          <div id="walletInfo" class="wallet-info" style="display: none">
+            <div class="wallet-badge">
+              <svg class="wallet-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+              <code id="address" class="wallet-address">Loading...</code>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Request Queue Card -->
+      <div id="queueContainer" class="card queue-card">
+        <div class="card-header">
+          <h2 class="card-title">Request Queue</h2>
+          <span class="badge" id="queueCount">0</span>
+        </div>
+        <div class="card-content">
+          <div id="queueList" class="queue-list">
+            <div class="empty-state">
+              <svg class="empty-icon" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              <p class="empty-text">No pending requests</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructions Card -->
+      <div class="card instructions-card">
+        <div class="card-header">
+          <h2 class="card-title">How to Use</h2>
+        </div>
+        <div class="card-content">
+          <div class="instructions-list">
+            <div class="instruction-item">
+              <div class="instruction-number">1</div>
+              <div class="instruction-content">
+                <div class="instruction-title">Install a Wallet Extension</div>
+                <div class="instruction-description">
+                  Get <a href="https://www.arconnect.io" target="_blank" rel="noopener noreferrer">ArConnect</a> or
+                  <a href="https://www.wander.app" target="_blank" rel="noopener noreferrer">Wander</a>
+                </div>
+              </div>
+            </div>
+            <div class="instruction-item">
+              <div class="instruction-number">2</div>
+              <div class="instruction-content">
+                <div class="instruction-title">Connect Your Wallet</div>
+                <div class="instruction-description">
+                  Approve the connection request in your browser wallet
+                </div>
+              </div>
+            </div>
+            <div class="instruction-item">
+              <div class="instruction-number">3</div>
+              <div class="instruction-content">
+                <div class="instruction-title">Sign Transactions</div>
+                <div class="instruction-description">
+                  Keep this window open to approve CLI operations
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Log Card -->
+      <div class="card log-card">
+        <div class="card-header">
+          <h2 class="card-title">Activity Log</h2>
+          <button id="clearLog" class="button-ghost" style="display: none">
+            Clear
+          </button>
+        </div>
+        <div class="card-content">
+          <div id="log" class="activity-log">
+            <div class="log-entry info">
+              <span class="log-timestamp">[00:00:00]</span>
+              <span class="log-message">Waiting for wallet connection...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="wallet-connect.js"></script>
+  </body>
+</html>

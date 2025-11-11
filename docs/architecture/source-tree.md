@@ -41,6 +41,11 @@ agent-skills-registry/
 │   │   │   ├── lock-file.ts
 │   │   │   ├── commands.ts
 │   │   │   └── errors.ts
+│   │   ├── ui/
+│   │   │   ├── wallet-connect.html
+│   │   │   ├── wallet-connect.css
+│   │   │   ├── wallet-connect.js
+│   │   │   └── README.md
 │   │   └── utils/
 │   │       ├── version-compare.ts
 │   │       └── retry.ts

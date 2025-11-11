@@ -1,0 +1,43 @@
+---
+version: "2.0"
+
+services:
+  api:
+    image: node:18-alpine
+    expose:
+      - port: 3000
+        as: 80
+        to:
+          - global: true
+        accept:
+          - api.example.com
+    env:
+      - "NODE_ENV=production"
+      - "PORT=3000"
+    # Optional: Add command to run your API
+    # command:
+    #   - "node"
+    #   - "server.js"
+
+profiles:
+  compute:
+    api:
+      resources:
+        cpu:
+          units: 1.0
+        memory:
+          size: 1Gi
+        storage:
+          size: 2Gi
+  placement:
+    dcloud:
+      pricing:
+        api:
+          denom: uakt
+          amount: 2000
+
+deployment:
+  api:
+    dcloud:
+      profile: api
+      count: 1

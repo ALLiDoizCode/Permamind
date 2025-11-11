@@ -17,8 +17,8 @@
  * @module lib/topological-sorter
  */
 
-import { IDependencyTree, IDependencyNode } from '../types/dependency';
-import { DependencyError } from '../types/errors';
+import { IDependencyTree, IDependencyNode } from '../types/dependency.js';
+import { DependencyError } from '../types/errors.js';
 
 /**
  * Performs topological sort on dependency tree

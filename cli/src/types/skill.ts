@@ -116,6 +116,18 @@ export interface ISkillManifest {
    * '## Added\n- Batch operation support\n## Fixed\n- Search bug\n- Error messages'
    */
   changelog?: string;
+
+  /**
+   * MCP server requirements (optional)
+   *
+   * Array of MCP server names that this skill requires for functionality.
+   * Format: MCP server names with mcp__ prefix (e.g., "mcp__pixel-art", "mcp__shadcn-ui")
+   * Note: Users must install MCP servers separately. This field is informational only.
+   *
+   * @example
+   * mcpServers: ['mcp__pixel-art', 'mcp__shadcn-ui']
+   */
+  mcpServers?: string[];
 }
 
 /**

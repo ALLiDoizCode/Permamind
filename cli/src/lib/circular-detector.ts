@@ -21,7 +21,7 @@ import {
   IDependencyNode,
   ICircularDependency,
   NodeColor,
-} from '../types/dependency';
+} from '../types/dependency.js';
 
 /**
  * Detects circular dependencies in a dependency tree

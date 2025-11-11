@@ -13,7 +13,7 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import * as aoRegistryClient from '../clients/ao-registry-client.js';
+import { SearchService } from '../lib/search-service.js';
 import { formatSearchResults } from '../formatters/search-results.js';
 import logger from '../utils/logger.js';
 import {
@@ -123,34 +123,23 @@ export async function execute(
   // Track performance for NFR4 requirement (2-second target)
   const startTime = Date.now();
 
-  // Query execution with AO Registry Client
-  const results = await queryRegistry(query);
+  // Call SearchService (business logic layer)
+  const service = new SearchService();
+  const results = await service.search(query, {
+    tags: options.tag,
+    verbose: options.verbose,
+  });
 
-  // Filter results by tags (client-side, AND logic)
-  const filteredResults = filterByTags(results, options.tag || []);
+  // Calculate query duration for verbose metadata
+  const duration = Date.now() - startTime;
 
-  // Calculate query duration
-  const endTime = Date.now();
-  const duration = endTime - startTime;
-  const durationSeconds = (duration / 1000).toFixed(2);
-
-  // Log performance warning if exceeds 2 seconds (NFR4)
-  if (duration > 2000) {
-    logger.warn(
-      `Search query took ${durationSeconds}s (exceeds 2s target). Consider optimizing your query or checking network connectivity.`
-    );
-  }
-
-  // Log verbose metadata if requested
+  // Log verbose metadata if requested (CLI responsibility)
   if (options.verbose === true) {
-    await logVerboseMetadata(query, results.length, filteredResults.length, duration, options.tag);
+    await logVerboseMetadata(query, results.length, results.length, duration, options.tag);
   }
 
-  // Sort results by relevance
-  const sortedResults = sortByRelevance(filteredResults, query);
-
-  // Format and display results
-  const formattedOutput = formatSearchResults(sortedResults, {
+  // Format and display results (CLI presentation responsibility)
+  const formattedOutput = formatSearchResults(results, {
     json: options.json,
     tags: options.tag,
   });
@@ -158,145 +147,19 @@ export async function execute(
   // Display results using logger (not console.log per critical rule #1)
   logger.info(formattedOutput);
 
-  return sortedResults;
-}
-
-/**
- * Query AO registry for skills matching the search query
- *
- * @param query - Search query (empty string lists all skills)
- * @returns Array of skill metadata
- * @throws {NetworkError} If query fails
- * @throws {ConfigurationError} If registry not configured
- */
-async function queryRegistry(
-  query: string
-): Promise<ISkillMetadata[]> {
-  logger.debug('Querying AO registry', { query });
-
-  // Call searchSkills with query parameter
-  // Empty query returns all skills (AC: 12)
-  const results = await aoRegistryClient.searchSkills(query);
-
-  logger.debug('Query execution complete', {
-    resultCount: results.length,
-  });
-
   return results;
 }
 
 /**
- * Filter search results by tags (client-side, AND logic)
+ * REMOVED: Business logic functions moved to SearchService
  *
- * @param results - Unfiltered skill metadata array
- * @param tags - Tag filters (skills must have ALL specified tags)
- * @returns Filtered skill metadata array
+ * - queryRegistry() -> SearchService.queryRegistry() (private)
+ * - filterByTags() -> SearchService.filterByTags() (private)
+ * - sortByRelevance() -> SearchService.sortByRelevance() (private)
+ *
+ * CLI command is now a thin wrapper around SearchService,
+ * responsible only for presentation (formatting, colors, verbose metadata).
  */
-function filterByTags(
-  results: ISkillMetadata[],
-  tags: string[]
-): ISkillMetadata[] {
-  // No tags specified - return all results (no filtering)
-  if (!tags || tags.length === 0) {
-    return results;
-  }
-
-  // Convert filter tags to lowercase for case-insensitive matching
-  const lowerTags = tags.map((tag) => tag.toLowerCase());
-
-  logger.debug('Filtering results by tags', { filterTags: lowerTags });
-
-  // Filter results: skill must have ALL specified tags (AND logic)
-  const filtered = results.filter((skill) => {
-    const skillTagsLower = skill.tags.map((tag) => tag.toLowerCase());
-    return lowerTags.every((filterTag) => skillTagsLower.includes(filterTag));
-  });
-
-  logger.debug('Tag filtering complete', {
-    preFilterCount: results.length,
-    postFilterCount: filtered.length,
-    filterTags: lowerTags,
-  });
-
-  return filtered;
-}
-
-/**
- * Sort search results by relevance
- *
- * Priority (highest to lowest):
- * 1. Exact name match (case-insensitive)
- * 2. Name starts with query
- * 3. Name contains query
- * 4. Description contains query
- * 5. Tags contain query
- *
- * @param results - Unsorted skill metadata array
- * @param query - Search query string
- * @returns Sorted skill metadata array
- */
-function sortByRelevance(
-  results: ISkillMetadata[],
-  query: string
-): ISkillMetadata[] {
-  // Handle empty query (list all) - no sorting needed
-  if (!query || query.trim() === '') {
-    logger.debug('Empty query - returning unsorted results (list all)');
-    return results;
-  }
-
-  const lowerQuery = query.toLowerCase();
-
-  logger.debug('Sorting results by relevance', { query });
-
-  // Create scored results for sorting
-  const scoredResults = results.map((skill) => {
-    let score = 0;
-
-    const nameLower = skill.name.toLowerCase();
-    const descriptionLower = skill.description.toLowerCase();
-    const tagsLower = skill.tags.map((tag) => tag.toLowerCase());
-
-    // Priority 1: Exact name match (score = 5)
-    if (nameLower === lowerQuery) {
-      score = 5;
-    }
-    // Priority 2: Name starts with query (score = 4)
-    else if (nameLower.startsWith(lowerQuery)) {
-      score = 4;
-    }
-    // Priority 3: Name contains query (score = 3)
-    else if (nameLower.includes(lowerQuery)) {
-      score = 3;
-    }
-    // Priority 4: Description contains query (score = 2)
-    else if (descriptionLower.includes(lowerQuery)) {
-      score = 2;
-    }
-    // Priority 5: Tags contain query (score = 1)
-    else if (tagsLower.some((tag) => tag.includes(lowerQuery))) {
-      score = 1;
-    }
-
-    logger.debug('Skill relevance score', {
-      skillName: skill.name,
-      score,
-    });
-
-    return { skill, score };
-  });
-
-  // Sort by score descending (highest first)
-  const sorted = scoredResults
-    .sort((a, b) => b.score - a.score)
-    .map((item) => item.skill);
-
-  logger.debug('Results sorted by relevance', {
-    resultCount: sorted.length,
-  });
-
-  return sorted;
-}
 
 /**
  * Log verbose metadata about the search query

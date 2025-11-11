@@ -77,16 +77,25 @@ import {
   pollConfirmation,
   downloadBundle,
 } from '../../../src/clients/arweave-client.js';
+import * as fs from 'fs';
 
 describe('Arweave Client', () => {
-  const mockWallet = {
-    kty: 'RSA',
-    e: 'AQAB',
-    n: 'mock_n_value',
-    d: 'mock_d_value',
+  // Load valid test wallet with proper RSA key parameters
+  const testWalletPath = path.join(__dirname, '../../fixtures/wallets/test-wallet.json');
+  const mockWallet = JSON.parse(fs.readFileSync(testWalletPath, 'utf-8'));
+
+  // Create mock wallet provider for tests
+  const mockWalletProvider = {
+    getAddress: jest.fn().mockResolvedValue('mock_arweave_address_43_characters_long_abc'),
+    createDataItemSigner: jest.fn().mockResolvedValue(jest.fn()),
+    disconnect: jest.fn().mockResolvedValue(undefined),
+    getSource: jest.fn().mockReturnValue({ source: 'file' as const, value: testWalletPath }),
+    getJWK: jest.fn().mockResolvedValue(mockWallet),
   };
 
-  const mockBundle = Buffer.from('mock tar.gz bundle data');
+  // Epic 9: Create bundle ≥ 100KB to force Arweave SDK path (not Turbo SDK free tier)
+  // This ensures tests run against the Arweave SDK upload path with transaction creation
+  const mockBundle = Buffer.alloc(102400, 'x'); // 100KB bundle
   const mockMetadata = {
     skillName: 'test-skill',
     skillVersion: '1.0.0',
@@ -95,6 +104,13 @@ describe('Arweave Client', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockTransaction.addTag.mockClear();
+
+    // Re-setup wallet provider mocks after clearAllMocks
+    mockWalletProvider.getAddress.mockResolvedValue('mock_arweave_address_43_characters_long_abc');
+    mockWalletProvider.createDataItemSigner.mockResolvedValue(jest.fn());
+    mockWalletProvider.disconnect.mockResolvedValue(undefined);
+    mockWalletProvider.getSource.mockReturnValue({ source: 'file' as const, value: testWalletPath });
+    mockWalletProvider.getJWK.mockResolvedValue(mockWallet);
 
     // Re-setup config-loader mock after clearAllMocks
     mockLoadConfig.mockResolvedValue({
@@ -116,7 +132,7 @@ describe('Arweave Client', () => {
   describe('uploadBundle()', () => {
     describe('successful upload', () => {
       it('should create transaction with bundle data', async () => {
-        const result = await uploadBundle(mockBundle, mockMetadata, mockWallet);
+        const result = await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
         expect(mockArweaveInstance.createTransaction).toHaveBeenCalledWith(
           { data: mockBundle },
@@ -126,7 +142,7 @@ describe('Arweave Client', () => {
       });
 
       it('should add correct transaction tags', async () => {
-        await uploadBundle(mockBundle, mockMetadata, mockWallet);
+        await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
         expect(mockTransaction.addTag).toHaveBeenCalledWith('App-Name', 'Agent-Skills-Registry');
         expect(mockTransaction.addTag).toHaveBeenCalledWith('Content-Type', 'application/x-tar+gzip');
@@ -135,31 +151,31 @@ describe('Arweave Client', () => {
       });
 
       it('should sign transaction with wallet JWK', async () => {
-        await uploadBundle(mockBundle, mockMetadata, mockWallet);
+        await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
         expect(mockTransactions.sign).toHaveBeenCalledWith(mockTransaction, mockWallet);
       });
 
       it('should upload transaction to gateway', async () => {
-        await uploadBundle(mockBundle, mockMetadata, mockWallet);
+        await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
         expect(mockTransactions.post).toHaveBeenCalledWith(mockTransaction);
       });
 
       it('should return transaction ID', async () => {
-        const result = await uploadBundle(mockBundle, mockMetadata, mockWallet);
+        const result = await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
         expect(result.txId).toBe('mock_transaction_id_43_chars_long_12345678');
       });
 
       it('should calculate upload size correctly', async () => {
-        const result = await uploadBundle(mockBundle, mockMetadata, mockWallet);
+        const result = await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
         expect(result.uploadSize).toBe(mockBundle.length);
       });
 
       it('should return upload result with cost', async () => {
-        const result = await uploadBundle(mockBundle, mockMetadata, mockWallet);
+        const result = await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
         expect(result.cost).toBe(1000000000); // From mockTransaction.reward
       });
@@ -169,7 +185,7 @@ describe('Arweave Client', () => {
       it('should invoke progress callback during upload', async () => {
         const progressCallback = jest.fn();
 
-        await uploadBundle(mockBundle, mockMetadata, mockWallet, {
+        await uploadBundle(mockBundle, mockMetadata, mockWalletProvider, {
           progressCallback,
         });
 
@@ -181,7 +197,7 @@ describe('Arweave Client', () => {
         const progressValues = [];
         const progressCallback = (pct) => progressValues.push(pct);
 
-        await uploadBundle(mockBundle, mockMetadata, mockWallet, {
+        await uploadBundle(mockBundle, mockMetadata, mockWalletProvider, {
           progressCallback,
         });
 
@@ -194,14 +210,14 @@ describe('Arweave Client', () => {
       it('should handle upload without callback', async () => {
         // Should not throw error when no progress callback provided
         await expect(
-          uploadBundle(mockBundle, mockMetadata, mockWallet)
+          uploadBundle(mockBundle, mockMetadata, mockWalletProvider)
         ).resolves.toBeDefined();
       });
 
       it('should handle progress callback with correct percentage values', async () => {
         const progressCallback = jest.fn();
 
-        await uploadBundle(mockBundle, mockMetadata, mockWallet, {
+        await uploadBundle(mockBundle, mockMetadata, mockWalletProvider, {
           progressCallback,
         });
 
@@ -216,12 +232,15 @@ describe('Arweave Client', () => {
 
     describe('error handling', () => {
       it('should throw NetworkError on timeout', async () => {
-        mockTransactions.post.mockRejectedValueOnce(
-          Object.assign(new Error('timeout'), { code: 'ABORT_ERR' })
-        );
+        // Mock all retry attempts to fail with timeout
+        const timeoutError = Object.assign(new Error('timeout'), { code: 'ABORT_ERR' });
+        mockTransactions.post
+          .mockRejectedValueOnce(timeoutError)
+          .mockRejectedValueOnce(timeoutError)
+          .mockRejectedValueOnce(timeoutError);
 
         await expect(
-          uploadBundle(mockBundle, mockMetadata, mockWallet)
+          uploadBundle(mockBundle, mockMetadata, mockWalletProvider)
         ).rejects.toThrow(NetworkError);
       });
 
@@ -231,7 +250,7 @@ describe('Arweave Client', () => {
         mockTransaction.reward = '1000000000000'; // 1 AR
 
         await expect(
-          uploadBundle(mockBundle, mockMetadata, mockWallet)
+          uploadBundle(mockBundle, mockMetadata, mockWalletProvider)
         ).rejects.toThrow(AuthorizationError);
       });
 
@@ -243,7 +262,7 @@ describe('Arweave Client', () => {
         });
 
         await expect(
-          uploadBundle(mockBundle, mockMetadata, mockWallet)
+          uploadBundle(mockBundle, mockMetadata, mockWalletProvider)
         ).rejects.toThrow(NetworkError);
       });
 
@@ -255,17 +274,20 @@ describe('Arweave Client', () => {
         });
 
         await expect(
-          uploadBundle(mockBundle, mockMetadata, mockWallet)
+          uploadBundle(mockBundle, mockMetadata, mockWalletProvider)
         ).rejects.toThrow(NetworkError);
       });
 
       it('should include helpful solution in error message', async () => {
-        mockTransactions.post.mockRejectedValueOnce(
-          Object.assign(new Error('timeout'), { code: 'ABORT_ERR' })
-        );
+        // Mock all retry attempts to fail with timeout
+        const timeoutError = Object.assign(new Error('timeout'), { code: 'ABORT_ERR' });
+        mockTransactions.post
+          .mockRejectedValueOnce(timeoutError)
+          .mockRejectedValueOnce(timeoutError)
+          .mockRejectedValueOnce(timeoutError);
 
         await expect(
-          uploadBundle(mockBundle, mockMetadata, mockWallet)
+          uploadBundle(mockBundle, mockMetadata, mockWalletProvider)
         ).rejects.toThrow(/Solution:/);
       });
     });
@@ -284,7 +306,7 @@ describe('Arweave Client', () => {
           .mockRejectedValueOnce(timeoutError)
           .mockResolvedValueOnce({ status: 200, statusText: 'OK' });
 
-        const result = await uploadBundle(mockBundle, mockMetadata, mockWallet);
+        const result = await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
         expect(result.txId).toBe('mock_transaction_id_43_chars_long_12345678');
         expect(mockWallets.getBalance).toHaveBeenCalledTimes(2);
@@ -300,7 +322,7 @@ describe('Arweave Client', () => {
           .mockRejectedValueOnce(resetError)
           .mockResolvedValueOnce('5000000000000');
 
-        const result = await uploadBundle(mockBundle, mockMetadata, mockWallet);
+        const result = await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
         expect(result.txId).toBe('mock_transaction_id_43_chars_long_12345678');
         expect(mockWallets.getBalance).toHaveBeenCalledTimes(2);
@@ -311,7 +333,7 @@ describe('Arweave Client', () => {
           .mockResolvedValueOnce({ status: 502, statusText: 'Bad Gateway' })
           .mockResolvedValueOnce({ status: 200, statusText: 'OK' });
 
-        const result = await uploadBundle(mockBundle, mockMetadata, mockWallet);
+        const result = await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
         expect(result.txId).toBe('mock_transaction_id_43_chars_long_12345678');
         expect(mockTransactions.post).toHaveBeenCalledTimes(2);
@@ -322,7 +344,7 @@ describe('Arweave Client', () => {
         mockTransaction.reward = '1000000000000'; // High cost
 
         await expect(
-          uploadBundle(mockBundle, mockMetadata, mockWallet)
+          uploadBundle(mockBundle, mockMetadata, mockWalletProvider)
         ).rejects.toThrow(AuthorizationError);
 
         // Should fail immediately without retry
@@ -335,7 +357,7 @@ describe('Arweave Client', () => {
         );
 
         await expect(
-          uploadBundle(mockBundle, mockMetadata, mockWallet)
+          uploadBundle(mockBundle, mockMetadata, mockWalletProvider)
         ).rejects.toThrow(ValidationError);
 
         // Should not retry validation errors
@@ -353,7 +375,7 @@ describe('Arweave Client', () => {
         const startTime = Date.now();
 
         await expect(
-          uploadBundle(mockBundle, mockMetadata, mockWallet)
+          uploadBundle(mockBundle, mockMetadata, mockWalletProvider)
         ).rejects.toThrow(NetworkError);
 
         const duration = Date.now() - startTime;
@@ -371,7 +393,7 @@ describe('Arweave Client', () => {
           .mockRejectedValueOnce(timeoutError);
 
         await expect(
-          uploadBundle(mockBundle, mockMetadata, mockWallet)
+          uploadBundle(mockBundle, mockMetadata, mockWalletProvider)
         ).rejects.toThrow();
 
         // 3 attempts (first try + 2 retries for maxAttempts=3)
@@ -552,7 +574,7 @@ describe('Arweave Client', () => {
       // Mock config returning empty object (no gateway configured)
       mockLoadConfig.mockResolvedValueOnce({});
 
-      await uploadBundle(mockBundle, mockMetadata, mockWallet);
+      await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
       // Default gateway should be used
       expect(mockArweaveInstance.createTransaction).toHaveBeenCalled();
@@ -564,14 +586,14 @@ describe('Arweave Client', () => {
         gateway: 'https://g8way.io',
       });
 
-      await uploadBundle(mockBundle, mockMetadata, mockWallet);
+      await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
       expect(mockArweaveInstance.createTransaction).toHaveBeenCalled();
     });
 
     it('should enforce HTTPS for gateway URLs', async () => {
       await expect(
-        uploadBundle(mockBundle, mockMetadata, mockWallet, {
+        uploadBundle(mockBundle, mockMetadata, mockWalletProvider, {
           gatewayUrl: 'http://arweave.net', // HTTP instead of HTTPS
         })
       ).rejects.toThrow(ValidationError);
@@ -579,7 +601,7 @@ describe('Arweave Client', () => {
 
     it('should reject HTTP gateway URLs (security requirement)', async () => {
       await expect(
-        uploadBundle(mockBundle, mockMetadata, mockWallet, {
+        uploadBundle(mockBundle, mockMetadata, mockWalletProvider, {
           gatewayUrl: 'http://unsafe-gateway.com',
         })
       ).rejects.toThrow(/HTTPS/);
@@ -588,14 +610,14 @@ describe('Arweave Client', () => {
     it('should support alternative gateways (g8way.io, ar-io.dev)', async () => {
       // Test g8way.io
       await expect(
-        uploadBundle(mockBundle, mockMetadata, mockWallet, {
+        uploadBundle(mockBundle, mockMetadata, mockWalletProvider, {
           gatewayUrl: 'https://g8way.io',
         })
       ).resolves.toBeDefined();
 
       // Test ar-io.dev
       await expect(
-        uploadBundle(mockBundle, mockMetadata, mockWallet, {
+        uploadBundle(mockBundle, mockMetadata, mockWalletProvider, {
           gatewayUrl: 'https://ar-io.dev',
         })
       ).resolves.toBeDefined();
@@ -607,7 +629,7 @@ describe('Arweave Client', () => {
         gateway: 'https://arweave.net',
       });
 
-      await uploadBundle(mockBundle, mockMetadata, mockWallet, {
+      await uploadBundle(mockBundle, mockMetadata, mockWalletProvider, {
         gatewayUrl: 'https://g8way.io',
       });
 
@@ -748,21 +770,24 @@ describe('Arweave Client', () => {
     });
 
     it('should throw NetworkError after timeout (30 seconds)', async () => {
-      // Mock fetch that respects abort signal
-      (global.fetch).mockImplementationOnce(
-        (url: string, options: any) =>
-          new Promise((resolve, reject) => {
-            // Listen for abort signal
-            if (options?.signal) {
-              options.signal.addEventListener('abort', () => {
-                const abortError = new Error('The operation was aborted');
-                abortError.name = 'AbortError';
-                reject(abortError);
-              });
-            }
-            // Never resolve otherwise
-          })
-      );
+      // Mock fetch that respects abort signal for all retry attempts
+      const abortMock = (url: string, options: any) =>
+        new Promise((resolve, reject) => {
+          // Listen for abort signal
+          if (options?.signal) {
+            options.signal.addEventListener('abort', () => {
+              const abortError = new Error('The operation was aborted');
+              abortError.name = 'AbortError';
+              reject(abortError);
+            });
+          }
+          // Never resolve otherwise
+        });
+
+      (global.fetch as jest.Mock)
+        .mockImplementationOnce(abortMock)
+        .mockImplementationOnce(abortMock)
+        .mockImplementationOnce(abortMock);
 
       await expect(
         downloadBundle('abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG', {

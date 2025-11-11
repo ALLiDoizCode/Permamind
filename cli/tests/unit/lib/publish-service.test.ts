@@ -175,10 +175,10 @@ describe('PublishService', () => {
     });
 
     it('should update existing skill when skill already exists in registry', async () => {
-      // Mock skill already exists
+      // Mock skill already exists with SAME version (triggers Update-Skill)
       (aoRegistryClient.getSkill as jest.Mock).mockResolvedValue({
         name: 'test-skill',
-        version: '0.9.0',
+        version: '1.0.0', // Same as mockManifest.version
       } as any);
 
       const result = await service.publish(mockDirectory, {
@@ -186,11 +186,31 @@ describe('PublishService', () => {
         progressCallback,
       });
 
-      // Verify updateSkill called instead of registerSkill
+      // Verify updateSkill called instead of registerSkill (same version = update metadata)
       expect((aoRegistryClient.updateSkill as jest.Mock)).toHaveBeenCalled();
       expect((aoRegistryClient.registerSkill as jest.Mock)).not.toHaveBeenCalled();
 
       expect(result.skillName).toBe('test-skill');
+    });
+
+    it('should register new version when version differs from existing', async () => {
+      // Mock skill exists with DIFFERENT version (triggers Register-Skill for new version)
+      (aoRegistryClient.getSkill as jest.Mock).mockResolvedValue({
+        name: 'test-skill',
+        version: '0.9.0', // Different from mockManifest.version (1.0.0)
+      } as any);
+
+      const result = await service.publish(mockDirectory, {
+        wallet: mockWallet,
+        progressCallback,
+      });
+
+      // Verify registerSkill called for new version, not updateSkill
+      expect((aoRegistryClient.registerSkill as jest.Mock)).toHaveBeenCalled();
+      expect((aoRegistryClient.updateSkill as jest.Mock)).not.toHaveBeenCalled();
+
+      expect(result.skillName).toBe('test-skill');
+      expect(result.version).toBe('1.0.0');
     });
 
     // Epic 11: These tests use deprecated wallet/walletPath options

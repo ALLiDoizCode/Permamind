@@ -105,6 +105,13 @@ describe('Arweave Client', () => {
     jest.clearAllMocks();
     mockTransaction.addTag.mockClear();
 
+    // Re-setup wallet provider mocks after clearAllMocks
+    mockWalletProvider.getAddress.mockResolvedValue('mock_arweave_address_43_characters_long_abc');
+    mockWalletProvider.createDataItemSigner.mockResolvedValue(jest.fn());
+    mockWalletProvider.disconnect.mockResolvedValue(undefined);
+    mockWalletProvider.getSource.mockReturnValue({ source: 'file' as const, value: testWalletPath });
+    mockWalletProvider.getJWK.mockResolvedValue(mockWallet);
+
     // Re-setup config-loader mock after clearAllMocks
     mockLoadConfig.mockResolvedValue({
       gateway: 'https://arweave.net',

@@ -73,6 +73,15 @@ describe('Arweave Upload Integration Tests', () => {
   const testWalletPath = path.join(__dirname, '../fixtures/wallets/test-wallet.json');
   const mockWallet = JSON.parse(fs.readFileSync(testWalletPath, 'utf-8'));
 
+  // Create mock wallet provider for tests
+  const mockWalletProvider = {
+    getAddress: jest.fn(),
+    createDataItemSigner: jest.fn(),
+    disconnect: jest.fn(),
+    getSource: jest.fn(),
+    getJWK: jest.fn(),
+  };
+
   const mockBundle = Buffer.from('integration test bundle data');
   const mockMetadata = {
     skillName: 'integration-test-skill',
@@ -81,6 +90,13 @@ describe('Arweave Upload Integration Tests', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-setup wallet provider mocks after clearAllMocks
+    mockWalletProvider.getAddress.mockResolvedValue('integration_test_address_43_chars_long_abc');
+    mockWalletProvider.createDataItemSigner.mockResolvedValue(jest.fn());
+    mockWalletProvider.disconnect.mockResolvedValue(undefined);
+    mockWalletProvider.getSource.mockReturnValue({ source: 'file' as const, value: testWalletPath });
+    mockWalletProvider.getJWK.mockResolvedValue(mockWallet);
 
     // Set up default mock implementations
     mockWallets.jwkToAddress.mockResolvedValue('integration_test_address_43_chars_long_abc');
@@ -118,7 +134,7 @@ describe('Arweave Upload Integration Tests', () => {
         });
 
       // Step 1: Upload bundle
-      const uploadResult = await uploadBundle(mockBundle, mockMetadata, mockWallet);
+      const uploadResult = await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
       expect(uploadResult.txId).toBe('integration_test_tx_id_43_chars_long_123');
       expect(uploadResult.uploadSize).toBe(mockBundle.length);
@@ -140,7 +156,7 @@ describe('Arweave Upload Integration Tests', () => {
       const progressCallback = (pct: number) => progressValues.push(pct);
 
       // Upload with progress tracking
-      const uploadResult = await uploadBundle(mockBundle, mockMetadata, mockWallet, {
+      const uploadResult = await uploadBundle(mockBundle, mockMetadata, mockWalletProvider, {
         progressCallback,
       });
 
@@ -160,7 +176,7 @@ describe('Arweave Upload Integration Tests', () => {
         .mockRejectedValueOnce(timeoutError)
         .mockResolvedValueOnce('5000000000000');
 
-      const result = await uploadBundle(mockBundle, mockMetadata, mockWallet);
+      const result = await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
       expect(result.txId).toBe('integration_test_tx_id_43_chars_long_123');
       expect(mockWallets.getBalance).toHaveBeenCalledTimes(2);
@@ -171,7 +187,7 @@ describe('Arweave Upload Integration Tests', () => {
         .mockResolvedValueOnce({ status: 503, statusText: 'Service Unavailable' })
         .mockResolvedValueOnce({ status: 200, statusText: 'OK' });
 
-      const result = await uploadBundle(mockBundle, mockMetadata, mockWallet);
+      const result = await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
       expect(result.txId).toBe('integration_test_tx_id_43_chars_long_123');
       expect(mockTransactions.post).toHaveBeenCalledTimes(2);
@@ -188,7 +204,7 @@ describe('Arweave Upload Integration Tests', () => {
         .mockRejectedValueOnce(timeoutError);
 
       await expect(
-        uploadBundle(mockBundle, mockMetadata, mockWallet)
+        uploadBundle(mockBundle, mockMetadata, mockWalletProvider)
       ).rejects.toThrow(NetworkError);
 
       expect(mockWallets.getBalance).toHaveBeenCalledTimes(3);
@@ -206,7 +222,7 @@ describe('Arweave Upload Integration Tests', () => {
 
     it('should timeout after specified duration', async () => {
       // Upload succeeds
-      const uploadResult = await uploadBundle(mockBundle, mockMetadata, mockWallet);
+      const uploadResult = await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
       // Mock status always returning pending
       (global.fetch).mockResolvedValue({ status: 404 });
@@ -223,7 +239,7 @@ describe('Arweave Upload Integration Tests', () => {
     });
 
     it('should poll at correct intervals', async () => {
-      const uploadResult = await uploadBundle(mockBundle, mockMetadata, mockWallet);
+      const uploadResult = await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
       (global.fetch)
         .mockResolvedValueOnce({ status: 404 })
@@ -255,7 +271,7 @@ describe('Arweave Upload Integration Tests', () => {
       mockTransaction.reward = '1000000000000'; // High cost
 
       await expect(
-        uploadBundle(mockBundle, mockMetadata, mockWallet)
+        uploadBundle(mockBundle, mockMetadata, mockWalletProvider)
       ).rejects.toThrow(/Insufficient funds/);
     });
 
@@ -263,7 +279,7 @@ describe('Arweave Upload Integration Tests', () => {
       mockTransactions.post.mockRejectedValueOnce(new Error('Upload failed'));
 
       await expect(
-        uploadBundle(mockBundle, mockMetadata, mockWallet)
+        uploadBundle(mockBundle, mockMetadata, mockWalletProvider)
       ).rejects.toThrow();
     });
 
@@ -281,7 +297,7 @@ describe('Arweave Upload Integration Tests', () => {
       );
 
       await expect(
-        uploadBundle(mockBundle, mockMetadata, mockWallet)
+        uploadBundle(mockBundle, mockMetadata, mockWalletProvider)
       ).rejects.toThrow(/Solution:/);
     });
   });
@@ -290,7 +306,7 @@ describe('Arweave Upload Integration Tests', () => {
     it('should complete workflow with custom gateway', async () => {
       const customGateway = 'https://g8way.io';
 
-      const result = await uploadBundle(mockBundle, mockMetadata, mockWallet, {
+      const result = await uploadBundle(mockBundle, mockMetadata, mockWalletProvider, {
         gatewayUrl: customGateway,
       });
 
@@ -300,7 +316,7 @@ describe('Arweave Upload Integration Tests', () => {
 
     it('should validate gateway URL before upload', async () => {
       await expect(
-        uploadBundle(mockBundle, mockMetadata, mockWallet, {
+        uploadBundle(mockBundle, mockMetadata, mockWalletProvider, {
           gatewayUrl: 'http://insecure-gateway.com',
         })
       ).rejects.toThrow(/HTTPS/);
@@ -312,7 +328,7 @@ describe('Arweave Upload Integration Tests', () => {
       const largeBundleSize = 5 * 1024 * 1024; // 5MB bundle
       const largeBundle = Buffer.alloc(largeBundleSize, 'x');
 
-      const result = await uploadBundle(largeBundle, mockMetadata, mockWallet);
+      const result = await uploadBundle(largeBundle, mockMetadata, mockWalletProvider);
 
       expect(result.uploadSize).toBe(largeBundleSize);
       expect(result.txId).toBeDefined();
@@ -329,7 +345,7 @@ describe('Arweave Upload Integration Tests', () => {
         .mockResolvedValueOnce({ status: 503 })
         .mockResolvedValueOnce({ status: 200, statusText: 'OK' });
 
-      const result = await uploadBundle(mockBundle, mockMetadata, mockWallet);
+      const result = await uploadBundle(mockBundle, mockMetadata, mockWalletProvider);
 
       // Verify transaction was created and uploaded despite retries
       expect(result.txId).toBe('integration_test_tx_id_43_chars_long_123');

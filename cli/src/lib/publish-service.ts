@@ -622,7 +622,24 @@ export class PublishService {
           name: manifest.name,
           version: foundSkill.version,
         });
-        existingSkill = foundSkill;
+
+        // Check if same version or different version
+        if (foundSkill.version === manifest.version) {
+          // Same version exists - use Update-Skill to update metadata
+          existingSkill = foundSkill;
+          logger.debug('Same version exists, will update metadata', {
+            name: manifest.name,
+            version: manifest.version,
+          });
+        } else {
+          // Different version - use Register-Skill to create new version
+          existingSkill = null;
+          logger.debug('Different version, will register as new version', {
+            name: manifest.name,
+            oldVersion: foundSkill.version,
+            newVersion: manifest.version,
+          });
+        }
       } else {
         logger.debug('Skill does not exist, will register as new');
         existingSkill = null;

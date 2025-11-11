@@ -6,10 +6,11 @@ module.exports = {
   // Use @swc/jest transformer (Rust-based, no Babel dependency)
   // Eliminates Babel parser errors on TypeScript `import type` syntax
   transform: {
-    '^.+\\.ts$': '@swc/jest'
+    '^.+\\.ts$': '@swc/jest',
+    '^.+\\.js$': '@swc/jest'
   },
   transformIgnorePatterns: [
-    '/node_modules/'
+    '/node_modules/(?!@permamind/node-arweave-wallet)'
   ],
   collectCoverageFrom: [
     'src/**/*.ts',

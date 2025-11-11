@@ -29,6 +29,12 @@ export function Header() {
             >
               docs
             </Link>
+            <Link
+              to="/mcp-guide"
+              className="text-sm text-terminal-muted hover:text-syntax-blue font-mono transition-colors"
+            >
+              mcp
+            </Link>
 
             {/* Social Icons */}
             <div className="flex items-center gap-4">

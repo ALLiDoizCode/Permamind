@@ -43,6 +43,9 @@ export interface ISkillMetadata {
   /** Array of required skill dependencies with versions */
   dependencies: Array<{ name: string; version: string } | string>;
 
+  /** Optional array of required MCP server names (Story 13.1) */
+  mcpServers?: string[];
+
   /** 43-character Arweave transaction ID */
   arweaveTxId: string;
 

@@ -29,11 +29,13 @@ skills --version
 
 - **Node.js**: 20.11.0 LTS or higher
 - **npm**: 10.x or higher (bundled with Node.js)
-- **Arweave Wallet**: Required for publishing Skills (JSON keyfile)
+- **Arweave Wallet**: Required for publishing Skills (two options)
 
 ## Quick Start
 
 ### 1. Configure Your Wallet
+
+**Option A: File-Based Wallet (Traditional)**
 
 Create a `.skillsrc` file in your home directory:
 
@@ -44,6 +46,33 @@ Create a `.skillsrc` file in your home directory:
   "gateway": "https://arweave.net"
 }
 ```
+
+**Option B: Seed Phrase Wallet (Deterministic)**
+
+Set the `SEED_PHRASE` environment variable with a 12-word BIP39 mnemonic:
+
+```bash
+# Via environment variable
+export SEED_PHRASE="abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+
+# Or via .env file (recommended for development)
+echo 'SEED_PHRASE=your twelve word mnemonic phrase here' > .env
+```
+
+**Wallet Selection Priority:**
+1. `SEED_PHRASE` environment variable (highest priority)
+2. `--wallet` flag (command-line override)
+3. Default wallet path `~/.arweave/wallet.json` (fallback)
+
+**Security Warning:**
+- ⚠️ Never commit `.env` files with real seed phrases to version control
+- ⚠️ Keep seed phrases secure - anyone with your seed phrase has full wallet access
+- ⚠️ Use `.env.example` as a template (placeholder only, safe to commit)
+- ✅ Add `.env` to your `.gitignore` file
+
+**Keychain Limitation:**
+- Keychain operations only support file-based wallets
+- Seed phrase wallets are generated deterministically on each CLI invocation
 
 ### 2. Search for Skills
 
@@ -138,6 +167,131 @@ skills publish --help
 skills search --help
 ```
 
+## MCP Server Integration
+
+This CLI has a complementary MCP server that exposes the same functionality to Claude AI through the Model Context Protocol.
+
+**📖 MCP Server Documentation**: See [../mcp-server/README.md](../mcp-server/README.md) for MCP server setup and usage.
+
+**🔄 Cross-Compatibility Guarantee**: Skills published, searched, or installed via either the CLI or MCP server are fully compatible. Both tools share the same lock file format (`skills-lock.json`) and registry.
+
+**✅ Verified Compatibility**: Cross-compatibility is verified by [integration tests](tests/integration/cross-compatibility.integration.test.ts) with 11/11 tests passing (100% compatibility).
+
+### Key Differences
+
+| Feature | CLI | MCP Server |
+|---------|-----|-----------|
+| **Interface** | Command-line | Natural language (Claude AI) |
+| **Wallet Type** | File-based (JWK) or seed phrase | Seed phrase only |
+| **Best For** | Automation, CI/CD, scripting | Interactive use, Claude Desktop integration |
+| **Installation** | Global npm package | Claude Desktop configuration |
+
+### Example Cross-Tool Workflow
+
+```bash
+# Publish with MCP (via Claude)
+# User: "Publish the skill in ./my-skill"
+# Claude: Successfully published my-skill v1.0.0!
+
+# Search with CLI
+skills search my-skill
+# Found: my-skill v1.0.0 by Your Name
+
+# Install with CLI
+skills install my-skill
+# ✓ Installed to ~/.claude/skills/my-skill
+
+# Both tools share the same lock file
+cat ~/.claude/skills/skills-lock.json
+```
+
+## Creating Skills
+
+### SKILL.md Structure
+
+Every skill requires a `SKILL.md` file with YAML frontmatter:
+
+```yaml
+---
+name: my-skill
+version: 1.0.0
+description: A clear description of what this skill does
+author: Your Name
+tags:
+  - category
+  - topic
+dependencies: []  # Other skills this skill depends on
+license: MIT
+---
+
+# Skill Content
+
+Your skill instructions, workflows, and documentation go here.
+```
+
+### Documenting MCP Server Requirements
+
+If your skill requires MCP (Model Context Protocol) servers, document them in the `mcpServers` field:
+
+**✅ Correct Example:**
+
+```yaml
+---
+name: pixel-art-generator
+version: 1.0.0
+description: Generate pixel art using Claude's MCP integration
+author: Skill Author
+tags: ["pixel-art", "mcp"]
+dependencies: []  # Other skills only
+mcpServers:
+  - mcp__pixel-art
+  - mcp__shadcn-ui
+---
+```
+
+**❌ Incorrect Example (Anti-pattern):**
+
+```yaml
+---
+name: pixel-art-generator
+version: 1.0.0
+dependencies:
+  - mcp__pixel-art  # ❌ WRONG: MCP servers should be in mcpServers field
+---
+```
+
+**Important Notes:**
+- MCP servers are **NOT installed automatically** by the CLI
+- Users must install required MCP servers separately through Claude Desktop
+- The `mcpServers` field is informational only (helps users understand requirements)
+- MCP servers in `dependencies` will be skipped during skill installation
+- You will receive a warning during publish if MCP servers are in the wrong field
+
+**Example Warning:**
+
+```bash
+skills publish ./my-skill
+
+⚠ Warning: MCP server references detected in dependencies field
+
+The following MCP servers should be documented in the 'mcpServers' field instead:
+  - mcp__pixel-art
+  - mcp__shadcn-ui
+
+Solution: Move these to 'mcpServers' field in SKILL.md frontmatter:
+
+---
+name: my-skill
+version: 1.0.0
+dependencies: []  # Remove MCP servers from here
+mcpServers:
+  - mcp__pixel-art
+  - mcp__shadcn-ui
+---
+
+Note: This skill will still publish successfully. MCP servers in dependencies will be skipped during installation.
+```
+
 ## Architecture
 
 This CLI uses a **decentralized infrastructure**:
@@ -146,6 +300,78 @@ This CLI uses a **decentralized infrastructure**:
 - **npm Registry**: CLI tool distribution
 
 ## Troubleshooting
+
+### MCP Server Validation Warnings
+
+#### Understanding the Warning Message
+
+When you run `skills publish`, you may see a validation warning if your SKILL.md has MCP servers (items with `mcp__` prefix) in the `dependencies` field:
+
+```bash
+skills publish ./my-skill
+
+⚠ Warning: MCP server dependencies detected in 'dependencies' field
+
+The following MCP servers should be documented in the 'mcpServers' field instead:
+  - mcp__pixel-art
+  - mcp__shadcn-ui
+
+Solution: Move these to 'mcpServers' field in SKILL.md frontmatter:
+
+---
+name: my-skill
+version: 1.0.0
+dependencies: []  # Remove MCP servers from here
+mcpServers:
+  - mcp__pixel-art
+  - mcp__shadcn-ui
+---
+
+Note: This skill will still publish successfully. MCP servers in dependencies will be skipped during installation.
+```
+
+**This warning is informational only** - your skill will still publish successfully. MCP servers in the `dependencies` field are automatically detected and skipped during installation.
+
+#### How to Migrate Your Skill
+
+Follow these steps to resolve the validation warning:
+
+1. **Open your SKILL.md file**
+2. **Identify items starting with `mcp__` in the `dependencies` field**
+3. **Add `mcpServers` field to your frontmatter** (if it doesn't exist)
+4. **Move `mcp__` prefixed items from `dependencies` to `mcpServers`**
+5. **Run `skills publish` again** (no warnings should appear)
+
+#### Quick Fix Example
+
+**Before (causes validation warning):**
+
+```yaml
+---
+name: my-skill
+version: 1.0.0
+dependencies:
+  - ao-basics
+  - mcp__pixel-art
+---
+```
+
+**After (no warnings):**
+
+```yaml
+---
+name: my-skill
+version: 1.0.0
+dependencies:
+  - ao-basics
+mcpServers:
+  - mcp__pixel-art
+---
+```
+
+**Explanation:** Move `mcp__` prefixed items from `dependencies` to new `mcpServers` field.
+
+**For detailed migration guidance**, see the [MCP Server Migration Guide](../docs/guides/mcp-migration-guide.md).
 
 ### "command not found: skills"
 

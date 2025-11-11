@@ -1,6 +1,6 @@
 ---
 name: ao
-version: 1.0.3
+version: 1.0.4
 author: Permamind Team
 description: Learn AO protocol fundamentals - processes, message passing, handlers, and ADP compliance
 tags: ["ao", "blockchain", "tutorial"]
@@ -10,10 +10,12 @@ dependencies:
   - name: aoconnect
     version: 1.0.0
 changelog: |
-  ## Added
-  - aoconnect dependency for JavaScript SDK integration
+  ## v1.0.4
+  - Test publish with Epic 13 CLI improvements
+  - Validates mcpServers field support and MCP dependency detection
 
-  ## Changed
+  ## v1.0.3
+  - Added aoconnect dependency for JavaScript SDK integration
   - Updated dependency chain to include aoconnect library
 ---
 

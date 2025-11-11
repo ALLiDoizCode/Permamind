@@ -17,3 +17,21 @@ Cross-platform testing, CLI UX polish, error handling refinement, and community 
 
 **Epic 6: Web Frontend**
 Build a production-ready web frontend for the Agent Skills Registry that enables developers to discover, browse, and learn about agent skills through an intuitive terminal-themed interface. Complements the existing CLI tool with visual exploration capabilities, search with autocomplete, detailed skill pages, version history, and efficient filtering.
+
+**Epic 7: HyperBEAM Performance**
+Optimize HyperBEAM integration for production-scale performance and reliability.
+
+**Epic 8: MCP Server for Agent Skills Registry**
+Create a Model Context Protocol (MCP) server that provides the same functionality as the existing @permamind/skills npm package, enabling Claude AI to publish, search, and install agent skills through the MCP protocol without requiring command-line access. Includes deterministic wallet generation from 12-word seed phrase using the same approach as Permamind MCP server.
+
+**Epic 9: Turbo SDK Migration**
+Migrate from direct Arweave SDK transaction creation to Turbo SDK for bundle uploads, enabling free uploads for bundles under 100KB (most skill bundles) and reducing network costs. Maintains full backward compatibility with existing registry infrastructure while delivering significant cost savings through Turbo's subsidized upload tier.
+
+**Epic 10: Jest Test Infrastructure Overhaul**
+Fix Jest automocking infrastructure or migrate to Vitest to restore automated unit testing capabilities project-wide. Addresses critical infrastructure issue where jest.mock() silently fails and returns real implementations instead of mocks, blocking 75+ tests. Delivers modern, reliable test infrastructure with fast feedback loops and proper test isolation.
+
+**Epic 11: Node Arweave Wallet Integration - Brownfield Enhancement**
+Integrate node-arweave-wallet as a fallback authentication mechanism when no SEED_PHRASE environment variable is available, enabling users to securely connect their browser wallets (Wander, ArConnect) to Permamind CLI/MCP tools. Delivers seamless browser wallet authentication with zero breaking changes to existing SEED_PHRASE workflow.
+
+**Epic 12: Custom Wallet UI Fork - Brownfield Enhancement**
+Fork node-arweave-wallet library to enable custom HTML/CSS/JS UI templates for the browser wallet connection interface, providing a fully branded Permamind experience that matches the developer-CLI frontend design system. Delivers customizable wallet UI while maintaining compatibility with upstream library updates and Epic 11 wallet workflows.

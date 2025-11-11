@@ -57,3 +57,77 @@ export interface WalletInfo {
   /** Human-readable balance string (e.g., "5.2 AR", "0.001 AR") */
   balanceFormatted: string;
 }
+
+/**
+ * Data Item Signer type from @permaweb/aoconnect
+ *
+ * This type matches the signature expected by AO SDK's createDataItemSigner.
+ * Used to sign AO messages and Arweave transactions.
+ *
+ * @see node_modules/@permaweb/aoconnect/dist/dal.d.ts:347-390
+ */
+export type DataItemSigner = (args: {
+  data: any;
+  tags: { name: string; value: string }[];
+  target?: string;
+  anchor?: string;
+}) => Promise<{ id: string; raw: any }>;
+
+/**
+ * Wallet Provider Interface
+ *
+ * Abstracts different wallet authentication methods (seed phrase, browser wallet, file)
+ * to provide a unified interface for AO/Arweave operations.
+ *
+ * All wallet providers implement this interface, enabling transparent switching
+ * between authentication methods without changing MCP tool code.
+ */
+export interface IWalletProvider {
+  /**
+   * Get wallet address
+   * @returns 43-character Arweave address
+   */
+  getAddress(): Promise<string>;
+
+  /**
+   * Create data item signer for AO/Arweave operations
+   *
+   * Returns a function compatible with @permaweb/aoconnect createDataItemSigner
+   * that can sign AO messages and Arweave transactions.
+   *
+   * @returns DataItemSigner function for signing operations
+   */
+  createDataItemSigner(): Promise<DataItemSigner>;
+
+  /**
+   * Clean up resources (close connections, clear state)
+   *
+   * Should be called on CLI process exit or unhandled errors to ensure
+   * proper cleanup of connections (e.g., browser wallet local server).
+   */
+  disconnect(): Promise<void>;
+
+  /**
+   * Get wallet source metadata
+   *
+   * Returns information about how this wallet was loaded (seed phrase,
+   * browser wallet, or file) for logging and debugging purposes.
+   *
+   * @returns Wallet source configuration
+   */
+  getSource(): { source: 'seedPhrase' | 'browserWallet' | 'file'; value: string };
+
+  /**
+   * Get JWK keypair (optional - only supported by file and seed phrase providers)
+   *
+   * Browser wallet providers cannot export JWK for security reasons.
+   * This method is only available for backward compatibility with legacy code
+   * that requires direct JWK access (e.g., Arweave SDK transaction signing).
+   *
+   * @returns JWK keypair
+   * @throws {Error} If provider does not support JWK export (e.g., browser wallet)
+   *
+   * @deprecated Prefer using createDataItemSigner() for signing operations
+   */
+  getJWK?(): Promise<JWK>;
+}

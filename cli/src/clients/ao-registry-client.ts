@@ -17,6 +17,7 @@ import {
   IAODryrunResult,
 } from '../types/ao-registry.js';
 import { JWK } from '../types/arweave.js';
+import { IWalletProvider } from '../types/wallet.js';
 import { NetworkError } from '../types/errors.js';
 
 // Configure aoconnect with centralized configuration
@@ -75,8 +76,10 @@ function getProcessId(): string {
  * Sends a Register-Skill message to the AO registry process with skill metadata.
  * This is a state-changing operation and will NOT be retried on failure.
  *
+ * Story 11.6: Updated to accept IWalletProvider for browser wallet support
+ *
  * @param metadata - Complete skill metadata including arweaveTxId
- * @param wallet - Wallet JWK for signing the message
+ * @param walletProvider - Wallet provider instance (supports all wallet types)
  * @returns AO message ID for the registration transaction
  * @throws {NetworkError} If message sending fails
  * @throws {ConfigurationError} If registry process ID not configured
@@ -94,12 +97,12 @@ function getProcessId(): string {
  *   arweaveTxId: 'tx123...tx789',
  *   publishedAt: Date.now(),
  *   updatedAt: Date.now()
- * }, walletJWK);
+ * }, walletProvider);
  * ```
  */
 export async function registerSkill(
   metadata: ISkillMetadata,
-  wallet: JWK
+  walletProvider: IWalletProvider
 ): Promise<string> {
   const processId = getProcessId();
 
@@ -110,8 +113,8 @@ export async function registerSkill(
       version: metadata.version,
     });
 
-    // Create data item signer from wallet JWK
-    const signer = createDataItemSigner(wallet);
+    // Create data item signer from wallet provider (supports all wallet types)
+    const signer = await walletProvider.createDataItemSigner();
 
     // Send message with Register-Skill action
     const messageId = await message({
@@ -128,7 +131,7 @@ export async function registerSkill(
         { name: 'BundledFiles', value: JSON.stringify(metadata.bundledFiles || []) },
         { name: 'Changelog', value: metadata.changelog || '' },
       ],
-      signer,
+      signer: signer as any, // Type assertion needed - aoconnect types are compatible
     });
 
     logger.debug('Register-Skill message sent successfully', { messageId });
@@ -151,15 +154,17 @@ export async function registerSkill(
  * This is a state-changing operation and will NOT be retried on failure.
  * Only the skill owner can update a skill.
  *
+ * Story 11.6: Updated to accept IWalletProvider for browser wallet support
+ *
  * @param metadata - Complete skill metadata including arweaveTxId
- * @param wallet - Wallet JWK for signing the message
+ * @param walletProvider - Wallet provider instance (supports all wallet types)
  * @returns AO message ID for the update transaction
  * @throws {NetworkError} If message sending fails
  * @throws {ConfigurationError} If registry process ID not configured
  */
 export async function updateSkill(
   metadata: ISkillMetadata,
-  wallet: JWK
+  walletProvider: IWalletProvider
 ): Promise<string> {
   const processId = getProcessId();
 
@@ -170,8 +175,8 @@ export async function updateSkill(
       version: metadata.version,
     });
 
-    // Create data item signer from wallet JWK
-    const signer = createDataItemSigner(wallet);
+    // Create data item signer from wallet provider (supports all wallet types)
+    const signer = await walletProvider.createDataItemSigner();
 
     // Send message with Update-Skill action
     const messageId = await message({
@@ -188,7 +193,7 @@ export async function updateSkill(
         { name: 'BundledFiles', value: JSON.stringify(metadata.bundledFiles || []) },
         { name: 'Changelog', value: metadata.changelog || '' },
       ],
-      signer,
+      signer: signer as any, // Type assertion needed - aoconnect types are compatible
     });
 
     logger.debug('Update-Skill message sent successfully', { messageId });

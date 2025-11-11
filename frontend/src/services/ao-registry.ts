@@ -567,6 +567,9 @@ export async function getDownloadStats(
     const response = await hyperbeamFetch<{
       skillName?: string;
       totalDownloads: number;
+      totalSkills?: number; // Only in aggregate (scope=all) responses
+      downloads7Days?: number; // Only in aggregate responses
+      downloads30Days?: number; // Only in aggregate responses
       versions: Record<string, { version: string; downloads: number }>;
       latestVersion?: string;
     }>(url, async () => {
@@ -608,9 +611,10 @@ export async function getDownloadStats(
 
     // Transform HyperBEAM response to DownloadStats format
     const data: DownloadStats = {
-      downloads7Days: 0, // Not provided by HyperBEAM endpoint
-      downloads30Days: 0, // Not provided by HyperBEAM endpoint
-      downloadsTotal: response.totalDownloads,
+      downloads7Days: response.downloads7Days ?? 0,
+      downloads30Days: response.downloads30Days ?? 0,
+      downloadsTotal: response.totalDownloads ?? 0,
+      totalSkills: response.totalSkills ?? 0,
     };
 
     // Cache successful result

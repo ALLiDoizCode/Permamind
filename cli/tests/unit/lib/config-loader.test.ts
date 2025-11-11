@@ -194,4 +194,144 @@ describe('Config Loader', () => {
       expect(resolved).toBe('/config/wallet.json');
     });
   });
+
+  describe('Turbo SDK Configuration (Story 9.1)', () => {
+    // Store original env vars
+    const originalEnv = { ...process.env };
+
+    beforeEach(() => {
+      // Clear Turbo env vars before each test
+      delete process.env.TURBO_GATEWAY;
+      delete process.env.TURBO_USE_CREDITS;
+    });
+
+    afterEach(() => {
+      // Restore original env vars
+      process.env = { ...originalEnv };
+    });
+
+    describe('Default Turbo Configuration', () => {
+      it('should have undefined turboGateway when env var not set', async () => {
+        const config = await loadConfig();
+
+        expect(config.turboGateway).toBeUndefined();
+      });
+
+      it('should have undefined turboUseCredits when env var not set', async () => {
+        const config = await loadConfig();
+
+        expect(config.turboUseCredits).toBeUndefined();
+      });
+    });
+
+    describe('TURBO_GATEWAY Environment Variable', () => {
+      it('should parse TURBO_GATEWAY from environment', async () => {
+        process.env.TURBO_GATEWAY = 'https://upload.ardrive.io';
+
+        const config = await loadConfig();
+
+        expect(config.turboGateway).toBe('https://upload.ardrive.io');
+      });
+
+      it('should trim whitespace from TURBO_GATEWAY', async () => {
+        process.env.TURBO_GATEWAY = '  https://custom.gateway.io  ';
+
+        const config = await loadConfig();
+
+        expect(config.turboGateway).toBe('https://custom.gateway.io');
+      });
+
+      it('should throw ValidationError for non-HTTPS gateway URL', async () => {
+        process.env.TURBO_GATEWAY = 'http://insecure.gateway.io';
+
+        await expect(loadConfig()).rejects.toThrow('must use HTTPS protocol');
+      });
+
+      it('should throw ValidationError for malformed gateway URL', async () => {
+        process.env.TURBO_GATEWAY = 'not-a-valid-url';
+
+        await expect(loadConfig()).rejects.toThrow(
+          'Invalid TURBO_GATEWAY format'
+        );
+      });
+    });
+
+    describe('TURBO_USE_CREDITS Environment Variable', () => {
+      it('should parse TURBO_USE_CREDITS=true', async () => {
+        process.env.TURBO_USE_CREDITS = 'true';
+
+        const config = await loadConfig();
+
+        expect(config.turboUseCredits).toBe(true);
+      });
+
+      it('should parse TURBO_USE_CREDITS=false', async () => {
+        process.env.TURBO_USE_CREDITS = 'false';
+
+        const config = await loadConfig();
+
+        expect(config.turboUseCredits).toBe(false);
+      });
+
+      it('should handle case-insensitive "TRUE"', async () => {
+        process.env.TURBO_USE_CREDITS = 'TRUE';
+
+        const config = await loadConfig();
+
+        expect(config.turboUseCredits).toBe(true);
+      });
+
+      it('should treat non-"true" values as false', async () => {
+        process.env.TURBO_USE_CREDITS = 'yes';
+
+        const config = await loadConfig();
+
+        expect(config.turboUseCredits).toBe(false);
+      });
+    });
+
+    describe('Combined Turbo Configuration', () => {
+      it('should parse both TURBO_GATEWAY and TURBO_USE_CREDITS', async () => {
+        process.env.TURBO_GATEWAY = 'https://custom.turbo.io';
+        process.env.TURBO_USE_CREDITS = 'true';
+
+        const config = await loadConfig();
+
+        expect(config.turboGateway).toBe('https://custom.turbo.io');
+        expect(config.turboUseCredits).toBe(true);
+      });
+
+      it('should validate gateway even when turboUseCredits is set', async () => {
+        process.env.TURBO_GATEWAY = 'http://insecure.io';
+        process.env.TURBO_USE_CREDITS = 'false';
+
+        await expect(loadConfig()).rejects.toThrow('must use HTTPS protocol');
+      });
+    });
+
+    describe('Backward Compatibility', () => {
+      it('should not break existing config loading without Turbo vars', async () => {
+        const config = await loadConfig();
+
+        // Existing fields should still work
+        expect(config.gateway).toBe('https://arweave.net'); // default
+
+        // New fields should be undefined (not breaking)
+        expect(config.turboGateway).toBeUndefined();
+        expect(config.turboUseCredits).toBeUndefined();
+      });
+
+      it('should preserve existing config fields when adding Turbo fields', async () => {
+        process.env.TURBO_GATEWAY = 'https://turbo.io';
+
+        const config = await loadConfig();
+
+        // Existing fields preserved
+        expect(config.gateway).toBe('https://arweave.net');
+
+        // New Turbo field added
+        expect(config.turboGateway).toBe('https://turbo.io');
+      });
+    });
+  });
 });

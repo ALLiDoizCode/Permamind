@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeAll } from '@jest/globals';
-import { ArweaveClient } from '../../src/clients/arweave-client.js';
+import { uploadBundle } from '../../src/clients/arweave-client.js';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 

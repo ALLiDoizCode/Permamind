@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
-import { ArweaveClient } from '../../src/clients/arweave-client.js';
+import { uploadBundle, checkTransactionStatus } from '../../src/clients/arweave-client.js';
 import { AORegistryClient } from '../../src/clients/ao-registry-client.js';
 import { PublishService } from '../../src/lib/publish-service.js';
 import { SearchService } from '../../src/lib/search-service.js';
@@ -20,12 +20,12 @@ import * as path from 'path';
 import * as os from 'os';
 
 describe('Turbo SDK Cross-Compatibility Integration Tests', () => {
-  let arweaveClient: ArweaveClient;
   let aoRegistryClient: AORegistryClient;
   let publishService: PublishService;
   let searchService: SearchService;
   let installService: InstallService;
   let testWallet: any;
+  let testWalletProvider: any;
   let testSkillDir: string;
   let testInstallDir: string;
 
@@ -41,8 +41,16 @@ describe('Turbo SDK Cross-Compatibility Integration Tests', () => {
     );
     testWallet = JSON.parse(await fs.readFile(walletPath, 'utf-8'));
 
+    // Create mock wallet provider
+    testWalletProvider = {
+      getAddress: jest.fn().mockResolvedValue('test-address-43-characters-long-0000000000'),
+      createDataItemSigner: jest.fn().mockResolvedValue(jest.fn()),
+      disconnect: jest.fn().mockResolvedValue(undefined),
+      getSource: jest.fn().mockReturnValue({ source: 'file' as const, value: walletPath }),
+      getJWK: jest.fn().mockResolvedValue(testWallet),
+    };
+
     // Initialize clients
-    arweaveClient = new ArweaveClient();
     aoRegistryClient = new AORegistryClient();
     publishService = new PublishService();
     searchService = new SearchService();
@@ -186,7 +194,7 @@ Small skill bundle (< 100KB) to ensure free tier upload.
     const txId = 'turbo-sdk-test-txid'; // Replace with actual TXID
 
     // When: Check transaction status
-    const status = await arweaveClient.checkTransactionStatus(txId);
+    const status = await checkTransactionStatus(txId);
 
     // Then: Verify status returns correctly (pending/confirmed)
     expect(status).toBeDefined();
@@ -204,9 +212,13 @@ Small skill bundle (< 100KB) to ensure free tier upload.
   it('verifies Turbo SDK upload creates valid TXID for cross-compatibility', async () => {
     // Given: Small test bundle (< 100KB)
     const bundle = Buffer.alloc(50 * 1024, 'C'); // 50KB
+    const metadata = {
+      skillName: 'test-skill',
+      skillVersion: '1.0.0',
+    };
 
-    // When: Upload bundle using ArweaveClient (Turbo SDK path)
-    const result = await arweaveClient.uploadBundle(bundle, testWallet);
+    // When: Upload bundle using uploadBundle function (Turbo SDK path)
+    const result = await uploadBundle(bundle, metadata, testWalletProvider);
 
     // Then: Verify transaction ID is valid format
     expect(result.txId).toBeDefined();

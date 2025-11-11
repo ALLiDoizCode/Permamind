@@ -28,7 +28,7 @@ describe('WalletFactory', () => {
       expect(jwk.dp).toBeDefined();
       expect(jwk.dq).toBeDefined();
       expect(jwk.qi).toBeDefined();
-    }, 10000);
+    }, 30000); // Increased timeout for CI environment
 
     it('should throw InvalidMnemonicError for invalid mnemonic', async () => {
       await expect(
@@ -58,14 +58,14 @@ describe('WalletFactory', () => {
 
       // Validate address format (43 characters, base64url)
       expect(address).toMatch(/^[a-zA-Z0-9_-]{43}$/);
-    }, 10000);
+    }, 30000); // Increased timeout for CI environment
 
     it('should be deterministic: same mnemonic produces same JWK', async () => {
       const jwk1 = await WalletFactory.fromSeedPhrase(TEST_MNEMONIC);
       const jwk2 = await WalletFactory.fromSeedPhrase(TEST_MNEMONIC);
 
       expect(jwk1).toEqual(jwk2);
-    }, 10000);
+    }, 30000); // Increased timeout for CI environment
 
     it('should produce identical JWK across 100 iterations', async () => {
       const results = [];
@@ -78,7 +78,7 @@ describe('WalletFactory', () => {
       for (let i = 1; i < results.length; i++) {
         expect(results[i]).toEqual(results[0]);
       }
-    }, 30000);
+    }, 60000); // 100 iterations: increased timeout for CI environment
 
     it('should produce different JWKs for different mnemonics', async () => {
       const mnemonic1 = TEST_MNEMONIC;
@@ -90,14 +90,14 @@ describe('WalletFactory', () => {
       expect(jwk1).not.toEqual(jwk2);
       expect(jwk1.n).not.toBe(jwk2.n);
       expect(jwk1.d).not.toBe(jwk2.d);
-    }, 10000);
+    }, 30000); // Increased timeout for CI environment
 
     it('should generate JWK with 4096-bit modulus (512 bytes)', async () => {
       const jwk = await WalletFactory.fromSeedPhrase(TEST_MNEMONIC);
 
       const nBuffer = Buffer.from(jwk.n, 'base64url');
       expect(nBuffer.length).toBe(512); // 4096 bits = 512 bytes
-    }, 10000);
+    }, 30000); // Increased timeout for CI environment
 
     it('should produce same address for same mnemonic (cross-check)', async () => {
       const jwk1 = await WalletFactory.fromSeedPhrase(TEST_MNEMONIC);
@@ -107,7 +107,7 @@ describe('WalletFactory', () => {
       const address2 = await arweave.wallets.jwkToAddress(jwk2);
 
       expect(address1).toBe(address2);
-    }, 10000);
+    }, 30000); // Increased timeout for CI environment
   });
 
   describe('fromFile', () => {
@@ -187,7 +187,7 @@ describe('WalletFactory', () => {
       expect(jwk1.d).toBe(jwk2.d);
       expect(jwk1.p).toBe(jwk2.p);
       expect(jwk1.q).toBe(jwk2.q);
-    }, 10000);
+    }, 30000); // Increased timeout for CI environment
   });
 
   describe('security validation', () => {

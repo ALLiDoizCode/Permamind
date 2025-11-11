@@ -49,12 +49,21 @@ describe('BrowserWalletProvider', () => {
   let provider: BrowserWalletProvider;
 
   beforeEach(() => {
+    // Create mock NodeArweaveWallet instance
+    const mockWallet = {
+      signDataItem: jest.fn().mockResolvedValue({
+        id: 'signed_item_id_43_chars_long_000000000000',
+        raw: Buffer.from('signed data item'),
+      }),
+    };
+
     // Create mock adapter
     mockAdapter = {
       getAddress: jest.fn(),
       sign: jest.fn(),
       disconnect: jest.fn(),
       isConnected: jest.fn(),
+      wallet: mockWallet, // Add wallet property for createDataItemSigner()
     } as unknown as jest.Mocked<NodeArweaveWalletAdapter>;
 
     testAddress = 'kR-ZW0hlMJp_vTqTEsx6Of-YijJphwm_nWJLOJvT1u0'; // Valid 43-char address

@@ -82,7 +82,8 @@ describe('Seed Phrase Wallet', () => {
     });
 
     it('should generate 4096-bit modulus (512 bytes)', () => {
-      const seed = Buffer.from('test seed');
+      // Minimum 192 bits (24 bytes) of entropy required by human-crypto-keys
+      const seed = Buffer.alloc(32, 'a'); // 256 bits = 32 bytes
       const jwk = generateRSAKeyMaterial(seed);
 
       const nBuffer = Buffer.from(jwk.n, 'base64url');
@@ -90,7 +91,8 @@ describe('Seed Phrase Wallet', () => {
     });
 
     it('should generate standard RSA exponent (65537)', () => {
-      const seed = Buffer.from('test seed');
+      // Minimum 192 bits (24 bytes) of entropy required by human-crypto-keys
+      const seed = Buffer.alloc(32, 'b'); // 256 bits = 32 bytes
       const jwk = generateRSAKeyMaterial(seed);
 
       const eBuffer = Buffer.from(jwk.e, 'base64url');

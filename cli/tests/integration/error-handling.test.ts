@@ -11,6 +11,7 @@
  * These tests focus on file system validation and configuration detection.
  */
 
+import { describe, it, expect } from '@jest/globals';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -111,7 +112,7 @@ describe('Error Handling and Graceful Degradation', () => {
         expect(isReadable).toBeTruthy();
       } catch (error) {
         // Then: File should exist
-        fail('Template file should exist and be accessible');
+        throw new Error('Template file should exist and be accessible');
       }
     });
 
@@ -131,7 +132,7 @@ describe('Error Handling and Graceful Degradation', () => {
           // Then: Should be readable
           expect(isReadable).toBeTruthy();
         } catch (error) {
-          fail(`${file} should exist and be readable`);
+          throw new Error(`${file} should exist and be readable`);
         }
       });
     });

@@ -116,18 +116,19 @@ describe('MCP Validation Warning Integration Tests (Story 13.1)', () => {
 
     // Setup mocks
     const mockWalletManager = walletManager as jest.Mocked<typeof walletManager>;
-    mockWalletManager.loadWallet = jest.fn().mockResolvedValue(mockWallet);
-    mockWalletManager.getWalletInfo = jest.fn().mockResolvedValue(mockWalletInfo);
-    mockWalletManager.checkSufficientBalance = jest.fn().mockResolvedValue(true);
+    mockWalletManager.load = jest.fn().mockResolvedValue(mockWallet);
+    mockWalletManager.loadJWK = jest.fn().mockResolvedValue(mockWallet);
+    mockWalletManager.loadFromFile = jest.fn().mockResolvedValue(mockWallet);
+    mockWalletManager.checkBalance = jest.fn().mockResolvedValue(mockWalletInfo);
 
     const mockBundler = bundler as jest.Mocked<typeof bundler>;
-    mockBundler.createBundle = jest.fn().mockResolvedValue(mockBundleResult);
+    mockBundler.bundle = jest.fn().mockResolvedValue(mockBundleResult);
 
     const mockArweaveClient = arweaveClient as jest.Mocked<typeof arweaveClient>;
     mockArweaveClient.uploadBundle = jest.fn().mockResolvedValue(mockUploadResult);
 
     const mockSkillAnalyzer = skillAnalyzer as jest.Mocked<typeof skillAnalyzer>;
-    mockSkillAnalyzer.analyzeBundledFiles = jest.fn().mockResolvedValue(mockBundledFiles);
+    mockSkillAnalyzer.analyzeSkillDirectory = jest.fn().mockResolvedValue(mockBundledFiles);
   });
 
   afterEach(async () => {
@@ -153,20 +154,20 @@ describe('MCP Validation Warning Integration Tests (Story 13.1)', () => {
 
       // Setup AO registry mock (skill doesn't exist, so this is a new registration)
       const mockAoRegistryClient = aoRegistryClient as jest.Mocked<typeof aoRegistryClient>;
-      mockAoRegistryClient.querySkillByName = jest.fn().mockResolvedValue(null);
+      mockAoRegistryClient.getSkill = jest.fn().mockRejectedValue(new Error('Skill not found'));
       mockAoRegistryClient.registerSkill = jest
         .fn()
         .mockResolvedValue(mockRegistryMessageId);
 
       // Execute publish
-      const result = await service.publish({
-        directory: testSkillDir,
+      const result = await service.publish(testSkillDir, {
         wallet: mockWallet,
         verbose: false,
       });
 
       // Verify publish succeeded
-      expect(result.success).toBe(true);
+      expect(result.arweaveTxId).toBe(mockUploadResult.txId);
+      expect(result.registryMessageId).toBe(mockRegistryMessageId);
 
       // Verify warning was displayed
       expect(loggerWarnSpy).toHaveBeenCalledWith(
@@ -196,20 +197,20 @@ describe('MCP Validation Warning Integration Tests (Story 13.1)', () => {
 
       // Setup AO registry mock
       const mockAoRegistryClient = aoRegistryClient as jest.Mocked<typeof aoRegistryClient>;
-      mockAoRegistryClient.querySkillByName = jest.fn().mockResolvedValue(null);
+      mockAoRegistryClient.getSkill = jest.fn().mockRejectedValue(new Error('Skill not found'));
       mockAoRegistryClient.registerSkill = jest
         .fn()
         .mockResolvedValue(mockRegistryMessageId);
 
       // Execute publish
-      const result = await service.publish({
-        directory: testSkillDir,
+      const result = await service.publish(testSkillDir, {
         wallet: mockWallet,
         verbose: false,
       });
 
       // Verify publish succeeded
-      expect(result.success).toBe(true);
+      expect(result.arweaveTxId).toBe(mockUploadResult.txId);
+      expect(result.registryMessageId).toBe(mockRegistryMessageId);
 
       // Verify NO warning was displayed
       expect(loggerWarnSpy).not.toHaveBeenCalledWith(
@@ -228,25 +229,23 @@ describe('MCP Validation Warning Integration Tests (Story 13.1)', () => {
 
       // Setup AO registry mock
       const mockAoRegistryClient = aoRegistryClient as jest.Mocked<typeof aoRegistryClient>;
-      mockAoRegistryClient.querySkillByName = jest.fn().mockResolvedValue(null);
+      mockAoRegistryClient.getSkill = jest.fn().mockRejectedValue(new Error('Skill not found'));
       mockAoRegistryClient.registerSkill = jest
         .fn()
         .mockResolvedValue(mockRegistryMessageId);
 
       // Execute publish
-      const result = await service.publish({
-        directory: testSkillDir,
+      const result = await service.publish(testSkillDir, {
         wallet: mockWallet,
         verbose: false,
       });
 
       // Verify publish succeeded despite warning
-      expect(result.success).toBe(true);
-      expect(result.txId).toBe(mockUploadResult.txId);
+      expect(result.arweaveTxId).toBe(mockUploadResult.txId);
       expect(result.registryMessageId).toBe(mockRegistryMessageId);
 
       // Verify all publish steps completed
-      expect(mockBundler.createBundle).toHaveBeenCalled();
+      expect(mockBundler.bundle).toHaveBeenCalled();
       expect(mockArweaveClient.uploadBundle).toHaveBeenCalled();
       expect(mockAoRegistryClient.registerSkill).toHaveBeenCalled();
     });

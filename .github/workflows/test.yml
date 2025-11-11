@@ -53,8 +53,8 @@ jobs:
       - name: Clear Jest cache
         run: npx jest --clearCache
 
-      - name: Run tests
-        run: npm run test:once
+      - name: Run unit tests
+        run: npm run test:unit:once
 
       - name: Run performance regression tests
         run: npm test -- cli/tests/performance/regression.test.ts --no-watch

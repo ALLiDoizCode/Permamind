@@ -16,6 +16,7 @@
     "test": "jest --watch",
     "test:once": "jest",
     "test:unit": "jest --testPathPattern=tests/unit --watch",
+    "test:unit:once": "jest --testPathPattern=tests/unit",
     "test:integration": "jest --testPathPattern=tests/integration",
     "test:coverage": "jest --coverage --coverageThreshold='{\"global\":{\"lines\":100}}'",
     "test:ao": "cd ao-process && cd tests && lua run-all.lua",

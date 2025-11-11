@@ -16,6 +16,13 @@ import type { JWK } from '../../../src/types/wallet.js';
 // Mock WalletFactory
 jest.mock('../../../src/lib/wallet-factory.js');
 
+// Mock browser wallet adapter to skip browser wallet fallback
+jest.mock('../../../src/lib/node-arweave-wallet-adapter.js', () => ({
+  NodeArweaveWalletAdapter: jest.fn().mockImplementation(() => {
+    throw new Error('Browser wallet not available in test environment');
+  }),
+}));
+
 // Mock logger to suppress console output during tests
 jest.mock('../../../src/utils/logger.js', () => ({
   debug: jest.fn(),

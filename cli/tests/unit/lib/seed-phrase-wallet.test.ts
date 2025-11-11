@@ -67,7 +67,8 @@ describe('Seed Phrase Wallet', () => {
 
   describe('generateRSAKeyMaterial', () => {
     it('should generate valid JWK structure', () => {
-      const seed = Buffer.from('test seed for RSA key generation');
+      // Minimum 192 bits (24 bytes) of entropy required by human-crypto-keys
+      const seed = Buffer.alloc(32, 'c'); // 256 bits = 32 bytes
       const jwk = generateRSAKeyMaterial(seed);
 
       expect(jwk.kty).toBe('RSA');
@@ -102,7 +103,7 @@ describe('Seed Phrase Wallet', () => {
     });
 
     it('should generate 512-byte private exponent (d)', () => {
-      const seed = Buffer.from('test seed');
+      const seed = Buffer.alloc(32, 0); // 256 bits = 32 bytes minimum entropy
       const jwk = generateRSAKeyMaterial(seed);
 
       const dBuffer = Buffer.from(jwk.d!, 'base64url');
@@ -110,7 +111,7 @@ describe('Seed Phrase Wallet', () => {
     });
 
     it('should generate 256-byte prime factors (p, q)', () => {
-      const seed = Buffer.from('test seed');
+      const seed = Buffer.alloc(32, 0); // 256 bits = 32 bytes minimum entropy
       const jwk = generateRSAKeyMaterial(seed);
 
       const pBuffer = Buffer.from(jwk.p!, 'base64url');
@@ -121,7 +122,7 @@ describe('Seed Phrase Wallet', () => {
     });
 
     it('should generate 256-byte exponents (dp, dq, qi)', () => {
-      const seed = Buffer.from('test seed');
+      const seed = Buffer.alloc(32, 0); // 256 bits = 32 bytes minimum entropy
       const jwk = generateRSAKeyMaterial(seed);
 
       const dpBuffer = Buffer.from(jwk.dp!, 'base64url');
@@ -169,7 +170,7 @@ describe('Seed Phrase Wallet', () => {
     });
 
     it('should return all JWK components as base64url-encoded strings', () => {
-      const seed = Buffer.from('test seed');
+      const seed = Buffer.alloc(32, 0); // 256 bits = 32 bytes minimum entropy
       const jwk = generateRSAKeyMaterial(seed);
 
       // Check that all components are valid base64url strings
@@ -186,7 +187,7 @@ describe('Seed Phrase Wallet', () => {
     });
 
     it('should set first bit constraint for RSA parameters', () => {
-      const seed = Buffer.from('test seed');
+      const seed = Buffer.alloc(32, 0); // 256 bits = 32 bytes minimum entropy
       const jwk = generateRSAKeyMaterial(seed);
 
       const nBuffer = Buffer.from(jwk.n, 'base64url');

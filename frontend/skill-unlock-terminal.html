@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Unlocked - Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            font-family: 'VT323', 'Share Tech Mono', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .terminal {
+            width: 800px;
+            height: 600px;
+            background: #0a0e0f;
+            border: 2px solid #33ff00;
+            box-shadow: 0 0 50px rgba(51, 255, 0, 0.2);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Scanlines effect */
+        .terminal::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15) 0px,
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* CRT flicker */
+        .terminal::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(51, 255, 0, 0.02);
+            pointer-events: none;
+            z-index: 9;
+            animation: flicker 0.15s infinite;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.9; }
+            50% { opacity: 1; }
+            100% { opacity: 0.9; }
+        }
+
+        .terminal-header {
+            background: #000;
+            padding: 8px 12px;
+            border-bottom: 1px solid #33ff00;
+            font-size: 14px;
+            color: #33ff00;
+            letter-spacing: 2px;
+        }
+
+        .terminal-body {
+            flex: 1;
+            padding: 20px;
+            color: #33ff00;
+            font-size: 20px;
+            line-height: 1.5;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ascii-border {
+            border: 2px solid #33ff00;
+            padding: 20px;
+            margin: 40px auto;
+            max-width: 700px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: scale(0.8);
+            animation: terminalPop 0.5s ease-out 0.3s forwards;
+        }
+
+        @keyframes terminalPop {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            60% {
+                transform: scale(1.05);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .ascii-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            animation: iconPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes iconPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.9; }
+        }
+
+        .terminal-line {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 30px;
+        }
+
+        .prompt {
+            color: #33ff00;
+            margin-right: 5px;
+        }
+
+        .typed-text {
+            color: #33ff00;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 20px;
+            background: #33ff00;
+            margin-left: 3px;
+            animation: blink 0.7s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .title-line {
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px rgba(51, 255, 0, 0.5);
+        }
+
+        .skill-line {
+            font-size: 28px;
+            color: #00ffff;
+            letter-spacing: 2px;
+        }
+
+        .desc-line {
+            font-size: 18px;
+            color: #88ff88;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .bottom-prompt {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            opacity: 0;
+            animation: fadeIn 0.5s ease-in 6s forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        /* Border decoration */
+        .corner {
+            position: absolute;
+            color: #33ff00;
+            font-size: 16px;
+        }
+
+        .corner.tl { top: 5px; left: 5px; }
+        .corner.tr { top: 5px; right: 5px; }
+        .corner.bl { bottom: 5px; left: 5px; }
+        .corner.br { bottom: 5px; right: 5px; }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <div class="terminal-header">
+            PERMAMIND REGISTRY v1.0 - SKILL MANAGEMENT SYSTEM
+        </div>
+
+        <div class="terminal-body">
+            <div class="ascii-border">
+                <div class="corner tl">╔</div>
+                <div class="corner tr">╗</div>
+                <div class="corner bl">╚</div>
+                <div class="corner br">╝</div>
+
+                <div class="ascii-icon">📦</div>
+
+                <div class="terminal-line title-line">
+                    <span class="typed-text" id="title"></span>
+                </div>
+
+                <div class="terminal-line skill-line">
+                    <span class="typed-text" id="skill-name"></span>
+                </div>
+
+                <div class="terminal-line desc-line">
+                    <span class="typed-text" id="description"></span>
+                </div>
+            </div>
+
+            <div class="bottom-prompt">
+                <span class="prompt">$</span> permamind install content-ideation<span class="cursor"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function typeText(element, text, speed, callback) {
+            let i = 0;
+            element.textContent = '';
+
+            const cursor = document.createElement('span');
+            cursor.className = 'cursor';
+            element.appendChild(cursor);
+
+            function type() {
+                if (i < text.length) {
+                    element.textContent = text.substring(0, i + 1);
+                    element.appendChild(cursor);
+                    i++;
+                    setTimeout(type, speed);
+                } else {
+                    cursor.remove();
+                    if (callback) {
+                        setTimeout(callback, 200);
+                    }
+                }
+            }
+
+            type();
+        }
+
+        function startSequence() {
+            const title = document.getElementById('title');
+            const skillName = document.getElementById('skill-name');
+            const description = document.getElementById('description');
+
+            setTimeout(() => {
+                typeText(title, '>>> SKILL UNLOCKED <<<', 60, () => {
+                    typeText(skillName, 'Content Ideation', 70, () => {
+                        typeText(description, 'Generate creative content ideas, marketing strategies, and engaging copy for social media campaigns', 30);
+                    });
+                });
+            }, 800);
+        }
+
+        startSequence();
+
+        // Auto-reload for looping
+        setTimeout(() => {
+            location.reload();
+        }, 8000);
+    </script>
+</body>
+</html>

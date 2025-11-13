@@ -47,6 +47,8 @@ jest.mock('../../../src/lib/registry-config', () => ({
   getRegistryProcessId: jest.fn(() => 'test-process-id'),
   getMuUrl: jest.fn(() => 'https://mu.ao-testnet.xyz'),
   getCuUrl: jest.fn(() => 'https://cu.ao-testnet.xyz'),
+  getMuUrlFallback: jest.fn(() => 'https://mu-fallback.ao-testnet.xyz'),
+  getCuUrlFallback: jest.fn(() => 'https://cu-fallback.ao-testnet.xyz'),
   getGateway: jest.fn(() => 'https://arweave.net'),
   getHyperBeamNode: jest.fn(() => 'https://hyperbeam.arweave.net'),
 }));

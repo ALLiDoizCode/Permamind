@@ -12,7 +12,7 @@
             box-sizing: border-box;
         }
 
-        body {
+        html, body {
             background: #000;
             font-family: 'VT323', 'Share Tech Mono', monospace;
             display: flex;
@@ -26,11 +26,11 @@
             width: 800px;
             height: 600px;
             background: #0a0e0f;
-            border: 2px solid #33ff00;
-            box-shadow: 0 0 50px rgba(51, 255, 0, 0.2);
+            border-radius: 16px;
             position: relative;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
         /* Scanlines effect */
@@ -73,12 +73,7 @@
         }
 
         .terminal-header {
-            background: #000;
-            padding: 8px 12px;
-            border-bottom: 1px solid #33ff00;
-            font-size: 14px;
-            color: #33ff00;
-            letter-spacing: 2px;
+            display: none;
         }
 
         .terminal-body {
@@ -118,9 +113,17 @@
         }
 
         .ascii-icon {
-            font-size: 48px;
             margin-bottom: 15px;
             animation: iconPulse 2s ease-in-out infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ascii-icon img {
+            width: 120px;
+            height: 120px;
+            filter: brightness(0) saturate(100%) invert(76%) sepia(89%) saturate(1514%) hue-rotate(54deg) brightness(103%) contrast(106%);
         }
 
         @keyframes iconPulse {
@@ -173,9 +176,9 @@
         }
 
         .desc-line {
-            font-size: 18px;
+            font-size: 22px;
             color: #88ff88;
-            max-width: 600px;
+            max-width: 650px;
             margin: 0 auto;
             line-height: 1.6;
         }
@@ -218,7 +221,9 @@
                 <div class="corner bl">╚</div>
                 <div class="corner br">╝</div>
 
-                <div class="ascii-icon">📦</div>
+                <div class="ascii-icon">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnPgo8IS0tIE91dGVyIHNxdWFyZSAtLT4KPHBhdGggZD0iTTEwMCA3MEwzMDAgNzBMMzAwIDMzMEwxMDAgMzMwWiIgc3Ryb2tlPSIjMzMzMzMzIiBzdHJva2Utd2lkdGg9IjEuNSIgZmlsbD0ibm9uZSIvPgoKPCEtLSBJbm5lciBzcXVhcmUgLS0+CjxwYXRoIGQ9Ik03NSAxMDVMMzI1IDEwNUwzMjUgMjk1TDc1IDI5NVoiIHN0cm9rZT0iIzMzMzMzMyIgc3Ryb2tlLXdpZHRoPSIxLjUiIGZpbGw9Im5vbmUiLz4KCjwhLS0gQ2VudGVyIHN0YXIgcG9pbnRzIC0tPgo8cGF0aCBkPSJNMjAwIDcwTDIwMCAzMzBNNzUgMjAwTDMyNSAyMDBNMTAwIDEwNUwzMDAgMjk1TTMwMCAxMDVMMTAwIDI5NU0xNTAgNzBMMjUwIDMzME0zMjUgMTUwTDc1IDI1ME0yNTAgNzBMMTUwIDMzME03NSAxNTBMMzI1IDI1MCIgc3Ryb2tlPSIjMzMzMzMzIiBzdHJva2Utd2lkdGg9IjEiIG9wYWNpdHk9IjAuNyIvPgoKPCEtLSBJbm5lciBjcm9zc2VzIC0tPgo8cGF0aCBkPSJNMTUwIDEwNUwyNTAgMjk1TTI1MCAxMDVMMTUwIDI5NU0xMDAgMTUwTDMwMCAyNTBNMzAwIDE1MEwxMDAgMjUwIiBzdHJva2U9IiMzMzMzMzMiIHN0cm9rZS13aWR0aD0iMSIgb3BhY2l0eT0iMC42Ii8+Cgo8IS0tIENlbnRlciBwb2ludHMgLS0+CjxjaXJjbGUgY3g9IjIwMCIgY3k9IjIwMCIgcj0iMyIgZmlsbD0iIzMzMzMzMyIvPgo8Y2lyY2xlIGN4PSIyMDAiIGN5PSI3MCIgcj0iMi41IiBmaWxsPSIjMzMzMzMzIi8+CjxjaXJjbGUgY3g9IjIwMCIgY3k9IjMzMCIgcj0iMi41IiBmaWxsPSIjMzMzMzMzIi8+CjxjaXJjbGUgY3g9Ijc1IiBjeT0iMjAwIiByPSIyLjUiIGZpbGw9IiMzMzMzMzMiLz4KPGNpcmNsZSBjeD0iMzI1IiBjeT0iMjAwIiByPSIyLjUiIGZpbGw9IiMzMzMzMzMiLz4KPGNpcmNsZSBjeD0iMTAwIiBjeT0iMTA1IiByPSIyIiBmaWxsPSIjMzMzMzMzIi8+CjxjaXJjbGUgY3g9IjMwMCIgY3k9IjEwNSIgcj0iMiIgZmlsbD0iIzMzMzMzMyIvPgo8Y2lyY2xlIGN4PSIxMDAiIGN5PSIyOTUiIHI9IjIiIGZpbGw9IiMzMzMzMzMiLz4KPGNpcmNsZSBjeD0iMzAwIiBjeT0iMjk1IiByPSIyIiBmaWxsPSIjMzMzMzMzIi8+CjxjaXJjbGUgY3g9IjE1MCIgY3k9IjE1MCIgcj0iMiIgZmlsbD0iIzMzMzMzMyIvPgo8Y2lyY2xlIGN4PSIyNTAiIGN5PSIxNTAiIHI9IjIiIGZpbGw9IiMzMzMzMzMiLz4KPGNpcmNsZSBjeD0iMTUwIiBjeT0iMjUwIiByPSIyIiBmaWxsPSIjMzMzMzMzIi8+CjxjaXJjbGUgY3g9IjI1MCIgY3k9IjI1MCIgcj0iMiIgZmlsbD0iIzMzMzMzMyIvPgo8L2c+Cjwvc3ZnPg==" alt="Skill Icon"/>
+                </div>
 
                 <div class="terminal-line title-line">
                     <span class="typed-text" id="title"></span>
@@ -234,7 +239,7 @@
             </div>
 
             <div class="bottom-prompt">
-                <span class="prompt">$</span> permamind install content-ideation<span class="cursor"></span>
+                <span class="prompt">$</span> skills install content-ideation<span class="cursor"></span>
             </div>
         </div>
     </div>
@@ -281,10 +286,10 @@
 
         startSequence();
 
-        // Auto-reload for looping
+        // Auto-reload for looping (increased to 11 seconds for longer display)
         setTimeout(() => {
             location.reload();
-        }, 8000);
+        }, 11000);
     </script>
 </body>
 </html>

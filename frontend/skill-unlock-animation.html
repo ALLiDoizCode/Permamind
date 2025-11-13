@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Unlocked - CLI Theme</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0e27;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 800px;
+            height: 600px;
+            position: relative;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            border: 2px solid #00ff88;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+        }
+
+        /* Scanline effect */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 255, 136, 0.03) 0px,
+                rgba(0, 255, 136, 0.03) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .terminal-header {
+            background: #0d1117;
+            padding: 12px 20px;
+            border-bottom: 2px solid #00ff88;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff5f56;
+            animation: pulse 2s infinite;
+        }
+
+        .terminal-dot:nth-child(2) { background: #ffbd2e; animation-delay: 0.2s; }
+        .terminal-dot:nth-child(3) { background: #27c93f; animation-delay: 0.4s; }
+
+        .terminal-title {
+            color: #00ff88;
+            font-size: 14px;
+            margin-left: 12px;
+        }
+
+        .content {
+            padding: 40px;
+            height: calc(100% - 48px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .skill-card {
+            background: #0d1117;
+            border: 3px solid #00ff88;
+            padding: 35px 45px;
+            border-radius: 0;
+            box-shadow: 4px 4px 0 rgba(0, 255, 136, 0.3);
+            text-align: center;
+            opacity: 0;
+            transform: scale(0.5);
+            animation: pixelPop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+            animation-delay: 0.3s;
+            width: 650px;
+            position: relative;
+        }
+
+        .skill-icon {
+            width: 90px;
+            height: 90px;
+            margin: 0 auto 20px;
+            border: 3px solid #00ff88;
+            border-radius: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 45px;
+            background: #1a1f3a;
+            box-shadow: 3px 3px 0 rgba(0, 255, 136, 0.25);
+            animation: iconFloat 3s ease-in-out infinite;
+            position: relative;
+        }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .unlock-text {
+            color: #00ff88;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+            letter-spacing: 2px;
+            min-height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .unlock-text-inner {
+            display: inline-block;
+        }
+
+        .skill-name {
+            color: #00d9ff;
+            font-size: 32px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+            letter-spacing: 1px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .skill-name-inner {
+            display: inline-block;
+        }
+
+        .skill-description {
+            color: #a8b2d1;
+            font-size: 15px;
+            line-height: 1.8;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 20px;
+        }
+
+        .skill-description-inner {
+            display: inline-block;
+            max-width: 520px;
+            text-align: center;
+        }
+
+        .skill-description-text {
+            display: inline-block;
+        }
+
+        /* Single typing cursor */
+        .typing-cursor {
+            display: inline-block;
+            width: 12px;
+            height: 1.2em;
+            background: #00ff88;
+            margin-left: 4px;
+            vertical-align: text-bottom;
+            animation: blink-cursor 0.7s step-end infinite;
+        }
+
+        @keyframes blink-cursor {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .cli-prompt {
+            position: absolute;
+            bottom: 30px;
+            left: 40px;
+            color: #00ff88;
+            font-size: 14px;
+            opacity: 0;
+            animation: promptBlink 0.5s ease-in forwards;
+            animation-delay: 5.2s;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background: #00ff88;
+            margin-left: 5px;
+            animation: blink 1s infinite;
+        }
+
+        /* Particles effect */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #00ff88;
+            border-radius: 50%;
+            opacity: 0;
+            animation: particleFloat 2s ease-out forwards;
+        }
+
+        @keyframes pixelPop {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes promptBlink {
+            to { opacity: 1; }
+        }
+
+        @keyframes particleFloat {
+            0% {
+                opacity: 0;
+                transform: translateY(0) translateX(0);
+            }
+            20% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-150px) translateX(var(--tx));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="terminal-header">
+            <div class="terminal-dot"></div>
+            <div class="terminal-dot"></div>
+            <div class="terminal-dot"></div>
+            <span class="terminal-title">permamind@registry:~/skills$</span>
+        </div>
+
+        <div class="content">
+            <div class="skill-card">
+                <div class="skill-icon">
+                    <span>📦</span>
+                </div>
+                <div class="unlock-text">
+                    <div class="unlock-text-inner" id="unlock-text"></div>
+                </div>
+                <div class="skill-name">
+                    <div class="skill-name-inner" id="skill-name"></div>
+                </div>
+                <div class="skill-description">
+                    <div class="skill-description-inner">
+                        <div class="skill-description-text" id="skill-description"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cli-prompt">
+                $ permamind install content-ideation<span class="cursor"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Create particles
+        function createParticles() {
+            const content = document.querySelector('.content');
+            const centerX = 400;
+            const centerY = 250;
+
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+
+                const angle = (Math.PI * 2 * i) / 20;
+                const distance = 100 + Math.random() * 50;
+                const tx = Math.cos(angle) * distance;
+
+                particle.style.left = `${centerX}px`;
+                particle.style.top = `${centerY}px`;
+                particle.style.setProperty('--tx', `${tx}px`);
+                particle.style.animationDelay = `${0.5 + i * 0.05}s`;
+
+                content.appendChild(particle);
+            }
+        }
+
+        // Typewriter effect with single cursor
+        function typeWriter(element, text, speed, callback) {
+            let i = 0;
+            element.textContent = '';
+
+            // Create cursor element
+            const cursor = document.createElement('span');
+            cursor.className = 'typing-cursor';
+            element.appendChild(cursor);
+
+            function type() {
+                if (i < text.length) {
+                    element.textContent = text.substring(0, i + 1);
+                    element.appendChild(cursor); // Re-append cursor after text
+                    i++;
+                    setTimeout(type, speed);
+                } else {
+                    // Remove cursor when done
+                    cursor.remove();
+                    if (callback) {
+                        setTimeout(callback, 300);
+                    }
+                }
+            }
+
+            type();
+        }
+
+        // Start typing sequence
+        function startTypingSequence() {
+            const unlockText = document.getElementById('unlock-text');
+            const skillName = document.getElementById('skill-name');
+            const skillDescription = document.getElementById('skill-description');
+
+            // Type "SKILL UNLOCKED!" after 1 second
+            setTimeout(() => {
+                typeWriter(unlockText, 'SKILL UNLOCKED!', 60, () => {
+                    // Type skill name after unlock text is done
+                    typeWriter(skillName, 'Content Ideation', 70, () => {
+                        // Type description after skill name is done
+                        typeWriter(skillDescription, 'Generate creative content ideas, marketing strategies, and engaging copy for social media campaigns', 35);
+                    });
+                });
+            }, 1000);
+        }
+
+        createParticles();
+        startTypingSequence();
+
+        // Auto-loop animation - restart every 8 seconds
+        setInterval(() => {
+            location.reload();
+        }, 8000);
+    </script>
+</body>
+</html>

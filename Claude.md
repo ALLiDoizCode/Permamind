@@ -302,56 +302,88 @@ Use Playwright for all integration and end-to-end testing of the marketplace.
 - Test accessibility using snapshots
 
 ### permamind
-**Permanent AI Memory System built on Arweave and AO**
+**Claude Code Skills Registry - "I Know Kung Fu" for AI Agents**
 
-- **Type**: Local MCP server
+- **Type**: MCP server for skills publishing, discovery, and installation
 - **Command**: `npx permamind`
 - **Repository**: https://github.com/ALLiDoizCode/Permamind
-- **Purpose**: Permanent, decentralized AI memory and AO process development
+- **Purpose**: Decentralized registry for Claude Code agent skills on Arweave
 
-#### Available Tool Categories:
+#### What is Permamind?
 
-**1. Memory Management**
-- Persistent AI memory storage across sessions
-- Knowledge relationship creation
-- Permanent information retrieval
+Permamind is like **npm for Claude Code skills** - a permanent, decentralized registry where developers can:
+- **Publish** their Claude agent skills to the Permaweb
+- **Discover** skills created by the community
+- **Install** skills instantly with automatic dependency resolution
 
-**2. Process Tools**
-- `generateLuaProcess`: Generate ADP-compliant Lua code for AO processes
-  - Parameters: `userRequest` (required), `domains` (optional), `includeExplanation` (optional)
-  - Example: `"Generate a token transfer process"`
-- `spawnProcess`: Spawn new AO processes
-- `evalProcess`: Deploy Lua code (handlers, modules)
-- `executeAction`: Send natural language messages to processes
-- `queryAOProcessMessages`: Query process message history
-- `validateDeployment`: Validate deployed functionality
-- `rollbackDeployment`: Rollback failed deployments
-- `analyzeProcessArchitecture`: Analyze process structure
+**The "I Know Kung Fu" Moment**: Just like Neo downloading martial arts skills in The Matrix, agents can instantly gain new capabilities by loading skills from Permamind.
 
-**3. Token Tools**
-- Balance queries and transfers
-- Advanced minting strategies
-- Credit notice detection
+#### Core MCP Tools:
 
-**4. Documentation Tools**
-- Permaweb documentation access
-- File storage and deployment
-- Decentralized documentation systems
+**1. Publishing Skills**
+- `publish_skill`: Publish a skill to the Agent Skills Registry on Arweave
+  - Parameters: `directory` (path to skill folder with SKILL.md)
+  - Requires: `SEED_PHRASE` environment variable for wallet
+  - Creates permanent, immutable skill entry on Permaweb
 
-**5. Contact & Hub Tools**
-- Contact and address management
-- Hub creation for Velocity protocol
-- Decentralized identity management
+**2. Discovering Skills**
+- `search_skills`: Search the registry by keyword or tag
+  - Parameters: `query` (search string), `tags` (optional filter)
+  - Returns: Skills matching query in name/description/tags
+  - Example: `search_skills("ao-basics")` or `search_skills("", ["web3", "tokens"])`
 
-**6. ArNS Tools**
-- ArNS name system operations
-- Decentralized domain management
+**3. Installing Skills**
+- `install_skill`: Install from registry with dependency resolution
+  - Parameters: `skillName` (supports `name@version` format)
+  - Auto-resolves: Dependencies and version conflicts
+  - Location: `~/.claude/skills` (customizable)
+  - Example: `install_skill("ao-basics@1.0.0")`
+
+#### How It Works:
+
+```
+Developer creates skill → publish_skill → Arweave (permanent storage)
+                                              ↓
+Community discovers → search_skills → Browse registry on Permaweb
+                                              ↓
+User installs → install_skill → Automatic download + dependency resolution
+                                              ↓
+Claude Code loads skill → "I know kung fu" moment → Agent gains new capability
+```
+
+#### Why Decentralized Registry?
+
+**Permanent**: Skills published to Arweave exist forever (no npm unpublish drama)
+**Censorship-resistant**: No central authority can remove skills
+**Ownership**: Developers retain full control via cryptographic signatures
+**Zero hosting costs**: Pay once to publish, available forever
+
+#### Publishing Your First Skill:
+
+```bash
+# 1. Create skill directory with SKILL.md
+mkdir my-awesome-skill
+cd my-awesome-skill
+# ... create SKILL.md with frontmatter
+
+# 2. Set wallet (one-time setup)
+export SEED_PHRASE="your twelve word seed phrase here"
+
+# 3. Publish to Permamind registry
+npx permamind
+# Then use: publish_skill("/path/to/my-awesome-skill")
+
+# 4. Others can now discover and install
+# search_skills("awesome")
+# install_skill("my-awesome-skill")
+```
 
 #### Usage Best Practices:
-- **Memory Storage**: Natural language commands automatically persist
-- **Zero Configuration**: All tools work without setup
-- **Process Development**: Use `generateLuaProcess` for ADP v1.0 compliance
-- **Natural Language**: Conversational commands for blockchain operations
+- **Semantic Versioning**: Use semver for skill versions (1.0.0, 1.1.0, etc.)
+- **Rich Metadata**: Include detailed description and tags for discoverability
+- **Dependencies**: Document skill dependencies in SKILL.md
+- **Open Source**: Share skill code on GitHub, publish to Permamind for distribution
+- **Community**: Join Permamind Discord to share skills and get feedback
 
 ### aolite Docs
 **Local AO Protocol Emulation for Testing**
@@ -706,24 +738,6 @@ Handlers.add("info",
 )
 ```
 
-### Permamind-First Development Standard
-**ALL new AO processes MUST be generated using Permamind** for ADP v1.0 compliance:
-
-```bash
-# Generate ADP-compliant process
-mcp://permamind/generateLuaProcess {
-    "userRequest": "Create a [process description]",
-    "includeExplanation": true
-}
-```
-
-#### Why Permamind-First?
-- ✅ **ADP v1.0 Compliance**: Automatic self-documentation standards
-- ✅ **Production-Ready**: Complete mechanics and error handling
-- ✅ **Consistent Quality**: Standardized structure and validation
-- ✅ **Future-Proof**: Compatible with autonomous AI agents
-- ✅ **Development Speed**: Instant generation vs manual templates
-
 ## HyperBEAM Resources
 
 ### Core HyperBEAM Documentation
@@ -773,10 +787,10 @@ WebFetch: https://github.com/permaweb/HyperBEAM
 
 ## MCP Best Practices
 
-- **Memory Management**: Use permamind for context persistence across sessions
+- **Skills Distribution**: Use Permamind to publish, discover, and install Claude Code skills
 - **Documentation Access**: Leverage MCP documentation servers for real-time technical docs
 - **HyperBEAM Resources**: Reference documentation section for architecture details
-- **Permanent Storage**: Use aolite docs for permanent storage implementations
+- **Permanent Storage**: Use Arweave/Permaweb for permanent data storage
 - **Decentralized Development**: Use harlequin-toolkit for Permaweb applications
 
 ---

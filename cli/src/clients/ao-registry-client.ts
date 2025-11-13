@@ -9,7 +9,7 @@
  */
 
 import { connect, createDataItemSigner } from '@permaweb/aoconnect';
-import { getRegistryProcessId, getMuUrl, getCuUrl } from '../lib/registry-config.js';
+import { getRegistryProcessId, getMuUrl, getCuUrl, getMuUrlFallback, getCuUrlFallback } from '../lib/registry-config.js';
 import logger from '../utils/logger.js';
 import {
   ISkillMetadata,
@@ -20,13 +20,20 @@ import { JWK } from '../types/arweave.js';
 import { IWalletProvider } from '../types/wallet.js';
 import { NetworkError } from '../types/errors.js';
 
-// Configure aoconnect with centralized configuration
-const ao = connect({
+// Configure primary aoconnect with centralized configuration
+const aoPrimary = connect({
   MU_URL: getMuUrl(),
   CU_URL: getCuUrl(),
 });
 
-const { message, dryrun, result } = ao;
+// Configure fallback aoconnect with testnet endpoints
+const aoFallback = connect({
+  MU_URL: getMuUrlFallback(),
+  CU_URL: getCuUrlFallback(),
+});
+
+const { message, dryrun, result } = aoPrimary;
+const { message: messageFallback, dryrun: dryrunFallback, result: resultFallback } = aoFallback;
 
 /**
  * Constants for AO operations
@@ -332,8 +339,11 @@ export async function listSkills(options?: {
 }> {
   const processId = getProcessId();
 
-  const executeQuery = async () => {
-    logger.debug('Sending List-Skills dryrun query', { processId, options });
+  const executeQuery = async (useFallback: boolean) => {
+    const dryrunFn = useFallback ? dryrunFallback : dryrun;
+    const endpoint = useFallback ? 'fallback' : 'primary';
+
+    logger.debug(`Sending List-Skills dryrun query (${endpoint})`, { processId, options });
 
     const tags: Array<{ name: string; value: string }> = [
       { name: 'Action', value: 'List-Skills' },
@@ -356,7 +366,7 @@ export async function listSkills(options?: {
       tags.push({ name: 'FilterTags', value: JSON.stringify(options.filterTags) });
     }
 
-    const result = (await dryrun({
+    const result = (await dryrunFn({
       process: processId,
       tags,
     })) as IAODryrunResult;
@@ -468,10 +478,13 @@ export async function searchSkills(
 
   const processId = getProcessId();
 
-  const executeQuery = async (): Promise<ISkillMetadata[]> => {
-    logger.debug('Sending Search-Skills dryrun query', { processId, query });
+  const executeQuery = async (useFallback: boolean): Promise<ISkillMetadata[]> => {
+    const dryrunFn = useFallback ? dryrunFallback : dryrun;
+    const endpoint = useFallback ? 'fallback' : 'primary';
 
-    const result = (await dryrun({
+    logger.debug(`Sending Search-Skills dryrun query (${endpoint})`, { processId, query });
+
+    const result = (await dryrunFn({
       process: processId,
       tags: [
         { name: 'Action', value: 'Search-Skills' },
@@ -536,8 +549,11 @@ export async function getSkill(name: string, version?: string): Promise<ISkillMe
 
   const processId = getProcessId();
 
-  const executeQuery = async (): Promise<ISkillMetadata | null> => {
-    logger.debug('Sending Get-Skill dryrun query', { processId, name, version: version || 'latest' });
+  const executeQuery = async (useFallback: boolean): Promise<ISkillMetadata | null> => {
+    const dryrunFn = useFallback ? dryrunFallback : dryrun;
+    const endpoint = useFallback ? 'fallback' : 'primary';
+
+    logger.debug(`Sending Get-Skill dryrun query (${endpoint})`, { processId, name, version: version || 'latest' });
 
     const tags: Array<{ name: string; value: string }> = [
       { name: 'Action', value: 'Get-Skill' },
@@ -549,7 +565,7 @@ export async function getSkill(name: string, version?: string): Promise<ISkillMe
       tags.push({ name: 'Version', value: version });
     }
 
-    const result = (await dryrun({
+    const result = (await dryrunFn({
       process: processId,
       tags,
     })) as IAODryrunResult;
@@ -618,10 +634,13 @@ export async function getSkill(name: string, version?: string): Promise<ISkillMe
 export async function getRegistryInfo(): Promise<IRegistryInfo> {
   const processId = getProcessId();
 
-  const executeQuery = async (): Promise<IRegistryInfo> => {
-    logger.debug('Sending Info dryrun query for ADP compliance', { processId });
+  const executeQuery = async (useFallback: boolean): Promise<IRegistryInfo> => {
+    const dryrunFn = useFallback ? dryrunFallback : dryrun;
+    const endpoint = useFallback ? 'fallback' : 'primary';
 
-    const result = (await dryrun({
+    logger.debug(`Sending Info dryrun query for ADP compliance (${endpoint})`, { processId });
+
+    const result = (await dryrunFn({
       process: processId,
       tags: [{ name: 'Action', value: 'Info' }],
     })) as IAODryrunResult;
@@ -679,32 +698,39 @@ async function withTimeout<T>(
 }
 
 /**
- * Retry a query function with fixed delay between attempts
+ * Retry a query function with fixed delay between attempts and automatic fallback
  *
  * IMPORTANT: Only use this for dryrun queries (read-only operations).
  * Do NOT retry message() calls (state-changing operations).
  *
- * @param fn - Query function to retry
+ * Retry strategy:
+ * 1. Try primary endpoints (Randao) MAX_RETRY_ATTEMPTS times
+ * 2. If all primary attempts fail, try fallback endpoints (ao-testnet) once
+ * 3. If fallback succeeds, log warning and return result
+ * 4. If both primary and fallback fail, throw NetworkError
+ *
+ * @param fn - Query function to retry (receives useFallback boolean)
  * @param actionName - Name of the action for error messages
  * @returns Result from successful query execution
- * @throws {NetworkError} If all retry attempts fail
+ * @throws {NetworkError} If all retry attempts fail (primary + fallback)
  * @private
  */
 async function retryQuery<T>(
-  fn: () => Promise<T>,
+  fn: (useFallback: boolean) => Promise<T>,
   actionName: string
 ): Promise<T> {
   let lastError: Error | undefined;
 
+  // Try primary endpoints first
   for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
     try {
       // Wrap function execution with timeout
-      return await withTimeout(fn, DEFAULT_TIMEOUT_MS, actionName);
+      return await withTimeout(() => fn(false), DEFAULT_TIMEOUT_MS, actionName);
     } catch (error: unknown) {
       lastError = error instanceof Error ? error : new Error(String(error));
 
       // Log the actual error for debugging
-      logger.warn(`${actionName} query attempt ${attempt} failed: ${lastError.message} (${lastError.name})`);
+      logger.warn(`${actionName} query attempt ${attempt} (primary) failed: ${lastError.message} (${lastError.name})`);
 
       // Fast fail on timeout errors - do not retry
       if (lastError.message.includes('timed out')) {
@@ -712,7 +738,7 @@ async function retryQuery<T>(
       }
 
       if (attempt < MAX_RETRY_ATTEMPTS) {
-        logger.debug(`${actionName} query failed, retrying...`, {
+        logger.debug(`${actionName} query failed, retrying with primary endpoints...`, {
           attempt,
           maxAttempts: MAX_RETRY_ATTEMPTS,
           error: lastError.message,
@@ -722,13 +748,25 @@ async function retryQuery<T>(
     }
   }
 
-  // All attempts failed - include the actual error details
-  throw new NetworkError(
-    `[NetworkError] Failed to execute ${actionName} query after ${MAX_RETRY_ATTEMPTS} attempts. -> Solution: Check your network connection and ensure the AO registry process is available. Try again in a few moments. Last error: ${lastError!.message}`,
-    lastError!,
-    'ao-registry',
-    'connection_failure'
-  );
+  // Primary endpoints failed - try fallback endpoints once
+  logger.warn(`${actionName} query failed on primary endpoints after ${MAX_RETRY_ATTEMPTS} attempts. Trying fallback endpoints...`);
+
+  try {
+    const result = await withTimeout(() => fn(true), DEFAULT_TIMEOUT_MS, actionName);
+    logger.warn(`${actionName} query succeeded using fallback endpoints (ao-testnet)`);
+    return result;
+  } catch (fallbackError: unknown) {
+    const fbError = fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError));
+    logger.error(`${actionName} query failed on fallback endpoints: ${fbError.message}`);
+
+    // Both primary and fallback failed
+    throw new NetworkError(
+      `[NetworkError] Failed to execute ${actionName} query on both primary and fallback endpoints. -> Solution: Check your network connection and ensure the AO registry process is available. Try again in a few moments. Primary error: ${lastError!.message}, Fallback error: ${fbError.message}`,
+      lastError!,
+      'ao-registry',
+      'connection_failure'
+    );
+  }
 }
 
 /**

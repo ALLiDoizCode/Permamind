@@ -64,6 +64,79 @@ agent-skills-registry/
 │   ├── deploy.md
 │   └── README.md
 │
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── layout/
+│   │   │   │   ├── Header.tsx
+│   │   │   │   └── Footer.tsx
+│   │   │   ├── sections/
+│   │   │   │   ├── HeroSection.tsx
+│   │   │   │   ├── FeaturedSkillsSection.tsx
+│   │   │   │   └── HowItWorksSection.tsx
+│   │   │   ├── ui/
+│   │   │   │   ├── badge.tsx
+│   │   │   │   ├── button.tsx
+│   │   │   │   ├── card.tsx
+│   │   │   │   ├── input.tsx
+│   │   │   │   └── tabs.tsx
+│   │   │   ├── __tests__/
+│   │   │   │   └── MarkdownRenderer.*.test.tsx
+│   │   │   ├── MarkdownRenderer.tsx
+│   │   │   ├── SkillCard.tsx
+│   │   │   ├── SearchBar.tsx
+│   │   │   ├── LoadingSkeleton.tsx
+│   │   │   ├── ErrorBoundary.tsx
+│   │   │   ├── Breadcrumbs.tsx
+│   │   │   ├── CopyButton.tsx
+│   │   │   └── ScrollToTop.tsx
+│   │   ├── pages/
+│   │   │   ├── Home.tsx
+│   │   │   ├── SearchResults.tsx
+│   │   │   ├── SkillDetail.tsx
+│   │   │   ├── Documentation.tsx
+│   │   │   ├── CliGuide.tsx
+│   │   │   ├── McpGuide.tsx
+│   │   │   ├── PublishSkill.tsx
+│   │   │   └── NotFound.tsx
+│   │   ├── routes/
+│   │   │   └── index.tsx
+│   │   ├── hooks/
+│   │   │   ├── useSkillSearch.ts
+│   │   │   └── useArnsName.ts
+│   │   ├── services/
+│   │   │   └── ao-registry.ts
+│   │   ├── lib/
+│   │   │   ├── utils.ts
+│   │   │   └── ao-client.ts
+│   │   ├── types/
+│   │   │   └── ao.ts
+│   │   ├── __tests__/
+│   │   │   ├── components/
+│   │   │   │   ├── layout/
+│   │   │   │   ├── sections/
+│   │   │   │   └── ui/
+│   │   │   ├── pages/
+│   │   │   ├── hooks/
+│   │   │   ├── routes/
+│   │   │   ├── services/
+│   │   │   ├── lib/
+│   │   │   └── integration/
+│   │   ├── index.css
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── e2e/
+│   │   └── *.spec.ts
+│   ├── public/
+│   │   ├── blog/
+│   │   └── assets/
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── vitest.config.ts
+│   ├── tsconfig.json
+│   ├── tailwind.config.js
+│   └── README.md
+│
 ├── skills/
 │   ├── ao-basics/
 │   ├── arweave-fundamentals/

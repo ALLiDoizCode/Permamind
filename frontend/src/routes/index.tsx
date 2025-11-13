@@ -36,8 +36,23 @@ const McpGuide = lazy(() =>
     default: module.McpGuide,
   }))
 );
+const BlogListing = lazy(() =>
+  import('@/pages/BlogListing').then((module) => ({
+    default: module.BlogListing,
+  }))
+);
+const BlogPost = lazy(() =>
+  import('@/pages/BlogPost').then((module) => ({
+    default: module.BlogPost,
+  }))
+);
 const NotFound = lazy(() =>
   import('@/pages/NotFound').then((module) => ({ default: module.NotFound }))
+);
+const MarkdownDemo = lazy(() =>
+  import('@/pages/MarkdownDemo').then((module) => ({
+    default: module.MarkdownDemo,
+  }))
 );
 
 /**
@@ -76,6 +91,15 @@ export function AppRoutes() {
         <Route path="/cli-guide" element={<CliGuide />} />
         <Route path="/mcp-guide" element={<McpGuide />} />
         <Route path="/publish" element={<PublishSkill />} />
+
+        {/* Blog listing page */}
+        <Route path="/blog" element={<BlogListing />} />
+
+        {/* Blog post detail page */}
+        <Route path="/blog/:slug" element={<BlogPost />} />
+
+        {/* Markdown demo (development only) */}
+        <Route path="/markdown-demo" element={<MarkdownDemo />} />
 
         {/* 404 Not Found - must be last */}
         <Route path="*" element={<NotFound />} />

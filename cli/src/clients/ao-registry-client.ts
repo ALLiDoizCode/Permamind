@@ -33,7 +33,7 @@ const aoFallback = connect({
 });
 
 const { message, dryrun, result } = aoPrimary;
-const { message: messageFallback, dryrun: dryrunFallback, result: resultFallback } = aoFallback;
+const { dryrun: dryrunFallback } = aoFallback;
 
 /**
  * Constants for AO operations

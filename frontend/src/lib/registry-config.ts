@@ -23,16 +23,28 @@ export const REGISTRY_CONFIG = {
   PROCESS_ID: 'afj-S1wpWK07iSs9jIttoPJsptf4Db6ubZ_CLODdEpQ',
 
   /**
-   * AO Messaging Unit (MU) endpoint
+   * AO Messaging Unit (MU) endpoint - Primary
    * Default: Randao MU for reliable message delivery
    */
   MU_URL: 'https://ur-mu.randao.net',
 
   /**
-   * AO Compute Unit (CU) endpoint
+   * AO Compute Unit (CU) endpoint - Primary
    * Default: Randao CU for reliable computation
    */
   CU_URL: 'https://ur-cu.randao.net',
+
+  /**
+   * AO Messaging Unit (MU) endpoint - Fallback
+   * Used when primary MU fails
+   */
+  MU_URL_FALLBACK: 'https://mu.ao-testnet.xyz',
+
+  /**
+   * AO Compute Unit (CU) endpoint - Fallback
+   * Used when primary CU fails
+   */
+  CU_URL_FALLBACK: 'https://cu.ao-testnet.xyz',
 
   /**
    * HyperBEAM node endpoint for serverless read-only queries
@@ -57,7 +69,7 @@ export function getRegistryProcessId(): string {
 /**
  * Get MU endpoint with environment variable override support
  *
- * @returns MU URL
+ * @returns MU URL (primary)
  */
 export function getMuUrl(): string {
   return import.meta.env.VITE_MU_URL || REGISTRY_CONFIG.MU_URL;
@@ -66,10 +78,28 @@ export function getMuUrl(): string {
 /**
  * Get CU endpoint with environment variable override support
  *
- * @returns CU URL
+ * @returns CU URL (primary)
  */
 export function getCuUrl(): string {
   return import.meta.env.VITE_CU_URL || REGISTRY_CONFIG.CU_URL;
+}
+
+/**
+ * Get fallback MU endpoint
+ *
+ * @returns Fallback MU URL
+ */
+export function getMuUrlFallback(): string {
+  return REGISTRY_CONFIG.MU_URL_FALLBACK;
+}
+
+/**
+ * Get fallback CU endpoint
+ *
+ * @returns Fallback CU URL
+ */
+export function getCuUrlFallback(): string {
+  return REGISTRY_CONFIG.CU_URL_FALLBACK;
 }
 
 /**

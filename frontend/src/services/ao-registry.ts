@@ -1,4 +1,4 @@
-import { dryrun, REGISTRY_PROCESS_ID } from '@/lib/ao-client';
+import { dryrun, dryrunFallback, REGISTRY_PROCESS_ID } from '@/lib/ao-client';
 import {
   buildHyperbeamUrl,
   hyperbeamFetch,
@@ -59,6 +59,50 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Execute dryrun with automatic fallback to secondary endpoints
+ * @param tags - Message tags for the dryrun query
+ * @returns Dryrun result
+ */
+async function dryrunWithFallback(tags: Array<{ name: string; value: string }>) {
+  try {
+    // Try primary endpoint first
+    const result = await dryrun({
+      process: REGISTRY_PROCESS_ID,
+      tags,
+    });
+    return result;
+  } catch (primaryError) {
+    // Log primary failure in dev mode
+    if (import.meta.env.DEV) {
+      console.warn('Primary endpoint failed, trying fallback:', primaryError);
+    }
+
+    // Try fallback endpoint
+    try {
+      const result = await dryrunFallback({
+        process: REGISTRY_PROCESS_ID,
+        tags,
+      });
+
+      if (import.meta.env.DEV) {
+        console.warn('Successfully used fallback endpoint (ao-testnet)');
+      }
+
+      return result;
+    } catch (fallbackError) {
+      // Both failed - throw the original error
+      if (import.meta.env.DEV) {
+        console.error('Both primary and fallback endpoints failed:', {
+          primary: primaryError,
+          fallback: fallbackError,
+        });
+      }
+      throw primaryError;
+    }
+  }
+}
+
 // Error types for better error handling
 export class RegistryError extends Error {
   constructor(
@@ -99,14 +143,11 @@ export async function searchSkills(
       total: number;
       query: string;
     }>(url, async () => {
-      // Fallback to dryrun if HyperBEAM fails
-      const result = await dryrun({
-        process: REGISTRY_PROCESS_ID,
-        tags: [
-          { name: 'Action', value: 'Search-Skills' },
-          { name: 'Query', value: sanitizedQuery },
-        ],
-      });
+      // Fallback to dryrun with automatic endpoint fallback if HyperBEAM fails
+      const result = await dryrunWithFallback([
+        { name: 'Action', value: 'Search-Skills' },
+        { name: 'Query', value: sanitizedQuery },
+      ]);
 
       // Validate response structure
       if (!result || !result.Messages || !Array.isArray(result.Messages)) {
@@ -222,7 +263,7 @@ export async function listSkills(
         hasPrevPage: boolean;
       };
     }>(url, async () => {
-      // Fallback to dryrun if HyperBEAM fails
+      // Fallback to dryrun with automatic endpoint fallback if HyperBEAM fails
       const tags = [
         { name: 'Action', value: 'List-Skills' },
         { name: 'Limit', value: String(limit) },
@@ -241,10 +282,7 @@ export async function listSkills(
         tags.push({ name: 'Featured', value: 'true' });
       }
 
-      const result = await dryrun({
-        process: REGISTRY_PROCESS_ID,
-        tags,
-      });
+      const result = await dryrunWithFallback(tags);
 
       // Validate response structure
       if (!result?.Messages?.[0]?.Data) {
@@ -328,7 +366,7 @@ export async function getSkill(
     const response = await hyperbeamFetch<{ skill: SkillMetadata }>(
       url,
       async () => {
-        // Fallback to dryrun if HyperBEAM fails
+        // Fallback to dryrun with automatic endpoint fallback if HyperBEAM fails
         const tags = [
           { name: 'Action', value: 'Get-Skill' },
           { name: 'Name', value: sanitizedName },
@@ -338,10 +376,7 @@ export async function getSkill(
           tags.push({ name: 'Version', value: version });
         }
 
-        const result = await dryrun({
-          process: REGISTRY_PROCESS_ID,
-          tags,
-        });
+        const result = await dryrunWithFallback(tags);
 
         if (!result?.Messages?.[0]?.Data) {
           throw new RegistryError(
@@ -422,14 +457,11 @@ export async function getSkillVersions(
       latest: string;
       total: number;
     }>(url, async () => {
-      // Fallback to dryrun if HyperBEAM fails
-      const result = await dryrun({
-        process: REGISTRY_PROCESS_ID,
-        tags: [
-          { name: 'Action', value: 'Get-Skill-Versions' },
-          { name: 'Name', value: sanitizedName },
-        ],
-      });
+      // Fallback to dryrun with automatic endpoint fallback if HyperBEAM fails
+      const result = await dryrunWithFallback([
+        { name: 'Action', value: 'Get-Skill-Versions' },
+        { name: 'Name', value: sanitizedName },
+      ]);
 
       if (!result?.Messages?.[0]?.Data) {
         throw new RegistryError(
@@ -493,11 +525,10 @@ export async function getRegistryInfo(retries = 3): Promise<RegistryInfo> {
       handlers: string[];
       documentation: { adpCompliance: string; selfDocumenting: boolean };
     }>(url, async () => {
-      // Fallback to dryrun if HyperBEAM fails
-      const result = await dryrun({
-        process: REGISTRY_PROCESS_ID,
-        tags: [{ name: 'Action', value: 'Info' }],
-      });
+      // Fallback to dryrun with automatic endpoint fallback if HyperBEAM fails
+      const result = await dryrunWithFallback([
+        { name: 'Action', value: 'Info' },
+      ]);
 
       if (!result?.Messages?.[0]?.Data) {
         throw new RegistryError(
@@ -573,7 +604,7 @@ export async function getDownloadStats(
       versions: Record<string, { version: string; downloads: number }>;
       latestVersion?: string;
     }>(url, async () => {
-      // Fallback to dryrun if HyperBEAM fails
+      // Fallback to dryrun with automatic endpoint fallback if HyperBEAM fails
       const tags = [{ name: 'Action', value: 'Get-Download-Stats' }];
 
       if ('scope' in options) {
@@ -582,10 +613,7 @@ export async function getDownloadStats(
         tags.push({ name: 'Name', value: options.skillName });
       }
 
-      const result = await dryrun({
-        process: REGISTRY_PROCESS_ID,
-        tags,
-      });
+      const result = await dryrunWithFallback(tags);
 
       // Validate response structure
       if (!result || !result.Messages || !Array.isArray(result.Messages)) {

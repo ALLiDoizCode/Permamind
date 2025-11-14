@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import os from 'os';
-import { REGISTRY_CONFIG } from '@permamind/registry-config';
+import { REGISTRY_CONFIG } from './registry-constants.js';
 
 /**
  * MCP Server configuration interface

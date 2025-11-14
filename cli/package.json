@@ -32,8 +32,8 @@
   },
   "dependencies": {
     "@ardrive/turbo-sdk": "^1.35.0",
+    "@permamind/node-arweave-wallet": "^0.0.13",
     "@permaweb/aoconnect": "^0.0.53",
-    "@permamind/registry-config": "*",
     "ajv": "^8.12.0",
     "arweave": "^1.14.4",
     "bip39": "^3.1.0",
@@ -46,7 +46,6 @@
     "human-crypto-keys": "^0.1.4",
     "keytar": "^7.9.0",
     "lodash": "^4.17.21",
-    "@permamind/node-arweave-wallet": "^0.0.13",
     "ora": "5.4.1",
     "tar": "^6.2.0"
   },

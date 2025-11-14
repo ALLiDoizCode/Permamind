@@ -1,8 +1,7 @@
 /**
  * Centralized Registry Configuration for Frontend
  *
- * This module provides environment variable override support for the shared registry config.
- * The base configuration is imported from @permamind/registry-config package.
+ * This module provides environment variable override support for the hardcoded registry config.
  *
  * Environment variables can be used to override defaults for testing/development:
  * - VITE_REGISTRY_PROCESS_ID: Override registry process ID
@@ -11,9 +10,9 @@
  * - VITE_HYPERBEAM_NODE: Override HyperBEAM node
  */
 
-// Import and re-export the shared registry configuration
-import { REGISTRY_CONFIG as _REGISTRY_CONFIG } from '@permamind/registry-config';
-export { REGISTRY_CONFIG } from '@permamind/registry-config';
+// Import and re-export the local registry configuration
+import { REGISTRY_CONFIG as _REGISTRY_CONFIG } from './registry-constants';
+export { REGISTRY_CONFIG } from './registry-constants';
 
 /**
  * Get registry process ID with environment variable override support

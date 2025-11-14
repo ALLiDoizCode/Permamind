@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Unlocked - Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            background: #000;
+            font-family: 'VT323', 'Share Tech Mono', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .terminal {
+            width: 800px;
+            height: 600px;
+            background: #0a0e0f;
+            border-radius: 16px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Scanlines effect */
+        .terminal::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15) 0px,
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* CRT flicker */
+        .terminal::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(51, 255, 0, 0.02);
+            pointer-events: none;
+            z-index: 9;
+            animation: flicker 0.15s infinite;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.9; }
+            50% { opacity: 1; }
+            100% { opacity: 0.9; }
+        }
+
+        .terminal-header {
+            display: none;
+        }
+
+        .terminal-body {
+            flex: 1;
+            padding: 20px;
+            color: #33ff00;
+            font-size: 20px;
+            line-height: 1.5;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ascii-border {
+            border: 2px solid #33ff00;
+            padding: 20px;
+            margin: 40px auto;
+            max-width: 700px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: scale(0.8);
+            animation: terminalPop 0.5s ease-out 0.3s forwards;
+        }
+
+        @keyframes terminalPop {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            60% {
+                transform: scale(1.05);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .ascii-icon {
+            margin-bottom: 15px;
+            animation: iconPulse 2s ease-in-out infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ascii-icon img {
+            width: 120px;
+            height: 120px;
+            filter: brightness(0) saturate(100%) invert(76%) sepia(89%) saturate(1514%) hue-rotate(54deg) brightness(103%) contrast(106%);
+        }
+
+        @keyframes iconPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.9; }
+        }
+
+        .terminal-line {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 30px;
+        }
+
+        .prompt {
+            color: #33ff00;
+            margin-right: 5px;
+        }
+
+        .typed-text {
+            color: #33ff00;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 20px;
+            background: #33ff00;
+            margin-left: 3px;
+            animation: blink 0.7s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .title-line {
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px rgba(51, 255, 0, 0.5);
+        }
+
+        .skill-line {
+            font-size: 28px;
+            color: #00ffff;
+            letter-spacing: 2px;
+        }
+
+        .desc-line {
+            font-size: 22px;
+            color: #88ff88;
+            max-width: 650px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .bottom-prompt {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            opacity: 0;
+            animation: fadeIn 0.5s ease-in 6s forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        /* Border decoration */
+        .corner {
+            position: absolute;
+            color: #33ff00;
+            font-size: 16px;
+        }
+
+        .corner.tl { top: 5px; left: 5px; }
+        .corner.tr { top: 5px; right: 5px; }
+        .corner.bl { bottom: 5px; left: 5px; }
+        .corner.br { bottom: 5px; right: 5px; }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <div class="terminal-header">
+            PERMAMIND REGISTRY v1.0 - SKILL MANAGEMENT SYSTEM
+        </div>
+
+        <div class="terminal-body">
+            <div class="ascii-border">
+                <div class="corner tl">╔</div>
+                <div class="corner tr">╗</div>
+                <div class="corner bl">╚</div>
+                <div class="corner br">╝</div>
+
+                <div class="ascii-icon">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnPgo8IS0tIE91dGVyIHNxdWFyZSAtLT4KPHBhdGggZD0iTTEwMCA3MEwzMDAgNzBMMzAwIDMzMEwxMDAgMzMwWiIgc3Ryb2tlPSIjMzMzMzMzIiBzdHJva2Utd2lkdGg9IjEuNSIgZmlsbD0ibm9uZSIvPgoKPCEtLSBJbm5lciBzcXVhcmUgLS0+CjxwYXRoIGQ9Ik03NSAxMDVMMzI1IDEwNUwzMjUgMjk1TDc1IDI5NVoiIHN0cm9rZT0iIzMzMzMzMyIgc3Ryb2tlLXdpZHRoPSIxLjUiIGZpbGw9Im5vbmUiLz4KCjwhLS0gQ2VudGVyIHN0YXIgcG9pbnRzIC0tPgo8cGF0aCBkPSJNMjAwIDcwTDIwMCAzMzBNNzUgMjAwTDMyNSAyMDBNMTAwIDEwNUwzMDAgMjk1TTMwMCAxMDVMMTAwIDI5NU0xNTAgNzBMMjUwIDMzME0zMjUgMTUwTDc1IDI1ME0yNTAgNzBMMTUwIDMzME03NSAxNTBMMzI1IDI1MCIgc3Ryb2tlPSIjMzMzMzMzIiBzdHJva2Utd2lkdGg9IjEiIG9wYWNpdHk9IjAuNyIvPgoKPCEtLSBJbm5lciBjcm9zc2VzIC0tPgo8cGF0aCBkPSJNMTUwIDEwNUwyNTAgMjk1TTI1MCAxMDVMMTUwIDI5NU0xMDAgMTUwTDMwMCAyNTBNMzAwIDE1MEwxMDAgMjUwIiBzdHJva2U9IiMzMzMzMzMiIHN0cm9rZS13aWR0aD0iMSIgb3BhY2l0eT0iMC42Ii8+Cgo8IS0tIENlbnRlciBwb2ludHMgLS0+CjxjaXJjbGUgY3g9IjIwMCIgY3k9IjIwMCIgcj0iMyIgZmlsbD0iIzMzMzMzMyIvPgo8Y2lyY2xlIGN4PSIyMDAiIGN5PSI3MCIgcj0iMi41IiBmaWxsPSIjMzMzMzMzIi8+CjxjaXJjbGUgY3g9IjIwMCIgY3k9IjMzMCIgcj0iMi41IiBmaWxsPSIjMzMzMzMzIi8+CjxjaXJjbGUgY3g9Ijc1IiBjeT0iMjAwIiByPSIyLjUiIGZpbGw9IiMzMzMzMzMiLz4KPGNpcmNsZSBjeD0iMzI1IiBjeT0iMjAwIiByPSIyLjUiIGZpbGw9IiMzMzMzMzMiLz4KPGNpcmNsZSBjeD0iMTAwIiBjeT0iMTA1IiByPSIyIiBmaWxsPSIjMzMzMzMzIi8+CjxjaXJjbGUgY3g9IjMwMCIgY3k9IjEwNSIgcj0iMiIgZmlsbD0iIzMzMzMzMyIvPgo8Y2lyY2xlIGN4PSIxMDAiIGN5PSIyOTUiIHI9IjIiIGZpbGw9IiMzMzMzMzMiLz4KPGNpcmNsZSBjeD0iMzAwIiBjeT0iMjk1IiByPSIyIiBmaWxsPSIjMzMzMzMzIi8+CjxjaXJjbGUgY3g9IjE1MCIgY3k9IjE1MCIgcj0iMiIgZmlsbD0iIzMzMzMzMyIvPgo8Y2lyY2xlIGN4PSIyNTAiIGN5PSIxNTAiIHI9IjIiIGZpbGw9IiMzMzMzMzMiLz4KPGNpcmNsZSBjeD0iMTUwIiBjeT0iMjUwIiByPSIyIiBmaWxsPSIjMzMzMzMzIi8+CjxjaXJjbGUgY3g9IjI1MCIgY3k9IjI1MCIgcj0iMiIgZmlsbD0iIzMzMzMzMyIvPgo8L2c+Cjwvc3ZnPg==" alt="Skill Icon"/>
+                </div>
+
+                <div class="terminal-line title-line">
+                    <span class="typed-text" id="title"></span>
+                </div>
+
+                <div class="terminal-line skill-line">
+                    <span class="typed-text" id="skill-name"></span>
+                </div>
+
+                <div class="terminal-line desc-line">
+                    <span class="typed-text" id="description"></span>
+                </div>
+            </div>
+
+            <div class="bottom-prompt">
+                <span class="prompt">$</span> skills install content-ideation<span class="cursor"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function typeText(element, text, speed, callback) {
+            let i = 0;
+            element.textContent = '';
+
+            const cursor = document.createElement('span');
+            cursor.className = 'cursor';
+            element.appendChild(cursor);
+
+            function type() {
+                if (i < text.length) {
+                    element.textContent = text.substring(0, i + 1);
+                    element.appendChild(cursor);
+                    i++;
+                    setTimeout(type, speed);
+                } else {
+                    cursor.remove();
+                    if (callback) {
+                        setTimeout(callback, 200);
+                    }
+                }
+            }
+
+            type();
+        }
+
+        function startSequence() {
+            const title = document.getElementById('title');
+            const skillName = document.getElementById('skill-name');
+            const description = document.getElementById('description');
+
+            setTimeout(() => {
+                typeText(title, '>>> SKILL UNLOCKED <<<', 60, () => {
+                    typeText(skillName, 'Content Ideation', 70, () => {
+                        typeText(description, 'Generate creative content ideas, marketing strategies, and engaging copy for social media campaigns', 30);
+                    });
+                });
+            }, 800);
+        }
+
+        startSequence();
+
+        // Auto-reload for looping (increased to 11 seconds for longer display)
+        setTimeout(() => {
+            location.reload();
+        }, 11000);
+    </script>
+</body>
+</html>

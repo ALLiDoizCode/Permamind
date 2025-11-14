@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Unlocked: ao</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+
+        .terminal {
+            background: #0a0a0a;
+            border: 3px solid #00ff41;
+            border-radius: 8px;
+            padding: 40px;
+            width: 900px;
+            box-shadow:
+                0 0 20px rgba(0, 255, 65, 0.3),
+                inset 0 0 40px rgba(0, 255, 65, 0.05);
+        }
+
+        .terminal-header {
+            color: #00ff41;
+            font-size: 16px;
+            margin-bottom: 30px;
+            opacity: 0;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .skill-unlock {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0;
+            animation: iconPop 0.6s ease-out 0.5s forwards;
+        }
+
+        .title {
+            color: #00ff41;
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            opacity: 0;
+            animation: slideIn 0.6s ease-out 1.1s forwards;
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+        }
+
+        .description {
+            color: #00cc33;
+            font-size: 18px;
+            line-height: 1.6;
+            margin: 0 auto;
+            max-width: 800px;
+            opacity: 0;
+            animation: fadeIn 0.8s ease-out 1.7s forwards;
+        }
+
+        .loading-bar {
+            margin-top: 40px;
+            opacity: 0;
+            animation: fadeIn 0.5s ease-out 2.5s forwards;
+        }
+
+        .loading-text {
+            color: #00ff41;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .bar-container {
+            background: #001a00;
+            border: 2px solid #00ff41;
+            height: 30px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            background: linear-gradient(90deg, #00ff41, #00cc33);
+            height: 100%;
+            width: 0%;
+            animation: fillBar 2s ease-in-out 3s forwards;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.6);
+        }
+
+        .status {
+            color: #00ff41;
+            font-size: 16px;
+            margin-top: 20px;
+            text-align: center;
+            opacity: 0;
+            animation: fadeIn 0.5s ease-out 5s forwards;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 20px;
+            background: #00ff41;
+            animation: blink 1s step-end infinite;
+            margin-left: 5px;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        @keyframes iconPop {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fillBar {
+            to { width: 100%; }
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <div class="terminal-header">PERMAMIND SKILLS REGISTRY v1.0.0</div>
+
+        <div class="skill-unlock">
+            <div class="icon">📦</div>
+            <div class="title">SKILL UNLOCKED</div>
+            <div class="description">Learn AO protocol fundamentals - processes, message passing, handlers, and ADP compliance</div>
+        </div>
+
+        <div class="loading-bar">
+            <div class="loading-text">> Installing ao skill...</div>
+            <div class="bar-container">
+                <div class="bar-fill"></div>
+            </div>
+        </div>
+
+        <div class="status">
+            ✓ SKILL INSTALLED<span class="cursor"></span>
+        </div>
+    </div>
+</body>
+</html>

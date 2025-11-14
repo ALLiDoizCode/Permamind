@@ -1,0 +1,39 @@
+{
+  "name": "@permamind/registry-config",
+  "version": "1.0.0",
+  "description": "Shared registry configuration for Permamind CLI, MCP server, and frontend",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "permamind",
+    "registry",
+    "ao",
+    "arweave"
+  ],
+  "author": "Permamind Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ALLiDoizCode/Permamind.git",
+    "directory": "packages/registry-config"
+  },
+  "bugs": {
+    "url": "https://github.com/ALLiDoizCode/Permamind/issues"
+  },
+  "homepage": "https://github.com/ALLiDoizCode/Permamind#readme",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

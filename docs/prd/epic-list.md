@@ -35,3 +35,9 @@ Integrate node-arweave-wallet as a fallback authentication mechanism when no SEE
 
 **Epic 12: Custom Wallet UI Fork - Brownfield Enhancement**
 Fork node-arweave-wallet library to enable custom HTML/CSS/JS UI templates for the browser wallet connection interface, providing a fully branded Permamind experience that matches the developer-CLI frontend design system. Delivers customizable wallet UI while maintaining compatibility with upstream library updates and Epic 11 wallet workflows.
+
+**Epic 13: Skill MCP Server Dependency Classification - Brownfield Enhancement**
+Enhance the skill registry schema and MCP server to support dependency classification (mcp-server, npm-package, system-requirement, claude-skill) enabling AI agents to intelligently resolve and install skill dependencies with automated setup for MCP servers via npx. Delivers smart dependency resolution with zero breaking changes to existing registry infrastructure.
+
+**Epic 14: Blog Section - Brownfield Enhancement**
+Add a blog section to the Permamind frontend that enables the team to publish educational content, tutorials, and announcements. The blog will render markdown content with support for media embeds and external links while maintaining the existing terminal dark theme and design system. Delivers content publishing capabilities with enhanced markdown rendering (images, videos, lists, blockquotes, code blocks), blog listing page with filtering/search, and individual post pages with social sharing.

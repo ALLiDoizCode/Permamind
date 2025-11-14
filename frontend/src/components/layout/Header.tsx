@@ -30,6 +30,12 @@ export function Header() {
               docs
             </Link>
             <Link
+              to="/blog"
+              className="text-sm text-terminal-muted hover:text-syntax-blue font-mono transition-colors"
+            >
+              blog
+            </Link>
+            <Link
               to="/mcp-guide"
               className="text-sm text-terminal-muted hover:text-syntax-blue font-mono transition-colors"
             >

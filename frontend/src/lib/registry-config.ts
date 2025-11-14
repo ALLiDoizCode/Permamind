@@ -1,8 +1,7 @@
 /**
- * Centralized Registry Configuration
+ * Centralized Registry Configuration for Frontend
  *
- * This module provides a single source of truth for AO Registry configuration.
- * Users should NOT need to configure the registry process ID manually.
+ * This module provides environment variable override support for the hardcoded registry config.
  *
  * Environment variables can be used to override defaults for testing/development:
  * - VITE_REGISTRY_PROCESS_ID: Override registry process ID
@@ -11,35 +10,9 @@
  * - VITE_HYPERBEAM_NODE: Override HyperBEAM node
  */
 
-/**
- * Production registry configuration
- * These values are baked into the package and should work out-of-the-box
- */
-export const REGISTRY_CONFIG = {
-  /**
-   * AO Registry Process ID (Production)
-   * This is the official registry for Claude Agent Skills
-   */
-  PROCESS_ID: 'afj-S1wpWK07iSs9jIttoPJsptf4Db6ubZ_CLODdEpQ',
-
-  /**
-   * AO Messaging Unit (MU) endpoint
-   * Default: Randao MU for reliable message delivery
-   */
-  MU_URL: 'https://ur-mu.randao.net',
-
-  /**
-   * AO Compute Unit (CU) endpoint
-   * Default: Randao CU for reliable computation
-   */
-  CU_URL: 'https://ur-cu.randao.net',
-
-  /**
-   * HyperBEAM node endpoint for serverless read-only queries
-   * Used for fast (<500ms) registry reads via Dynamic Reads
-   */
-  HYPERBEAM_NODE: 'https://hb.randao.net',
-} as const;
+// Import and re-export the local registry configuration
+import { REGISTRY_CONFIG as _REGISTRY_CONFIG } from './registry-constants';
+export { REGISTRY_CONFIG } from './registry-constants';
 
 /**
  * Get registry process ID with environment variable override support
@@ -51,25 +24,43 @@ export const REGISTRY_CONFIG = {
  * @returns Registry process ID
  */
 export function getRegistryProcessId(): string {
-  return import.meta.env.VITE_REGISTRY_PROCESS_ID || REGISTRY_CONFIG.PROCESS_ID;
+  return import.meta.env.VITE_REGISTRY_PROCESS_ID || _REGISTRY_CONFIG.PROCESS_ID;
 }
 
 /**
  * Get MU endpoint with environment variable override support
  *
- * @returns MU URL
+ * @returns MU URL (primary)
  */
 export function getMuUrl(): string {
-  return import.meta.env.VITE_MU_URL || REGISTRY_CONFIG.MU_URL;
+  return import.meta.env.VITE_MU_URL || _REGISTRY_CONFIG.MU_URL;
 }
 
 /**
  * Get CU endpoint with environment variable override support
  *
- * @returns CU URL
+ * @returns CU URL (primary)
  */
 export function getCuUrl(): string {
-  return import.meta.env.VITE_CU_URL || REGISTRY_CONFIG.CU_URL;
+  return import.meta.env.VITE_CU_URL || _REGISTRY_CONFIG.CU_URL;
+}
+
+/**
+ * Get fallback MU endpoint
+ *
+ * @returns Fallback MU URL
+ */
+export function getMuUrlFallback(): string {
+  return _REGISTRY_CONFIG.MU_URL_FALLBACK;
+}
+
+/**
+ * Get fallback CU endpoint
+ *
+ * @returns Fallback CU URL
+ */
+export function getCuUrlFallback(): string {
+  return _REGISTRY_CONFIG.CU_URL_FALLBACK;
 }
 
 /**
@@ -78,7 +69,7 @@ export function getCuUrl(): string {
  * @returns HyperBEAM node URL
  */
 export function getHyperBeamNode(): string {
-  return import.meta.env.VITE_HYPERBEAM_NODE || REGISTRY_CONFIG.HYPERBEAM_NODE;
+  return import.meta.env.VITE_HYPERBEAM_NODE || _REGISTRY_CONFIG.HYPERBEAM_NODE;
 }
 
 /**

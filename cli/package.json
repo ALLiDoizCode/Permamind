@@ -33,6 +33,7 @@
   "dependencies": {
     "@ardrive/turbo-sdk": "^1.35.0",
     "@permaweb/aoconnect": "^0.0.53",
+    "@permamind/registry-config": "*",
     "ajv": "^8.12.0",
     "arweave": "^1.14.4",
     "bip39": "^3.1.0",

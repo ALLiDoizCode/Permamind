@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import os from 'os';
+import { REGISTRY_CONFIG } from '@permamind/registry-config';
 
 /**
  * MCP Server configuration interface
@@ -22,9 +23,6 @@ export class MissingEnvironmentVariableError extends Error {
   }
 }
 
-// Default registry process ID (mainnet)
-const DEFAULT_REGISTRY_PROCESS_ID = 'your_mainnet_registry_process_id';
-
 /**
  * Load and validate MCP server configuration from environment variables
  * @returns {IMCPServerConfig} Validated configuration object
@@ -43,7 +41,8 @@ export function loadConfig(): IMCPServerConfig {
   // Return configuration with defaults for optional variables
   return {
     seedPhrase,
-    registryProcessId: process.env.REGISTRY_PROCESS_ID || DEFAULT_REGISTRY_PROCESS_ID,
+    // Use shared registry config with environment variable override
+    registryProcessId: process.env.REGISTRY_PROCESS_ID || process.env.AO_REGISTRY_PROCESS_ID || REGISTRY_CONFIG.PROCESS_ID,
     installLocation: process.env.INSTALL_LOCATION || path.join(os.homedir(), '.claude', 'skills'),
     logLevel: (process.env.LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error') || 'info',
   };

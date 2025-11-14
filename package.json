@@ -5,7 +5,8 @@
   "private": true,
   "workspaces": [
     "cli",
-    "mcp-server"
+    "mcp-server",
+    "packages/registry-config"
   ],
   "engines": {
     "node": ">=20.11.0",

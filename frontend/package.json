@@ -26,6 +26,7 @@
   "dependencies": {
     "@ar.io/sdk": "^3.21.0",
     "@permaweb/aoconnect": "^0.0.90",
+    "@permamind/registry-config": "*",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.13",
     "@types/dompurify": "^3.0.5",

@@ -40,11 +40,14 @@ function formatDate(dateStr: string): string {
 }
 
 export function BlogPost() {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug: rawSlug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [markdown, setMarkdown] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Strip .html extension if present (for social media links)
+  const slug = rawSlug?.replace(/\.html$/, '');
 
   // Find blog post metadata
   const post = slug ? blogPosts.find((p) => p.slug === slug) : null;
@@ -113,7 +116,9 @@ export function BlogPost() {
     );
   }
 
-  const baseUrl = 'https://permamind.app';
+  const baseUrl = 'https://permamind.ar.io';
+  // Use .html URL for sharing so crawlers can see meta tags
+  const shareUrl = `${baseUrl}/blog/${slug}.html`;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -219,7 +224,7 @@ export function BlogPost() {
 
         {/* Share buttons - fixed on desktop, relative on mobile */}
         <ShareButtons
-          url={typeof window !== 'undefined' ? window.location.href : ''}
+          url={shareUrl}
           title={post.title}
           position="fixed"
         />
@@ -230,7 +235,7 @@ export function BlogPost() {
             {'// share_post'}
           </h3>
           <ShareButtons
-            url={typeof window !== 'undefined' ? window.location.href : ''}
+            url={shareUrl}
             title={post.title}
             position="relative"
           />

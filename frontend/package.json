@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && tsx scripts/generate-blog-html.ts",
+    "build:dev": "BASE_URL=https://dev_permamind.arweave.net tsc && vite build && BASE_URL=https://dev_permamind.arweave.net tsx scripts/generate-blog-html.ts",
+    "build:staging": "BASE_URL=https://staging_permamind.arweave.net tsc && vite build && BASE_URL=https://staging_permamind.arweave.net tsx scripts/generate-blog-html.ts",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -15,11 +17,11 @@
     "lint:fix": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext ts,tsx --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "deploy": "npm run build && npx permaweb-deploy --arns-name permamind --deploy-folder dist",
-    "deploy:dev": "npm run build && npx permaweb-deploy --arns-name permamind --undername dev --deploy-folder dist",
-    "deploy:staging": "npm run build && npx permaweb-deploy --arns-name permamind --undername staging --deploy-folder dist",
+    "deploy:dev": "npm run build:dev && npx permaweb-deploy --arns-name permamind --undername dev --deploy-folder dist",
+    "deploy:staging": "npm run build:staging && npx permaweb-deploy --arns-name permamind --undername staging --deploy-folder dist",
     "deploy:prod": "npm run deploy",
     "deploy:manual": "npm run build && DEPLOY_KEY=\"$(cat ../wallet.json | base64)\" npx permaweb-deploy --arns-name permamind --deploy-folder dist",
-    "deploy:manual:dev": "npm run build && DEPLOY_KEY=\"$(cat ../wallet.json | base64)\" npx permaweb-deploy --arns-name permamind --undername dev --deploy-folder dist"
+    "deploy:manual:dev": "npm run build:dev && DEPLOY_KEY=\"$(cat ../wallet.json | base64)\" npx permaweb-deploy --arns-name permamind --undername dev --deploy-folder dist"
   },
   "dependencies": {
     "@ar.io/sdk": "^3.21.0",
@@ -65,6 +67,7 @@
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.16",
+    "tsx": "^4.20.6",
     "typescript": "^5.3.3",
     "vite": "^5.4.21",
     "vite-plugin-node-polyfills": "^0.24.0",

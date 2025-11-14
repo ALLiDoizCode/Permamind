@@ -32,6 +32,7 @@ export const blogPosts: BlogPost[] = [
       'Learn how to install and publish your first skill to the Permamind registry using the CLI.',
     readTime: 3, // 449 words / 200 wpm ≈ 2.2 min, rounded to 3
     featured: true,
+    heroImage: '/blog-images/getting-started-with-permamind.png',
   },
   {
     slug: 'using-permamind-mcp-server',
@@ -43,6 +44,7 @@ export const blogPosts: BlogPost[] = [
       'Set up and use the Permamind MCP Server to publish, search, and install skills directly from Claude Desktop.',
     readTime: 5, // 872 words / 200 wpm ≈ 4.4 min, rounded to 5
     featured: true,
+    heroImage: '/blog-images/using-permamind-mcp-server.png',
   },
   {
     slug: 'understanding-permamind-architecture',
@@ -54,5 +56,6 @@ export const blogPosts: BlogPost[] = [
       'Learn how Permamind uses Arweave and AO networks to create a permanent, decentralized registry for Claude Code skills.',
     readTime: 6, // ~1200 words / 200 wpm = 6 min
     featured: false,
+    heroImage: '/blog-images/understanding-permamind-architecture.png',
   },
 ];

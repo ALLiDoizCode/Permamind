@@ -24,6 +24,15 @@
   ],
   "author": "Permamind Team",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ALLiDoizCode/Permamind.git",
+    "directory": "packages/registry-config"
+  },
+  "bugs": {
+    "url": "https://github.com/ALLiDoizCode/Permamind/issues"
+  },
+  "homepage": "https://github.com/ALLiDoizCode/Permamind#readme",
   "devDependencies": {
     "typescript": "^5.3.3"
   }

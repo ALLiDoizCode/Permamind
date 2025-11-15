@@ -162,6 +162,11 @@ export class InstallService {
 
     logger.debug('Starting install workflow', { skillNameWithVersion, options });
 
+    // Clear cache to ensure we get the latest version from registry
+    // This prevents stale cached data from being installed
+    aoRegistryClient.clearCache();
+    logger.debug('Cleared registry cache before install');
+
     // Track performance
     const startTime = performance.now();
 

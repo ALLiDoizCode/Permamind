@@ -613,6 +613,11 @@ export class PublishService {
     // createDataItemSigner() supports all wallet types including browser wallets
     logger.debug('Using wallet provider for AO registry signing');
 
+    // Clear cache to ensure we get the latest version from registry
+    // This prevents stale cached data from causing version conflicts
+    aoRegistryClient.clearCache();
+    logger.debug('Cleared registry cache before version check');
+
     // Check if skill already exists in registry
     let existingSkill: ISkillMetadata | null = null;
     try {

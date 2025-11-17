@@ -262,6 +262,14 @@ const blogPosts = [
         excerpt: 'Learn how Permamind uses Arweave and AO networks to create a permanent, decentralized registry for Claude Code skills.',
         readTime: 6,
     },
+    {
+        slug: 'permaweb-mcp-guide',
+        title: 'Permaweb-MCP: Your Gateway to AO and Arweave Development',
+        date: '2025-11-16',
+        tags: ['mcp', 'arweave', 'tutorials'],
+        excerpt: 'Transform how you interact with AO and Arweave through natural language. Deploy apps, manage processes, and register domains with Claude AI.',
+        readTime: 8,
+    },
 ];
 
 // Generate all previews

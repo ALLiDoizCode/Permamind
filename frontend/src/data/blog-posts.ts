@@ -58,4 +58,16 @@ export const blogPosts: BlogPost[] = [
     featured: false,
     heroImage: '/blog-images/understanding-permamind-architecture.png',
   },
+  {
+    slug: 'permaweb-mcp-guide',
+    title: 'Permaweb-MCP: Your Gateway to AO and Arweave Development',
+    date: '2025-11-16',
+    author: 'Permamind Team',
+    tags: ['mcp', 'arweave', 'ao'],
+    excerpt:
+      'Transform how you interact with AO and Arweave through natural language. Deploy apps, manage processes, and register domains with Claude AI.',
+    readTime: 8, // ~1600 words / 200 wpm = 8 min
+    featured: true,
+    heroImage: '/blog-images/permaweb-mcp-guide.png',
+  },
 ];

@@ -144,6 +144,7 @@ async function createBlogPreview(blogPost) {
             font-size: 24px;
             color: #00ffff;
             margin-top: 25px;
+            margin-bottom: 60px;
             letter-spacing: 1px;
         }
 

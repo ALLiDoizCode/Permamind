@@ -93,7 +93,7 @@ async function createBlogPreview(blogPost) {
 
         .ascii-border {
             border: 3px solid #33ff00;
-            padding: 40px;
+            padding: 40px 40px 80px 40px;
             margin: 60px auto;
             max-width: 1000px;
             text-align: center;

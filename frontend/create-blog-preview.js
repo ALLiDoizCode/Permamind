@@ -94,7 +94,7 @@ async function createBlogPreview(blogPost) {
         .ascii-border {
             border: 3px solid #33ff00;
             padding: 40px;
-            margin: 80px auto 180px auto;
+            margin: 60px auto;
             max-width: 1000px;
             text-align: center;
             background: rgba(0, 0, 0, 0.3);
@@ -144,15 +144,14 @@ async function createBlogPreview(blogPost) {
             font-size: 24px;
             color: #00ffff;
             margin-top: 25px;
-            margin-bottom: 60px;
             letter-spacing: 1px;
         }
 
         .bottom-brand {
             position: absolute;
-            bottom: 80px;
+            bottom: 30px;
             left: 40px;
-            font-size: 20px;
+            font-size: 22px;
             color: #33ff00;
             opacity: 0.9;
         }
@@ -262,14 +261,6 @@ const blogPosts = [
         tags: ['architecture', 'arweave'],
         excerpt: 'Learn how Permamind uses Arweave and AO networks to create a permanent, decentralized registry for Claude Code skills.',
         readTime: 6,
-    },
-    {
-        slug: 'permaweb-mcp-guide',
-        title: 'Permaweb-MCP: Your Gateway to AO and Arweave Development',
-        date: '2025-11-16',
-        tags: ['mcp', 'arweave', 'tutorials'],
-        excerpt: 'Transform how you interact with AO and Arweave through natural language. Deploy apps, manage processes, and register domains with Claude AI.',
-        readTime: 8,
     },
 ];
 

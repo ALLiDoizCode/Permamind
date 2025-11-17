@@ -266,7 +266,7 @@ const blogPosts = [
         slug: 'permaweb-mcp-guide',
         title: 'Permaweb-MCP: Your Gateway to AO and Arweave Development',
         date: '2025-11-16',
-        tags: ['mcp', 'arweave', 'tutorials'],
+        tags: ['mcp', 'arweave'],
         excerpt: 'Transform how you interact with AO and Arweave through natural language. Deploy apps, manage processes, and register domains with Claude AI.',
         readTime: 8,
     },

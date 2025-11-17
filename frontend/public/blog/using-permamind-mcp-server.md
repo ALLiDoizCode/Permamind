@@ -40,7 +40,7 @@ Add the MCP server to your Claude Desktop configuration file:
   "mcpServers": {
     "permamind": {
       "command": "npx",
-      "args": ["-y", "@permamind/mcp-server"],
+      "args": ["@permamind/mcp@latest"],
       "env": {
         "SEED_PHRASE": "your twelve word seed phrase here"
       }

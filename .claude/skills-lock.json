@@ -1,15 +1,15 @@
 {
   "lockfileVersion": 1,
-  "generatedAt": 1761302182097,
+  "generatedAt": 1763346235250,
   "skills": [
     {
       "name": "aolite",
       "version": "1.0.1",
-      "arweaveTxId": "o5iawVZJo0F3RNd3H9yRtsj9aezoqtTAACvgUXCJEbA",
-      "installedAt": 1761302182097,
+      "arweaveTxId": "gN32ICJA-aya656KsEF3MWeyOdNpOjJeWIDlnXCZ9qU",
+      "installedAt": 1763346235249,
       "installedPath": "/Users/jonathangreen/Documents/Permamind/.claude/skills/aolite",
       "dependencies": [],
-      "isDirectDependency": true
+      "isDirectDependency": false
     },
     {
       "name": "skill-creator",
@@ -22,9 +22,9 @@
     },
     {
       "name": "ao",
-      "version": "1.0.2",
-      "arweaveTxId": "hfLply5ttpgGgWnWVJepFvhO5WngvCaxiGoB3HOTuEc",
-      "installedAt": 1761302181615,
+      "version": "1.0.9",
+      "arweaveTxId": "zht-d0pc0lPVXjuxboRMylewBsqfqj9WlNw91VA86DY",
+      "installedAt": 1763346235248,
       "installedPath": "/Users/jonathangreen/Documents/Permamind/.claude/skills/ao",
       "dependencies": [
         {
@@ -35,9 +35,55 @@
           "installedPath": "",
           "dependencies": [],
           "isDirectDependency": false
+        },
+        {
+          "name": "aoconnect",
+          "version": "1.0.0",
+          "arweaveTxId": "",
+          "installedAt": 0,
+          "installedPath": "",
+          "dependencies": [],
+          "isDirectDependency": false
         }
       ],
       "isDirectDependency": false
+    },
+    {
+      "name": "ario",
+      "version": "1.0.0",
+      "arweaveTxId": "FxpBD973cxubqFxXgguR8-4qU64juVIpwFbgzC4dtDU",
+      "installedAt": 1763346217236,
+      "installedPath": "/Users/jonathangreen/Documents/Permamind/.claude/skills/ario",
+      "dependencies": [],
+      "isDirectDependency": true
+    },
+    {
+      "name": "ao-token",
+      "version": "1.0.0",
+      "arweaveTxId": "FneATPCQapoR-6wuWU8d6SIT6iodauvst3neCYE3Nvw",
+      "installedAt": 1763346235247,
+      "installedPath": "/Users/jonathangreen/Documents/Permamind/.claude/skills/ao-token",
+      "dependencies": [
+        {
+          "name": "ao",
+          "version": "1.0.9",
+          "arweaveTxId": "",
+          "installedAt": 0,
+          "installedPath": "",
+          "dependencies": [],
+          "isDirectDependency": false
+        }
+      ],
+      "isDirectDependency": false
+    },
+    {
+      "name": "aoconnect",
+      "version": "1.0.0",
+      "arweaveTxId": "_1sZhnPB8tQYidV9mLjHwgExroZcxJ1p_BGgYoCqfdc",
+      "installedAt": 1763346235250,
+      "installedPath": "/Users/jonathangreen/Documents/Permamind/.claude/skills/aoconnect",
+      "dependencies": [],
+      "isDirectDependency": true
     }
   ],
   "installLocation": "/Users/jonathangreen/Documents/Permamind/.claude"

@@ -133,7 +133,7 @@ export function BlogPost() {
         <meta property="og:description" content={post.excerpt} />
         <meta
           property="og:image"
-          content={post.heroImage || `${baseUrl}/og-default.jpg`}
+          content={post.heroImage ? `${baseUrl}${post.heroImage}` : `${baseUrl}/og-default.jpg`}
         />
         <meta property="og:url" content={`${baseUrl}/blog/${slug}`} />
         <meta property="og:type" content="article" />
@@ -144,7 +144,7 @@ export function BlogPost() {
         <meta name="twitter:description" content={post.excerpt} />
         <meta
           name="twitter:image"
-          content={post.heroImage || `${baseUrl}/twitter-default.jpg`}
+          content={post.heroImage ? `${baseUrl}${post.heroImage}` : `${baseUrl}/twitter-default.jpg`}
         />
       </Helmet>
 

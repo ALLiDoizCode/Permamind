@@ -94,7 +94,7 @@ async function createBlogPreview(blogPost) {
         .ascii-border {
             border: 3px solid #33ff00;
             padding: 40px;
-            margin: 60px auto 120px auto;
+            margin: 60px auto 160px auto;
             max-width: 1000px;
             text-align: center;
             background: rgba(0, 0, 0, 0.3);
@@ -149,7 +149,7 @@ async function createBlogPreview(blogPost) {
 
         .bottom-brand {
             position: absolute;
-            bottom: 40px;
+            bottom: 50px;
             left: 40px;
             font-size: 20px;
             color: #33ff00;

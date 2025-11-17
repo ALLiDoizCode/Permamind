@@ -149,7 +149,7 @@ async function createBlogPreview(blogPost) {
 
         .bottom-brand {
             position: absolute;
-            bottom: 50px;
+            bottom: 80px;
             left: 40px;
             font-size: 20px;
             color: #33ff00;

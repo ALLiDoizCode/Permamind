@@ -24,15 +24,20 @@ export const RECORD_DOWNLOAD_SCRIPT_ID =
  * @param scriptTxId - Arweave transaction ID of the Lua transformation script
  * @param functionName - Name of the Lua function to invoke
  * @param queryParams - Optional query parameters as key-value pairs
+ * @param useCache - Use /cache path (faster, potentially stale) instead of /now (real-time)
  * @returns Complete HyperBEAM URL
  */
 export function buildHyperbeamUrl(
   scriptTxId: string,
   functionName: string,
-  queryParams?: Record<string, string | number | undefined>
+  queryParams?: Record<string, string | number | undefined>,
+  useCache: boolean = false
 ): string {
-  // Base URL pattern: /{PROCESS_ID}~process@1.0/now/~lua@5.3a&module={SCRIPT_TX_ID}/{function_name}/serialize~json@1.0
-  let url = `${HYPERBEAM_NODE}/${REGISTRY_PROCESS_ID}~process@1.0/compute/~lua@5.3a&module=${scriptTxId}/${functionName}/serialize~json@1.0`;
+  // State path: /cache (faster, potentially stale) or /now (real-time)
+  const statePath = useCache ? 'cache' : 'now';
+
+  // Base URL pattern: /{PROCESS_ID}~process@1.0/{STATE_PATH}/~lua@5.3a&module={SCRIPT_TX_ID}/{function_name}/serialize~json@1.0
+  let url = `${HYPERBEAM_NODE}/${REGISTRY_PROCESS_ID}~process@1.0/${statePath}/~lua@5.3a&module=${scriptTxId}/${functionName}/serialize~json@1.0`;
 
   // Append query parameters if provided
   if (queryParams) {

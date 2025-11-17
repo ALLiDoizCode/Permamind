@@ -52,5 +52,5 @@ export const REGISTRY_CONFIG = {
    * HyperBEAM node endpoint for serverless read-only queries
    * Used for fast (<500ms) registry reads via Dynamic Reads
    */
-  HYPERBEAM_NODE: 'https://hb.randao.net',
+  HYPERBEAM_NODE: 'https://hb-edge.randao.net',
 } as const;

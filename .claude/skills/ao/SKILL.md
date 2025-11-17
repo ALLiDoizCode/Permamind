@@ -1,6 +1,6 @@
 ---
 name: ao
-version: 1.0.4
+version: 1.0.9
 author: Permamind Team
 description: Learn AO protocol fundamentals - processes, message passing, handlers, and ADP compliance
 tags: ["ao", "blockchain", "tutorial"]
@@ -10,12 +10,36 @@ dependencies:
   - name: aoconnect
     version: 1.0.0
 changelog: |
-  ## v1.0.4
-  - Test publish with Epic 13 CLI improvements
-  - Validates mcpServers field support and MCP dependency detection
+  ## Changed (v1.0.9)
+  - Version bump for registry update
 
-  ## v1.0.3
-  - Added aoconnect dependency for JavaScript SDK integration
+  ## Changed (v1.0.8)
+  - Testing cache fix for publish service
+
+  ## Changed (v1.0.7)
+  - Testing MCP publish functionality
+
+  ## Changed (v1.0.6)
+  - Minor documentation updates and improvements
+
+  ## Added (v1.0.5)
+  - Building with HyperBEAM section covering dynamic reads and state exposure
+  - Dynamic reads documentation for compute-on-demand patterns
+  - State exposure via HTTP using patch device
+  - Practical implementation patterns for token and chat processes
+  - JavaScript integration strategies with AOProcessClient class
+  - Best practices for HyperBEAM state management, performance, and security
+
+  ## Changed (v1.0.4)
+  - Updated ADP v1.0 specification: Info handler response no longer includes Action tag
+  - Added strict handler metadata format with read/write indicators
+  - Added complete tag specifications including types, required/optional status, and descriptions
+  - Enhanced self-documentation capabilities for autonomous tool integration
+
+  ## Added (v1.0.3)
+  - aoconnect dependency for JavaScript SDK integration
+
+  ## Changed (v1.0.3)
   - Updated dependency chain to include aoconnect library
 ---
 
@@ -317,9 +341,29 @@ end)
 
 1. **Protocol Identifier**: `adpVersion: "1.0"`
 2. **Info Handler**: Responds to `Action: "Info"` with process metadata
-3. **Message Schemas**: Defined schemas for all message types
-4. **Process Metadata**: Name, version, capabilities
-5. **Self-Documentation**: Queryable capabilities
+3. **No Action Tag in Response**: Info handler MUST NOT include an Action tag in the response
+4. **Strict Handler Metadata**: Complete specification of all handlers with:
+   - Handler name and action
+   - Type indicator: `"read"` (dryrun) or `"write"` (send)
+   - Description of handler purpose
+   - Complete tag specifications (required and optional)
+   - Tag value types (all are strings in AO)
+   - Expected response format
+5. **Process Metadata**: Name, version, capabilities
+6. **Self-Documentation**: Queryable capabilities
+
+**Handler Type Specification:**
+
+- **`"read"`**: Handler only queries state, safe for dryrun operations (no state modification)
+- **`"write"`**: Handler modifies process state, requires send operation (state changes persist)
+
+**Tag Specification Format:**
+
+Each tag must include:
+- `name`: Tag name (e.g., "Action", "Recipient", "Quantity")
+- `type`: Value type (always "string" in AO - even for numbers)
+- `value`: Fixed value if applicable (e.g., Action tag always has specific value)
+- `description`: What the tag represents (for non-fixed values)
 
 **Benefits:**
 
@@ -336,25 +380,94 @@ Handlers.add("info",
     function(msg)
         ao.send({
             Target = msg.From,
-            Action = "SaveState",
             Data = json.encode({
                 process = {
                     name = "TokenContract",
                     version = "1.0.0",
                     adpVersion = "1.0",
-                    capabilities = {"transfer", "balance", "mint"},
-                    messageSchemas = {
-                        Transfer = {
-                            required = {"Action", "Recipient", "Quantity"},
-                            optional = {"Data"}
+                    capabilities = {"transfer", "balance", "mint"}
+                },
+                handlers = {
+                    {
+                        name = "transfer",
+                        action = "Transfer",
+                        type = "write",
+                        description = "Transfer tokens between accounts",
+                        tags = {
+                            required = {
+                                {name = "Action", type = "string", value = "Transfer"},
+                                {name = "Recipient", type = "string", description = "Recipient address"},
+                                {name = "Quantity", type = "string", description = "Amount to transfer (as string)"}
+                            },
+                            optional = {}
                         },
-                        Balance = {
-                            required = {"Action"},
-                            optional = {"Target"}
+                        response = {
+                            tags = {
+                                {name = "Action", type = "string", value = "TransferSuccess"},
+                                {name = "From", type = "string"},
+                                {name = "Recipient", type = "string"},
+                                {name = "Quantity", type = "string"},
+                                {name = "NewBalance", type = "string"}
+                            }
+                        }
+                    },
+                    {
+                        name = "balance",
+                        action = "Balance",
+                        type = "read",
+                        description = "Query account balance",
+                        tags = {
+                            required = {
+                                {name = "Action", type = "string", value = "Balance"}
+                            },
+                            optional = {
+                                {name = "Target", type = "string", description = "Address to query (defaults to sender)"}
+                            }
+                        },
+                        response = {
+                            tags = {
+                                {name = "Action", type = "string", value = "BalanceResponse"},
+                                {name = "Balance", type = "string"},
+                                {name = "Target", type = "string"}
+                            }
+                        }
+                    },
+                    {
+                        name = "mint",
+                        action = "Mint",
+                        type = "write",
+                        description = "Create new tokens",
+                        tags = {
+                            required = {
+                                {name = "Action", type = "string", value = "Mint"},
+                                {name = "Quantity", type = "string", description = "Amount to mint (as string)"}
+                            },
+                            optional = {}
+                        },
+                        response = {
+                            tags = {
+                                {name = "Action", type = "string", value = "MintSuccess"},
+                                {name = "Quantity", type = "string"},
+                                {name = "TotalSupply", type = "string"}
+                            }
+                        }
+                    },
+                    {
+                        name = "info",
+                        action = "Info",
+                        type = "read",
+                        description = "Get process metadata and handler information (ADP v1.0)",
+                        tags = {
+                            required = {
+                                {name = "Action", type = "string", value = "Info"}
+                            },
+                            optional = {}
+                        },
+                        response = {
+                            data = "JSON object with process metadata and handlers schema"
                         }
                     }
                 },
-                handlers = {"transfer", "balance", "mint", "info"},
                 documentation = {
                     adpCompliance = "v1.0",
                     selfDocumenting = true,
@@ -389,7 +502,7 @@ ao.send({
 Handlers.add("info",
     Handlers.utils.hasMatchingTag("Action", "Info"),
     function(msg)
-        -- Build comprehensive process information
+        -- Build comprehensive process information with strict handler metadata
         local processInfo = {
             process = {
                 name = "MyProcess",
@@ -397,13 +510,66 @@ Handlers.add("info",
                 adpVersion = "1.0",
                 capabilities = {"create", "update", "query"}
             },
-            handlers = {"create", "update", "query", "info"}
+            handlers = {
+                {
+                    name = "create",
+                    action = "CreateItem",
+                    type = "write",  -- This handler modifies state
+                    description = "Create a new item",
+                    tags = {
+                        required = {
+                            {name = "Action", type = "string", value = "CreateItem"},
+                            {name = "Name", type = "string", description = "Item name"}
+                        },
+                        optional = {
+                            {name = "Description", type = "string", description = "Item description"}
+                        }
+                    },
+                    response = {
+                        tags = {
+                            {name = "Action", type = "string", value = "ItemCreated"},
+                            {name = "ItemId", type = "string"},
+                            {name = "Name", type = "string"}
+                        }
+                    }
+                },
+                {
+                    name = "query",
+                    action = "Query",
+                    type = "read",  -- This handler only reads state
+                    description = "Query items by ID",
+                    tags = {
+                        required = {
+                            {name = "Action", type = "string", value = "Query"},
+                            {name = "ItemId", type = "string", description = "Item ID to query"}
+                        },
+                        optional = {}
+                    },
+                    response = {
+                        data = "JSON object with item details"
+                    }
+                },
+                {
+                    name = "info",
+                    action = "Info",
+                    type = "read",  -- Info handler is always read-only
+                    description = "Get process metadata and handler information (ADP v1.0)",
+                    tags = {
+                        required = {
+                            {name = "Action", type = "string", value = "Info"}
+                        },
+                        optional = {}
+                    },
+                    response = {
+                        data = "JSON object with process metadata and handlers schema"
+                    }
+                }
+            }
         }
 
-        -- Send response with process metadata
+        -- Send response WITHOUT Action tag (ADP v1.0 requirement)
         ao.send({
             Target = msg.From,           -- Reply to sender
-            Action = "SaveState",        -- Standard ADP response action
             Data = json.encode(processInfo)  -- JSON-encoded metadata
         })
     end
@@ -558,6 +724,258 @@ local function validateInput(data)
 end
 ```
 
+## Building with HyperBEAM
+
+HyperBEAM provides modern patterns for accessing AO process state and enabling dynamic computations without traditional dry-run patterns.
+
+### Dynamic Reads: Compute on Demand
+
+**Dynamic reads** enable on-the-fly computations without modifying process state. You can execute Lua transformation scripts against cached process state in real-time via HTTP.
+
+**Transformation Functions:**
+
+Create Lua scripts that transform base state and upload them to Arweave:
+
+```lua
+-- circulating-supply.lua - Example transformation script
+function calculate(base, req)
+  local totalSupply = 0
+  local holderCount = 0
+
+  if base.balances then
+    for address, balance in pairs(base.balances) do
+      local numBalance = tonumber(balance) or 0
+      totalSupply = totalSupply + numBalance
+      holderCount = holderCount + 1
+    end
+  end
+
+  return {
+    CirculatingSupply = tostring(math.floor(totalSupply)),
+    HolderCount = tostring(holderCount),
+    LastCalculated = os.time()
+  }
+end
+```
+
+**Publication Workflow:**
+
+1. Upload transformation script to Arweave using ARX CLI tool
+2. Get the script's transaction ID
+3. Call via HyperBEAM URL with script ID and function name
+4. Integrate into applications via JavaScript SDK
+
+**JavaScript Implementation:**
+
+```javascript
+async function getCirculatingSupply(processId, scriptTxId) {
+  const url = `https://forward.computer/${processId}~process@1.0/now/~lua@5.3a&module=${scriptTxId}/calculate/serialize~json@1.0`;
+  const response = await fetch(url);
+  return await response.json();
+}
+```
+
+### State Exposure via HTTP
+
+**The Patch Device:**
+
+Use `Send({device = 'patch@1.0', ...})` to make process state immediately readable via HTTP GET requests to `forward.computer` endpoints. This allows external applications to access specific state keys like counters, user data, and balances directly.
+
+**Initial State Sync Pattern:**
+
+Critical data becomes immediately accessible through one-time synchronization:
+
+```lua
+-- Initialize sync status
+InitialSync = InitialSync or 'INCOMPLETE'
+
+if InitialSync == 'INCOMPLETE' then
+  -- Expose initial state via patch device
+  Send({
+    device = 'patch@1.0',
+    balances = Balances,
+    totalsupply = TotalSupply
+  })
+  InitialSync = 'COMPLETE'
+end
+```
+
+**IMPORTANT**: The patch device uses `Send()` (capital S) instead of `ao.send()`. This is a HyperBEAM-specific API.
+
+### Practical Implementation Patterns
+
+**Token Process with State Exposure:**
+
+```lua
+Handlers.add("Transfer",
+  Handlers.utils.hasMatchingTag("Action", "Transfer"),
+  function(msg)
+    -- Validate inputs
+    local amount = tonumber(msg.Quantity)
+    local target = msg.Recipient
+    local sender = msg.From
+
+    if not target or not amount or amount <= 0 then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Invalid transfer parameters"
+      })
+      return
+    end
+
+    -- Check balance
+    local senderBalance = tonumber(Balances[sender]) or 0
+    if senderBalance < amount then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Insufficient balance"
+      })
+      return
+    end
+
+    -- Process transfer
+    Balances[sender] = tostring(senderBalance - amount)
+    Balances[target] = tostring((tonumber(Balances[target]) or 0) + amount)
+
+    -- Expose updated state via patch device
+    Send({device = 'patch@1.0', balances = Balances})
+
+    -- Send success response
+    ao.send({
+      Target = msg.From,
+      Action = "TransferSuccess",
+      Recipient = target,
+      Quantity = msg.Quantity
+    })
+  end
+)
+```
+
+**Chat Process with HTTP-Accessible State:**
+
+```lua
+-- Initialize state
+Messages = Messages or {}
+Users = Users or {}
+
+Handlers.add("AddMessage",
+  Handlers.utils.hasMatchingTag("Action", "AddMessage"),
+  function(msg)
+    -- Validate message content
+    if not msg.Data or msg.Data == "" then
+      ao.send({
+        Target = msg.From,
+        Action = "Error",
+        Error = "Message content required"
+      })
+      return
+    end
+
+    -- Add message to state
+    local messageId = tostring(#Messages + 1)
+    Messages[messageId] = {
+      user = msg.From,
+      content = msg.Data,
+      timestamp = msg.Timestamp
+    }
+
+    -- Track user
+    Users[msg.From] = Users[msg.From] or {
+      firstMessage = msg.Timestamp,
+      messageCount = 0
+    }
+    Users[msg.From].messageCount = Users[msg.From].messageCount + 1
+    Users[msg.From].lastMessage = msg.Timestamp
+
+    -- Expose updated state via patch device
+    Send({device = 'patch@1.0', messages = Messages, users = Users})
+
+    -- Respond with success
+    ao.send({
+      Target = msg.From,
+      Action = "MessageAdded",
+      MessageId = messageId
+    })
+  end
+)
+```
+
+### Integration Strategies
+
+**AOProcessClient Class (JavaScript):**
+
+```javascript
+class AOProcessClient {
+  constructor(processId, hyperbeamUrl = 'https://forward.computer') {
+    this.processId = processId;
+    this.hyperbeamUrl = hyperbeamUrl;
+  }
+
+  // Get state key via patch device
+  async getState(key) {
+    const url = `${this.hyperbeamUrl}/${this.processId}~process@1.0/compute/${key}`;
+    const response = await fetch(url);
+    return await response.text();
+  }
+
+  // Execute dynamic read transformation
+  async getDynamicResult(scriptTxId, functionName) {
+    const url = `${this.hyperbeamUrl}/${this.processId}~process@1.0/now/~lua@5.3a&module=${scriptTxId}/${functionName}/serialize~json@1.0`;
+    const response = await fetch(url);
+    return await response.json();
+  }
+
+  // Get balances example
+  async getBalances() {
+    return JSON.parse(await this.getState('balances'));
+  }
+
+  // Get messages example
+  async getMessages() {
+    return JSON.parse(await this.getState('messages'));
+  }
+}
+
+// Usage
+const client = new AOProcessClient('your-process-id');
+const balances = await client.getBalances();
+const messages = await client.getMessages();
+```
+
+### Best Practices for HyperBEAM
+
+**State Management:**
+
+- Use descriptive, lowercase cache keys for patch device
+- Batch state updates when possible to reduce patch calls
+- Initialize sync for critical data that needs immediate availability
+- Consider what state external applications need to access
+
+**Performance:**
+
+- Patch frequently updated data for real-time external access
+- Use dynamic reads for complex computations that don't need caching
+- Minimize payload sizes in patch device calls
+- Cache transformation script results on client side when appropriate
+
+**Security:**
+
+- Validate all handler inputs before processing
+- Enforce permission checks before state modifications
+- Implement rate limiting for expensive operations
+- Never expose sensitive data via HTTP endpoints
+- Remember that patched state is publicly readable
+
+**Dynamic Read Scripts:**
+
+- Keep transformation functions pure (no side effects)
+- Return JSON-serializable data structures
+- Document expected base state structure
+- Test transformations locally before uploading to Arweave
+- Version your transformation scripts
+
 ## Resources
 
 ### aoconnect Library
@@ -674,6 +1092,6 @@ setMessageLog(level)  -- 0=off, 1=basic, 2=detailed, 3=verbose
 
 ---
 
-**Version**: 1.0.0
-**Last Updated**: 2025-10-22
+**Version**: 1.0.5
+**Last Updated**: 2025-11-15
 **ADP Compliance**: v1.0

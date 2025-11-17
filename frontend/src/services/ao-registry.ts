@@ -1,14 +1,4 @@
-import { dryrun, dryrunFallback, REGISTRY_PROCESS_ID } from '@/lib/ao-client';
-import {
-  buildHyperbeamUrl,
-  hyperbeamFetch,
-  SEARCH_SKILLS_SCRIPT_ID,
-  GET_SKILL_SCRIPT_ID,
-  GET_SKILL_VERSIONS_SCRIPT_ID,
-  GET_DOWNLOAD_STATS_SCRIPT_ID,
-  INFO_SCRIPT_ID,
-  LIST_SKILLS_SCRIPT_ID,
-} from '@/lib/hyperbeam-client';
+import { registryClient } from '@/lib/ao-registry-client';
 import type {
   SkillMetadata,
   PaginatedSkills,
@@ -17,6 +7,7 @@ import type {
   ListSkillsOptions,
   DownloadStats,
 } from '@/types/ao';
+import type { GetSkillResponse } from '@/types/hyperbeam';
 
 // Cache for query results
 interface CacheEntry<T> {
@@ -54,55 +45,6 @@ function setCache<T>(key: string, data: T): void {
   });
 }
 
-// Delay utility for retry logic
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Execute dryrun with automatic fallback to secondary endpoints
- * @param tags - Message tags for the dryrun query
- * @returns Dryrun result
- */
-async function dryrunWithFallback(tags: Array<{ name: string; value: string }>) {
-  try {
-    // Try primary endpoint first
-    const result = await dryrun({
-      process: REGISTRY_PROCESS_ID,
-      tags,
-    });
-    return result;
-  } catch (primaryError) {
-    // Log primary failure in dev mode
-    if (import.meta.env.DEV) {
-      console.warn('Primary endpoint failed, trying fallback:', primaryError);
-    }
-
-    // Try fallback endpoint
-    try {
-      const result = await dryrunFallback({
-        process: REGISTRY_PROCESS_ID,
-        tags,
-      });
-
-      if (import.meta.env.DEV) {
-        console.warn('Successfully used fallback endpoint (ao-testnet)');
-      }
-
-      return result;
-    } catch (fallbackError) {
-      // Both failed - throw the original error
-      if (import.meta.env.DEV) {
-        console.error('Both primary and fallback endpoints failed:', {
-          primary: primaryError,
-          fallback: fallbackError,
-        });
-      }
-      throw primaryError;
-    }
-  }
-}
-
 // Error types for better error handling
 export class RegistryError extends Error {
   constructor(
@@ -118,12 +60,8 @@ export class RegistryError extends Error {
 /**
  * Search skills by query string
  * @param query - Search query (empty string returns all skills)
- * @param retries - Number of retry attempts remaining
  */
-export async function searchSkills(
-  query: string,
-  retries = 3
-): Promise<SkillMetadata[]> {
+export async function searchSkills(query: string): Promise<SkillMetadata[]> {
   // Validate and sanitize query
   const sanitizedQuery = query.trim().slice(0, 256);
 
@@ -133,58 +71,8 @@ export async function searchSkills(
   if (cached) return cached;
 
   try {
-    // HyperBEAM Dynamic Reads with dryrun fallback
-    const url = buildHyperbeamUrl(SEARCH_SKILLS_SCRIPT_ID, 'searchSkills', {
-      query: sanitizedQuery,
-    });
-
-    const response = await hyperbeamFetch<{
-      results: SkillMetadata[];
-      total: number;
-      query: string;
-    }>(url, async () => {
-      // Fallback to dryrun with automatic endpoint fallback if HyperBEAM fails
-      const result = await dryrunWithFallback([
-        { name: 'Action', value: 'Search-Skills' },
-        { name: 'Query', value: sanitizedQuery },
-      ]);
-
-      // Validate response structure
-      if (!result || !result.Messages || !Array.isArray(result.Messages)) {
-        throw new RegistryError(
-          'Invalid response structure from registry',
-          'INVALID_RESPONSE'
-        );
-      }
-
-      if (result.Messages.length === 0) {
-        throw new RegistryError(
-          'No response from registry process',
-          'EMPTY_RESPONSE'
-        );
-      }
-
-      // Check for error message
-      if (result.Error) {
-        throw new RegistryError(
-          `Registry error: ${result.Error}`,
-          'REGISTRY_ERROR'
-        );
-      }
-
-      // Parse JSON safely
-      const rawData = JSON.parse(result.Messages[0].Data);
-
-      // Validate expected structure - registry sends direct array
-      if (!Array.isArray(rawData)) {
-        throw new RegistryError(
-          'Invalid response structure: expected array',
-          'INVALID_STRUCTURE'
-        );
-      }
-
-      return { results: rawData, total: rawData.length, query: sanitizedQuery };
-    });
+    // Use AORegistryClient (handles HyperBEAM + dryrun fallback + retry logic)
+    const response = await registryClient.searchSkills(sanitizedQuery);
 
     // Map downloadCount to downloads for frontend compatibility
     const data = response.results.map((skill: any) => ({
@@ -197,13 +85,6 @@ export async function searchSkills(
 
     return data;
   } catch (error) {
-    // Retry logic with exponential backoff
-    if (retries > 0) {
-      const backoffDelay = 2000 * (4 - retries); // 2s, 4s, 8s
-      await delay(backoffDelay);
-      return searchSkills(query, retries - 1);
-    }
-
     // Log error with context (dev only)
     if (import.meta.env.DEV) {
       console.error('Search skills failed:', {
@@ -225,75 +106,16 @@ export async function searchSkills(
  * List skills with pagination and filters
  */
 export async function listSkills(
-  options: ListSkillsOptions = {},
-  retries = 3
+  options: ListSkillsOptions = {}
 ): Promise<PaginatedSkills> {
-  const {
-    limit = 20,
-    offset = 0,
-    filterTags = [],
-    filterName = '',
-    featured = false,
-  } = options;
-
   // Check cache
   const cacheKey = getCacheKey('list', options);
   const cached = getFromCache<PaginatedSkills>(cacheKey);
   if (cached) return cached;
 
   try {
-    // HyperBEAM Dynamic Reads with dryrun fallback
-    const url = buildHyperbeamUrl(LIST_SKILLS_SCRIPT_ID, 'listSkills', {
-      limit,
-      offset,
-      filterTags:
-        filterTags.length > 0 ? JSON.stringify(filterTags) : undefined,
-      filterName: filterName || undefined,
-      author: undefined, // Not used in current implementation
-    });
-
-    const response = await hyperbeamFetch<{
-      skills: SkillMetadata[];
-      pagination: {
-        total: number;
-        limit: number;
-        offset: number;
-        returned: number;
-        hasNextPage: boolean;
-        hasPrevPage: boolean;
-      };
-    }>(url, async () => {
-      // Fallback to dryrun with automatic endpoint fallback if HyperBEAM fails
-      const tags = [
-        { name: 'Action', value: 'List-Skills' },
-        { name: 'Limit', value: String(limit) },
-        { name: 'Offset', value: String(offset) },
-      ];
-
-      if (filterTags.length > 0) {
-        tags.push({ name: 'FilterTags', value: filterTags.join(',') });
-      }
-
-      if (filterName) {
-        tags.push({ name: 'FilterName', value: filterName });
-      }
-
-      if (featured) {
-        tags.push({ name: 'Featured', value: 'true' });
-      }
-
-      const result = await dryrunWithFallback(tags);
-
-      // Validate response structure
-      if (!result?.Messages?.[0]?.Data) {
-        throw new RegistryError(
-          'No response from registry process',
-          'EMPTY_RESPONSE'
-        );
-      }
-
-      return JSON.parse(result.Messages[0].Data);
-    });
+    // Use AORegistryClient (handles HyperBEAM + dryrun fallback + retry logic)
+    const response = await registryClient.listSkills(options);
 
     // Validate structure
     if (!response.skills || !Array.isArray(response.skills)) {
@@ -319,13 +141,6 @@ export async function listSkills(
 
     return data;
   } catch (error) {
-    // Retry logic
-    if (retries > 0) {
-      const backoffDelay = 2000 * (4 - retries);
-      await delay(backoffDelay);
-      return listSkills(options, retries - 1);
-    }
-
     if (import.meta.env.DEV) {
       console.error('List skills failed:', { options, error });
     }
@@ -343,8 +158,7 @@ export async function listSkills(
  */
 export async function getSkill(
   name: string,
-  version?: string,
-  retries = 3
+  version?: string
 ): Promise<SkillMetadata> {
   // Validate name
   const sanitizedName = name.trim();
@@ -358,36 +172,9 @@ export async function getSkill(
   if (cached) return cached;
 
   try {
-    // HyperBEAM Dynamic Reads with dryrun fallback
-    const url = buildHyperbeamUrl(GET_SKILL_SCRIPT_ID, 'getSkill', {
-      name: sanitizedName,
-    });
-
-    const response = await hyperbeamFetch<{ skill: SkillMetadata }>(
-      url,
-      async () => {
-        // Fallback to dryrun with automatic endpoint fallback if HyperBEAM fails
-        const tags = [
-          { name: 'Action', value: 'Get-Skill' },
-          { name: 'Name', value: sanitizedName },
-        ];
-
-        if (version) {
-          tags.push({ name: 'Version', value: version });
-        }
-
-        const result = await dryrunWithFallback(tags);
-
-        if (!result?.Messages?.[0]?.Data) {
-          throw new RegistryError(
-            'No response from registry process',
-            'EMPTY_RESPONSE'
-          );
-        }
-
-        const rawData = JSON.parse(result.Messages[0].Data);
-        return { skill: rawData };
-      }
+    // Use AORegistryClient (handles HyperBEAM + dryrun fallback + retry logic)
+    const response: GetSkillResponse = await registryClient.getSkill(
+      sanitizedName
     );
 
     // Validate skill object
@@ -407,12 +194,6 @@ export async function getSkill(
 
     return skill;
   } catch (error) {
-    if (retries > 0) {
-      const backoffDelay = 2000 * (4 - retries);
-      await delay(backoffDelay);
-      return getSkill(name, version, retries - 1);
-    }
-
     if (import.meta.env.DEV) {
       console.error('Get skill failed:', { name, version, error });
     }
@@ -428,10 +209,7 @@ export async function getSkill(
 /**
  * Get all versions of a skill
  */
-export async function getSkillVersions(
-  name: string,
-  retries = 3
-): Promise<VersionInfo[]> {
+export async function getSkillVersions(name: string): Promise<VersionInfo[]> {
   const sanitizedName = name.trim();
   if (!sanitizedName) {
     throw new RegistryError('Skill name is required', 'INVALID_INPUT');
@@ -443,35 +221,8 @@ export async function getSkillVersions(
   if (cached) return cached;
 
   try {
-    // HyperBEAM Dynamic Reads with dryrun fallback
-    const url = buildHyperbeamUrl(
-      GET_SKILL_VERSIONS_SCRIPT_ID,
-      'getSkillVersions',
-      {
-        name: sanitizedName,
-      }
-    );
-
-    const response = await hyperbeamFetch<{
-      versions: VersionInfo[];
-      latest: string;
-      total: number;
-    }>(url, async () => {
-      // Fallback to dryrun with automatic endpoint fallback if HyperBEAM fails
-      const result = await dryrunWithFallback([
-        { name: 'Action', value: 'Get-Skill-Versions' },
-        { name: 'Name', value: sanitizedName },
-      ]);
-
-      if (!result?.Messages?.[0]?.Data) {
-        throw new RegistryError(
-          'No response from registry process',
-          'EMPTY_RESPONSE'
-        );
-      }
-
-      return JSON.parse(result.Messages[0].Data);
-    });
+    // Use AORegistryClient (handles HyperBEAM + dryrun fallback + retry logic)
+    const response = await registryClient.getSkillVersions(sanitizedName);
 
     if (!response.versions || !Array.isArray(response.versions)) {
       throw new RegistryError(
@@ -485,12 +236,6 @@ export async function getSkillVersions(
 
     return response.versions;
   } catch (error) {
-    if (retries > 0) {
-      const backoffDelay = 2000 * (4 - retries);
-      await delay(backoffDelay);
-      return getSkillVersions(name, retries - 1);
-    }
-
     if (import.meta.env.DEV) {
       console.error('Get skill versions failed:', { name, error });
     }
@@ -510,39 +255,19 @@ export async function getSkillVersions(
 /**
  * Get registry information
  */
-export async function getRegistryInfo(retries = 3): Promise<RegistryInfo> {
+export async function getRegistryInfo(): Promise<RegistryInfo> {
   // Check cache
   const cacheKey = getCacheKey('info', {});
   const cached = getFromCache<RegistryInfo>(cacheKey);
   if (cached) return cached;
 
   try {
-    // HyperBEAM Dynamic Reads with dryrun fallback
-    const url = buildHyperbeamUrl(INFO_SCRIPT_ID, 'info');
-
-    const response = await hyperbeamFetch<{
-      process: { name: string; version: string; adpVersion: string };
-      handlers: string[];
-      documentation: { adpCompliance: string; selfDocumenting: boolean };
-    }>(url, async () => {
-      // Fallback to dryrun with automatic endpoint fallback if HyperBEAM fails
-      const result = await dryrunWithFallback([
-        { name: 'Action', value: 'Info' },
-      ]);
-
-      if (!result?.Messages?.[0]?.Data) {
-        throw new RegistryError(
-          'No response from registry process',
-          'EMPTY_RESPONSE'
-        );
-      }
-
-      return JSON.parse(result.Messages[0].Data);
-    });
+    // Use AORegistryClient (handles HyperBEAM + dryrun fallback + retry logic)
+    const response = await registryClient.getInfo();
 
     // Transform to RegistryInfo structure
     const info: RegistryInfo = {
-      processId: REGISTRY_PROCESS_ID,
+      processId: response.process?.name || '',
       adpVersion: response.process?.adpVersion || '1.0',
       handlers: response.handlers || [],
       totalSkills: 0, // Will be populated by registry
@@ -553,12 +278,6 @@ export async function getRegistryInfo(retries = 3): Promise<RegistryInfo> {
 
     return info;
   } catch (error) {
-    if (retries > 0) {
-      const backoffDelay = 2000 * (4 - retries);
-      await delay(backoffDelay);
-      return getRegistryInfo(retries - 1);
-    }
-
     if (import.meta.env.DEV) {
       console.error('Get registry info failed:', { error });
     }
@@ -579,8 +298,7 @@ export async function getRegistryInfo(retries = 3): Promise<RegistryInfo> {
  * Get download statistics (aggregate or per-skill)
  */
 export async function getDownloadStats(
-  options: { scope: 'all' } | { skillName: string },
-  retries = 3
+  options: { scope: 'all' } | { skillName: string }
 ): Promise<DownloadStats | null> {
   // Check cache
   const cacheKey = getCacheKey('downloadStats', options);
@@ -588,50 +306,9 @@ export async function getDownloadStats(
   if (cached) return cached;
 
   try {
-    // HyperBEAM Dynamic Reads with dryrun fallback
-    const url = buildHyperbeamUrl(
-      GET_DOWNLOAD_STATS_SCRIPT_ID,
-      'getDownloadStats',
-      'skillName' in options ? { name: options.skillName } : {}
-    );
-
-    const response = await hyperbeamFetch<{
-      skillName?: string;
-      totalDownloads: number;
-      totalSkills?: number; // Only in aggregate (scope=all) responses
-      downloads7Days?: number; // Only in aggregate responses
-      downloads30Days?: number; // Only in aggregate responses
-      versions: Record<string, { version: string; downloads: number }>;
-      latestVersion?: string;
-    }>(url, async () => {
-      // Fallback to dryrun with automatic endpoint fallback if HyperBEAM fails
-      const tags = [{ name: 'Action', value: 'Get-Download-Stats' }];
-
-      if ('scope' in options) {
-        tags.push({ name: 'Scope', value: options.scope });
-      } else {
-        tags.push({ name: 'Name', value: options.skillName });
-      }
-
-      const result = await dryrunWithFallback(tags);
-
-      // Validate response structure
-      if (!result || !result.Messages || !Array.isArray(result.Messages)) {
-        if (import.meta.env.DEV) {
-          console.error('Invalid response structure from Get-Download-Stats');
-        }
-        return null;
-      }
-
-      if (result.Messages.length === 0) {
-        if (import.meta.env.DEV) {
-          console.error('No messages in Get-Download-Stats response');
-        }
-        return null;
-      }
-
-      return JSON.parse(result.Messages[0].Data);
-    });
+    // Use AORegistryClient (handles HyperBEAM + dryrun fallback + retry logic)
+    const skillName = 'skillName' in options ? options.skillName : '';
+    const response = await registryClient.getDownloadStats(skillName);
 
     if (!response) {
       return null;
@@ -639,10 +316,11 @@ export async function getDownloadStats(
 
     // Transform HyperBEAM response to DownloadStats format
     const data: DownloadStats = {
-      downloads7Days: response.downloads7Days ?? 0,
-      downloads30Days: response.downloads30Days ?? 0,
+      downloads7Days: 0, // Not provided in current implementation
+      downloads30Days: 0, // Not provided in current implementation
       downloadsTotal: response.totalDownloads ?? 0,
-      totalSkills: response.totalSkills ?? 0,
+      totalSkills: 0, // Not provided in current implementation
+      skillName: response.skillName,
     };
 
     // Cache successful result
@@ -650,13 +328,6 @@ export async function getDownloadStats(
 
     return data;
   } catch (error) {
-    // Retry logic with exponential backoff
-    if (retries > 0) {
-      const backoffDelay = 2000 * (4 - retries);
-      await delay(backoffDelay);
-      return getDownloadStats(options, retries - 1);
-    }
-
     if (import.meta.env.DEV) {
       console.error('Get download stats failed:', { options, error });
     }

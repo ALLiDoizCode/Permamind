@@ -41,3 +41,6 @@ Enhance the skill registry schema and MCP server to support dependency classific
 
 **Epic 14: Blog Section - Brownfield Enhancement**
 Add a blog section to the Permamind frontend that enables the team to publish educational content, tutorials, and announcements. The blog will render markdown content with support for media embeds and external links while maintaining the existing terminal dark theme and design system. Delivers content publishing capabilities with enhanced markdown rendering (images, videos, lists, blockquotes, code blocks), blog listing page with filtering/search, and individual post pages with social sharing.
+
+**Epic 15: HyperBEAM Registry Migration - Brownfield Enhancement**
+Migrate the AO registry process to leverage HyperBEAM's HTTP state exposure capabilities via the Patch device and Dynamic Reads, enabling the frontend to query skill metadata directly through HTTP GET requests instead of message passing. Delivers significantly improved performance for search/browse operations (<500ms vs 2s) while maintaining full backward compatibility with existing CLI and MCP server integrations using @permaweb/aoconnect message passing.

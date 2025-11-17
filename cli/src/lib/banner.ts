@@ -12,7 +12,8 @@
 
 import chalk from 'chalk';
 import { readFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 /**
  * Cached version to avoid reading package.json on every banner display
@@ -30,7 +31,11 @@ function getVersion(): string {
   }
 
   try {
-    // Read package.json from cli directory using __dirname (CommonJS)
+    // ESM equivalent of __dirname
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+
+    // Read package.json from cli directory
     const packagePath = join(__dirname, '../../package.json');
     const packageJson = JSON.parse(readFileSync(packagePath, 'utf-8')) as { version?: string };
     cachedVersion = packageJson.version ?? '0.0.0';

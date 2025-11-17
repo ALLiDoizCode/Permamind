@@ -89,12 +89,14 @@ async function createBlogPreview(blogPost) {
             line-height: 1.5;
             position: relative;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .ascii-border {
             border: 3px solid #33ff00;
             padding: 40px;
-            margin: 60px auto 120px auto;
             max-width: 1000px;
             text-align: center;
             background: rgba(0, 0, 0, 0.3);
@@ -147,13 +149,10 @@ async function createBlogPreview(blogPost) {
             letter-spacing: 1px;
         }
 
-        .bottom-brand {
-            position: absolute;
-            bottom: 30px;
-            left: 40px;
-            font-size: 22px;
-            color: #33ff00;
-            opacity: 0.9;
+        .tag {
+            display: inline-block;
+            vertical-align: baseline;
+            margin: 0 8px;
         }
 
         /* Border decoration */
@@ -191,12 +190,8 @@ async function createBlogPreview(blogPost) {
                 </div>
 
                 <div class="terminal-line tag-line">
-                    ${blogPost.tags.map(tag => `#${tag}`).join(' ')}
+                    ${blogPost.tags.map(tag => `<span class="tag">#${tag}</span>`).join(' ')}
                 </div>
-            </div>
-
-            <div class="bottom-brand">
-                PERMAMIND // ${blogPost.date} // ${blogPost.readTime} min read
             </div>
         </div>
     </div>
@@ -266,7 +261,7 @@ const blogPosts = [
         slug: 'permaweb-mcp-guide',
         title: 'Permaweb-MCP: Your Gateway to AO and Arweave Development',
         date: '2025-11-16',
-        tags: ['mcp', 'arweave'],
+        tags: ['mcp', 'arweave', 'ao'],
         excerpt: 'Transform how you interact with AO and Arweave through natural language. Deploy apps, manage processes, and register domains with Claude AI.',
         readTime: 8,
     },

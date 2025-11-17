@@ -92,18 +92,6 @@ Add Permaweb-MCP to your Claude Desktop configuration (`claude_desktop_config.js
 
 **Security Note**: Your seed phrase enables wallet access. Store it securely and never commit it to version control.
 
-### Environment Configuration
-
-**Required**:
-- `SEED_PHRASE`: 12-word mnemonic for deterministic wallet generation
-
-**Optional**:
-- `NODE_ENV`: Set to `production` or `development`
-- `AO_SCHEDULER`: Custom AO scheduler endpoint
-- `AO_MODULE`: Custom AO module ID
-- `DEBUG`: Enable debug logging
-- `MCP_LOG_LEVEL`: Control log verbosity
-
 ## Real-World Usage Examples
 
 ### Example 1: Deploy a Website to the Permaweb
@@ -238,29 +226,6 @@ Create a production build:
 npm run build
 ```
 
-## Common Workflows
-
-### Publishing a Web Application
-
-1. **Build** your application (`npm run build`, `vite build`, etc.)
-2. **Check prerequisites** with `checkPermawebDeployPrerequisites`
-3. **Deploy** using `deployPermawebDirectory` with your ArNS domain
-4. **Verify** deployment at `https://yourdomain.ar`
-
-### Creating an AO Agent
-
-1. **Spawn** a new process with `spawnProcess`
-2. **Deploy code** using `sendAOMessage` with `Action: Eval`
-3. **Test interaction** with `readAOProcess` queries
-4. **Monitor activity** using `queryAOProcessMessages`
-
-### Managing Domains
-
-1. **Check availability** with `getArnsRecordInfo`
-2. **Calculate cost** using `getArnsTokenCost`
-3. **Register domain** via `buyArnsRecord`
-4. **Update targets** with `updateArnsRecord` as you deploy new versions
-
 ## Why Use Permaweb-MCP?
 
 ### For AI-Assisted Development
@@ -332,24 +297,6 @@ npm run build
 - **GitHub Issues**: https://github.com/ALLiDoizCode/Permaweb-MCP/issues
 - **Discord Community**: https://discord.gg/yDJFBtfS4K
 - **Documentation**: https://github.com/ALLiDoizCode/Permaweb-MCP#readme
-
-## What's Next?
-
-### Advanced Features
-
-- **Custom AO Modules**: Deploy processes with custom WASM modules
-- **Multi-Signature Wallets**: Coordinate deployments across team wallets
-- **Atomic Swaps**: Integrate with AO token protocols
-- **Gateway Selection**: Choose optimal gateways for your region
-
-### Integrations
-
-Permaweb-MCP works seamlessly with:
-
-- **Claude Desktop**: Native MCP support
-- **VS Code**: Through Claude Code extension
-- **Cursor IDE**: MCP integration for AI pair programming
-- **Custom Clients**: Any MCP-compatible application
 
 ## Conclusion
 
